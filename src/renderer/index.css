@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 240 10% 4%;
+    --foreground: 0 0% 95%;
+    --card: 240 10% 6%;
+    --card-foreground: 0 0% 95%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 5% 15%;
+    --secondary-foreground: 0 0% 95%;
+    --muted: 240 5% 15%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 240 5% 15%;
+    --accent-foreground: 0 0% 95%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 5% 18%;
+    --input: 240 5% 18%;
+    --ring: 217 91% 60%;
+    --radius: 0.625rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(240 5% 25%);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(240 5% 35%);
+}
+
+/* 选区颜色 — 跟随方案主色调 */
+::selection {
+  background: hsl(var(--primary) / 0.3);
+}
+
+/* ── 方案级主题微调（补充 CSS 变量无法覆盖的细节） ── */
+
+/* 律所方案：偏冷正式 */
+[data-solution="law-firm"] ::-webkit-scrollbar-thumb {
+  background: hsl(220 15% 28%);
+}
+
+/* 工程造价：偏暖工业 */
+[data-solution="construction-cost"] ::-webkit-scrollbar-thumb {
+  background: hsl(20 15% 28%);
+}
+
+/* 中小企业：紫色系 */
+[data-solution="smb-operations"] ::-webkit-scrollbar-thumb {
+  background: hsl(263 10% 28%);
+}
