@@ -6,6 +6,8 @@ import { useChatStore, type ChatMessage, type WorkflowSuggestion } from '@/store
 import { sendMessage } from '@/lib/chat-service'
 import { startFromChat, getStatusDisplay } from '@/lib/workflow-os-service'
 import type { SolutionConfig, ScenarioConfig } from '@/lib/solution-router'
+import { getSolutionIcon } from '@/lib/solution-icons'
+import { Coins, Zap, ShieldCheck } from 'lucide-react'
 
 export default function ChatPanel() {
   const [input, setInput] = useState('')
@@ -93,7 +95,14 @@ function WelcomeScreen({ solution, onScenarioClick }: {
   return (
     <div className="flex flex-col gap-8 max-w-2xl mx-auto py-6">
       <div className="text-center">
-        <div className="text-5xl mb-2">{solution.icon}</div>
+        {(() => {
+          const Icon = getSolutionIcon(solution.id)
+          return (
+            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mx-auto mb-3">
+              <Icon className="w-7 h-7" />
+            </div>
+          )
+        })()}
         <h2 className="text-2xl font-bold tracking-tight">{solution.name}</h2>
         <p className="text-muted-foreground mt-1">{solution.tagline}</p>
         {solution.entrepreneurPurpose && (
@@ -103,17 +112,18 @@ function WelcomeScreen({ solution, onScenarioClick }: {
 
       {solution.profitMetrics.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {solution.profitMetrics.map((metric, i) => (
-            <div
-              key={i}
-              className="flex items-start gap-2.5 px-3.5 py-3 rounded-xl border border-primary/15 bg-primary/5"
-            >
-              <span className="text-primary text-sm mt-0.5 shrink-0">
-                {i === 0 ? '💰' : i === 1 ? '⚡' : '🛡️'}
-              </span>
-              <span className="text-xs leading-relaxed text-foreground/80">{metric}</span>
-            </div>
-          ))}
+          {solution.profitMetrics.map((metric, i) => {
+            const MetricIcon = [Coins, Zap, ShieldCheck][i] ?? Zap
+            return (
+              <div
+                key={i}
+                className="flex items-start gap-2.5 px-3.5 py-3 rounded-xl border border-primary/15 bg-primary/5"
+              >
+                <MetricIcon className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                <span className="text-xs leading-relaxed text-foreground/80">{metric}</span>
+              </div>
+            )
+          })}
         </div>
       )}
 
@@ -150,8 +160,9 @@ function WelcomeScreen({ solution, onScenarioClick }: {
         <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
           AI 专家团队
           {solution.valueEquivalent && (
-            <span className="ml-2 text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-primary/10 text-primary normal-case">
-              效率 {solution.valueEquivalent.acceleration}
+            <span className="inline-flex items-center gap-1 ml-2 text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary normal-case">
+              <Zap className="w-3 h-3" />
+              {solution.valueEquivalent.humanHours}h→{solution.valueEquivalent.mbeMinutes}min
             </span>
           )}
         </h3>

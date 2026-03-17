@@ -8,6 +8,7 @@ import { useLocalFeedbackStore, startFeedbackSync } from '@/stores/local-feedbac
 import { useSmartCacheStore } from '@/stores/smart-cache-store'
 import { useCloudSyncStore, startCloudSync } from '@/stores/cloud-sync-store'
 import { applySolutionTheme } from '@/lib/solution-router'
+import { getSolutionIcon } from '@/lib/solution-icons'
 import Sidebar from '@/components/Sidebar'
 import ChatPanel from '@/components/ChatPanel'
 import ConnectivityBadge from '@/components/ConnectivityBadge'
@@ -20,6 +21,8 @@ import DashboardPanel from '@/components/workbench/DashboardPanel'
 import WorkflowPanel from '@/components/workbench/WorkflowPanel'
 import ApprovalPanel from '@/components/workbench/ApprovalPanel'
 import CostPanel from '@/components/workbench/CostPanel'
+import SchedulerPanel from '@/components/workbench/SchedulerPanel'
+import DesignerPanel from '@/components/workbench/DesignerPanel'
 import { startApprovalPolling, stopApprovalPolling } from '@/stores/approval-store'
 import { useApprovalNotifications } from '@/hooks/useApprovalNotifications'
 
@@ -78,9 +81,12 @@ export default function Workspace() {
 
   if (!solution) return null
 
+  const SolutionIcon = getSolutionIcon(solution.id)
   let allTabs = solution.enabledTabs
   if (!allTabs.includes('approvals')) allTabs = [...allTabs, 'approvals' as const]
   if (!allTabs.includes('costs')) allTabs = [...allTabs, 'costs' as const]
+  if (!allTabs.includes('scheduler')) allTabs = [...allTabs, 'scheduler' as const]
+  if (!allTabs.includes('designer')) allTabs = [...allTabs, 'designer' as const]
   const showTabs = allTabs.length > 1
 
   return (
@@ -90,13 +96,13 @@ export default function Workspace() {
         {/* 顶部栏 */}
         <header className="h-12 border-b border-border/50 flex items-center px-4 shrink-0">
           <div className="flex items-center gap-2">
-            <span className="text-lg">{solution.icon}</span>
+            <SolutionIcon className="w-5 h-5 text-primary" />
             <span className="font-medium text-sm">{solution.name}</span>
           </div>
 
           {/* Tab 栏 */}
           {showTabs && (
-            <div className="ml-6">
+            <div className="ml-6 flex-shrink-0 overflow-x-auto">
               <WorkbenchTabs
                 activeTab={activeTab}
                 enabledTabs={allTabs}
@@ -141,6 +147,10 @@ function ActivePanel({ tab }: { tab: string }) {
       return <ApprovalPanel />
     case 'costs':
       return <CostPanel solution={solution} />
+    case 'scheduler':
+      return <SchedulerPanel solution={solution} />
+    case 'designer':
+      return <DesignerPanel solution={solution} />
     default:
       return <ChatPanel />
   }
