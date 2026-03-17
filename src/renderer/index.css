@@ -4,26 +4,25 @@
 
 @layer base {
   :root {
-    --background: 240 10% 4%;
+    --background: 220 15% 8%;
     --foreground: 0 0% 95%;
-    --card: 240 10% 6%;
-    --card-foreground: 0 0% 95%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 240 5% 15%;
-    --secondary-foreground: 0 0% 95%;
-    --muted: 240 5% 15%;
-    --muted-foreground: 240 5% 65%;
-    --accent: 240 5% 15%;
-    --accent-foreground: 0 0% 95%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 240 5% 18%;
-    --input: 240 5% 18%;
-    --ring: 217 91% 60%;
-    --radius: 0.625rem;
+    --card: 220 15% 11%;
+    --card-hover: 220 15% 13%;
+    --border: 220 10% 20%;
+    --primary: 38 92% 50%;
+    --secondary: 220 10% 15%;
+    --muted-foreground: 220 10% 55%;
+    --accent: 38 92% 50%;
   }
 }
+
+.bg-background { background-color: hsl(var(--background)); }
+.text-foreground { color: hsl(var(--foreground)); }
+.bg-card { background-color: hsl(var(--card)); }
+.border-border { border-color: hsl(var(--border) / 0.5); }
+.text-primary { color: hsl(var(--primary)); }
+.bg-secondary { background-color: hsl(var(--secondary)); }
+.text-muted-foreground { color: hsl(var(--muted-foreground)); }
 
 @layer base {
   * {
@@ -35,6 +34,15 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+}
+
+/* ── 动画工具类 ── */
+@layer utilities {
+  .animation-delay-100 { animation-delay: 60ms; }
+  .animation-delay-200 { animation-delay: 120ms; }
+  .animation-delay-300 { animation-delay: 180ms; }
+  .animation-delay-400 { animation-delay: 240ms; }
+  .animation-delay-500 { animation-delay: 300ms; }
 }
 
 /* 滚动条 */
@@ -56,6 +64,14 @@
 /* 选区颜色 — 跟随方案主色调 */
 ::selection {
   background: hsl(var(--primary) / 0.3);
+}
+
+/* ── 方案选择卡片 ── */
+.solution-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+.solution-card:hover {
+  background-color: hsl(var(--card-hover));
 }
 
 /* ── 方案级主题微调（补充 CSS 变量无法覆盖的细节） ── */
