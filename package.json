@@ -1,6 +1,6 @@
 {
   "name": "mbe-desktop",
-  "version": "0.2.0",
+  "version": "0.4.5",
   "description": "MBE Desktop — AI 专业服务统一桌面端",
   "main": "dist/main/index.js",
   "author": "MBE Team",
@@ -17,14 +17,18 @@
     "pack:linux": "npm run build && electron-builder --linux",
     "pack:dir": "npm run build && electron-builder --dir",
     "lint": "eslint . --ext .ts,.tsx",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test:e2e": "npx playwright test",
+    "test:e2e:ui": "npx playwright test --ui",
+    "test:e2e:headed": "npx playwright test --headed",
+    "test:e2e:report": "npx playwright show-report"
   },
   "dependencies": {
     "electron-updater": "^6.8.3",
-    "better-sqlite3": "^11.0.0"
+    "sql.js": "^1.14.1"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.8",
+    "@playwright/test": "^1.58.2",
     "@types/node": "^20.11.0",
     "@types/react": "^18.2.55",
     "@types/react-dom": "^18.2.19",
@@ -66,74 +70,61 @@
     ],
     "extraResources": [
       {
-        "from": "../.claude/skills/finance-calc/scripts",
-        "to": "calc-scripts",
-        "filter": ["calc_*.py"]
-      },
-      {
-        "from": "../.claude/skills/legal-calc/scripts",
-        "to": "calc-scripts",
-        "filter": ["calc_*.py"]
-      },
-      {
-        "from": "../.claude/skills/cost-calc/scripts",
-        "to": "calc-scripts",
-        "filter": ["calc_*.py"]
-      },
-      {
-        "from": "../.claude/skills/pulmonary-calc/scripts",
-        "to": "calc-scripts",
-        "filter": ["calc_*.py"]
-      },
-      {
-        "from": "../mbe-hr-backend/scripts",
-        "to": "calc-scripts",
-        "filter": ["calc_*.py"]
-      },
-      {
-        "from": "../mbe-finance-backend/scripts",
-        "to": "calc-scripts",
-        "filter": ["calc_stamp_tax.py"]
+        "from": "node_modules/sql.js/dist/sql-wasm.wasm",
+        "to": "sql-wasm.wasm"
       }
     ],
     "win": {
       "target": [
-        { "target": "nsis", "arch": ["x64"] },
-        { "target": "portable", "arch": ["x64"] }
+        {
+          "target": "msi",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
       "icon": "build/icon.ico",
-      "artifactName": "MBE-Desktop-${version}-Setup.${ext}",
+      "artifactName": "MBE-Desktop-${version}.${ext}",
       "signAndEditExecutable": false
     },
     "mac": {
-      "target": ["dmg", "zip"],
+      "target": [
+        "dmg",
+        "zip"
+      ],
       "category": "public.app-category.business",
       "artifactName": "MBE-Desktop-${version}-macOS.${ext}"
     },
     "linux": {
-      "target": ["AppImage", "deb"],
+      "target": [
+        "AppImage",
+        "deb"
+      ],
       "category": "Office",
       "artifactName": "MBE-Desktop-${version}-Linux.${ext}"
     },
     "protocols": [
       {
         "name": "MBE Desktop",
-        "schemes": ["mbe-desktop"]
+        "schemes": [
+          "mbe-desktop"
+        ]
       }
     ],
-    "nsis": {
+    "msi": {
       "oneClick": false,
       "perMachine": true,
-      "allowToChangeInstallationDirectory": true,
-      "allowElevation": true,
-      "createDesktopShortcut": "always",
+      "runAfterFinish": true,
+      "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "MBE Desktop",
-      "uninstallDisplayName": "MBE Desktop — AI 专业服务",
-      "language": "2052",
-      "installerIcon": "build/icon.ico",
-      "uninstallerIcon": "build/icon.ico",
-      "installerHeaderIcon": "build/icon.ico"
+      "warningsAsErrors": false
     },
     "portable": {
       "artifactName": "MBE-Desktop-${version}-Portable.${ext}"
