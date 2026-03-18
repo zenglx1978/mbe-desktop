@@ -2,9 +2,21 @@ import { app, BrowserWindow, shell, ipcMain, dialog, safeStorage } from 'electro
 import path from 'path'
 import fs from 'fs'
 import { autoUpdater } from 'electron-updater'
-import { initDatabase, setupDatabaseIPC, closeDatabase, getDb } from './database'
+import { initDatabase, setupDatabaseIPC, closeDatabase, getDb, checkAutoBackup } from './database'
 import { setupLocalCalcIPC } from './local-calc'
 import { setupMigrationIPC, setMigrationDb } from './migration'
+import { setupLocalAppBridgeIPC, setMainWindow } from './local-app-bridge'
+import { setupWorkflowMinerIPC } from './workflow-miner'
+import { setupCopilotBridgeIPC, setCopilotMainWindow, initCopilotBridge, destroyCopilotBridge } from './copilot-bridge'
+import { setupAccessibilityBridgeIPC, setAccessibilityMainWindow, destroyAccessibilityBridge } from './accessibility-bridge'
+import { setupEcommerceCsBridgeIPC, setEcommerceCSMainWindow } from './ecommerce-cs-bridge'
+import { setupWebReaderIPC } from './web-reader'
+import { setupLocalDataReaderIPC } from './local-data-reader'
+import { setupFileIntelIPC, setFileIntelMainWindow } from './file-intel'
+import { setupDataPipelineIPC, setPipelineMainWindow } from './data-pipeline'
+import { setupSchedulerIPC, setSchedulerMainWindow, setSchedulerDb, initScheduler, destroyScheduler } from './scheduler'
+import { setupUserMemoryIPC, setMemoryMainWindow, setMemoryDb } from './user-memory'
+import { setupLocalInferenceIPC, setInferenceDb, setInferenceMainWindow, initLocalInference } from './local-inference'
 
 if (process.platform === 'win32') {
   app.disableHardwareAcceleration()
@@ -99,6 +111,10 @@ function handleDeepLink(url: string) {
       const email = parsed.searchParams.get('email') || ''
       const name = parsed.searchParams.get('name') || ''
       const refreshToken = parsed.searchParams.get('refresh_token') || ''
+      const ref = parsed.searchParams.get('ref') || ''
+      if (ref && mainWindow) {
+        mainWindow.webContents.send('referral:set', { code: ref })
+      }
       if (token && mainWindow) {
         mainWindow.webContents.send('auth:callback', { token, email, name, refreshToken })
         if (mainWindow.isMinimized()) mainWindow.restore()
@@ -163,6 +179,7 @@ function createWindow(): void {
 
   mainWindow.on('closed', () => {
     mainWindow = null
+    setMainWindow(null)
   })
 }
 
@@ -185,15 +202,32 @@ function setupAutoUpdater() {
     return
   }
   autoUpdater.autoDownload = false
-  autoUpdater.autoInstallOnAppQuit = true
+  autoUpdater.autoInstallOnAppQuit = false
 
   autoUpdater.on('update-available', (info) => {
     sendUpdateStatus('available', { version: info.version })
   })
-  autoUpdater.on('update-downloaded', (info) => {
-    sendUpdateStatus('installing', { version: info.version })
-    setTimeout(() => autoUpdater.quitAndInstall(true, true), 2000)
+
+  autoUpdater.on('update-downloaded', (info: any) => {
+    const downloadedFile: string = info.downloadedFile || ''
+
+    if (downloadedFile.endsWith('.msi')) {
+      sendUpdateStatus('installing', { version: info.version })
+      setTimeout(() => {
+        const { spawn } = require('child_process')
+        const proc = spawn('msiexec', ['/passive', '/norestart', '/i', downloadedFile], {
+          detached: true,
+          stdio: 'ignore',
+        })
+        proc.unref()
+        app.quit()
+      }, 1500)
+    } else {
+      sendUpdateStatus('installing', { version: info.version })
+      setTimeout(() => autoUpdater.quitAndInstall(true, true), 2000)
+    }
   })
+
   autoUpdater.on('error', (err) => {
     console.error('[AutoUpdater] Error:', err.message)
   })
@@ -222,13 +256,41 @@ ipcMain.on('update:download', () => {
 
 // ==================== App 生命周期 ====================
 
-app.whenReady().then(() => {
-  initDatabase()
+app.whenReady().then(async () => {
+  await initDatabase()
   setupDatabaseIPC()
+  checkAutoBackup()
   setupLocalCalcIPC()
+  setupLocalAppBridgeIPC()
+  setupWorkflowMinerIPC()
+  setupCopilotBridgeIPC()
+  setupAccessibilityBridgeIPC()
+  setupEcommerceCsBridgeIPC()
+  setupWebReaderIPC()
+  setupLocalDataReaderIPC()
+  setupFileIntelIPC()
+  setupDataPipelineIPC()
+  setupSchedulerIPC()
+  setupUserMemoryIPC()
+  setupLocalInferenceIPC()
   setMigrationDb(getDb())
   setupMigrationIPC()
   createWindow()
+  setMainWindow(mainWindow)
+  setCopilotMainWindow(mainWindow)
+  setAccessibilityMainWindow(mainWindow)
+  setEcommerceCSMainWindow(mainWindow)
+  setFileIntelMainWindow(mainWindow)
+  setPipelineMainWindow(mainWindow)
+  setSchedulerMainWindow(mainWindow!)
+  setSchedulerDb(getDb())
+  setMemoryMainWindow(mainWindow!)
+  setMemoryDb(getDb())
+  setInferenceMainWindow(mainWindow!)
+  setInferenceDb(getDb())
+  initLocalInference()
+  initScheduler()
+  initCopilotBridge()
   setupAutoUpdater()
 
   app.on('open-url', (event, url) => {
@@ -262,6 +324,9 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', () => {
+  destroyScheduler()
+  destroyCopilotBridge()
+  destroyAccessibilityBridge()
   closeDatabase()
 })
 
