@@ -13,6 +13,7 @@ import Sidebar from '@/components/Sidebar'
 import ChatPanel from '@/components/ChatPanel'
 import ConnectivityBadge from '@/components/ConnectivityBadge'
 import ToastContainer from '@/components/ToastContainer'
+import UpdateBanner from '@/components/UpdateBanner'
 import WorkbenchTabs from '@/components/workbench/WorkbenchTabs'
 import ToolPanel from '@/components/workbench/ToolPanel'
 import DocumentsPanel from '@/components/workbench/DocumentsPanel'
@@ -23,6 +24,7 @@ import ApprovalPanel from '@/components/workbench/ApprovalPanel'
 import CostPanel from '@/components/workbench/CostPanel'
 import SchedulerPanel from '@/components/workbench/SchedulerPanel'
 import DesignerPanel from '@/components/workbench/DesignerPanel'
+import EfficiencyPanel from '@/components/workbench/EfficiencyPanel'
 import { startApprovalPolling, stopApprovalPolling } from '@/stores/approval-store'
 import { useApprovalNotifications } from '@/hooks/useApprovalNotifications'
 
@@ -46,17 +48,15 @@ export default function Workspace() {
       initConnectivityMonitor()
       connectivityInitialized = true
     }
-    // Bitter Lesson: 客户端智能初始化
     if (!clientIntelInitialized) {
-      useAdaptiveUIStore.getState().loadPreferences()
       useLocalFeedbackStore.getState().loadScores()
       clientIntelInitialized = true
     }
   }, [hasPickedSolution])
 
-  // 方案切换时：重新计算反馈分数 + 定期缓存清理 + 启动反馈同步 + 云端配置同步
   useEffect(() => {
     if (!solution) return
+    useAdaptiveUIStore.getState().loadPreferences(solution.id)
     useLocalFeedbackStore.getState().computeScores(solution.id)
     useSmartCacheStore.getState().prune(500)
     // Phase 10: 定时将本地反馈同步到服务端 HOPE 学习系统
@@ -82,15 +82,15 @@ export default function Workspace() {
   if (!solution) return null
 
   const SolutionIcon = getSolutionIcon(solution.id)
-  let allTabs = solution.enabledTabs
-  if (!allTabs.includes('approvals')) allTabs = [...allTabs, 'approvals' as const]
-  if (!allTabs.includes('costs')) allTabs = [...allTabs, 'costs' as const]
-  if (!allTabs.includes('scheduler')) allTabs = [...allTabs, 'scheduler' as const]
-  if (!allTabs.includes('designer')) allTabs = [...allTabs, 'designer' as const]
+  const allTabs = [...solution.enabledTabs]
+  if (!allTabs.includes('approvals')) allTabs.push('approvals' as const)
+  if (!allTabs.includes('costs')) allTabs.push('costs' as const)
+  if (!allTabs.includes('efficiency')) allTabs.push('efficiency' as const)
   const showTabs = allTabs.length > 1
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
+      <UpdateBanner />
       <Sidebar />
       <main className={`flex-1 flex flex-col transition-all duration-200 ${sidebarExpanded ? 'ml-64' : 'ml-16'}`}>
         {/* 顶部栏 */}
@@ -151,6 +151,8 @@ function ActivePanel({ tab }: { tab: string }) {
       return <SchedulerPanel solution={solution} />
     case 'designer':
       return <DesignerPanel solution={solution} />
+    case 'efficiency':
+      return <EfficiencyPanel />
     default:
       return <ChatPanel />
   }

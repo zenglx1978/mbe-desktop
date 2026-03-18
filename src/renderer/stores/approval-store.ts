@@ -152,11 +152,10 @@ const POLL_INTERVAL_WS = 60_000    // WS 可用时，轮询仅作兜底（60s）
 const POLL_INTERVAL_FALLBACK = 15_000 // WS 不可用时，加速轮询（15s）
 
 /**
- * 启动审批实时推送（方案切换时调用）
+ * 启动审批轮询（方案切换时调用）
  *
- * 1. 建立 WS 连接，监听 governance.* 事件
- * 2. 立即做一次 HTTP 全量拉取（确保不漏）
- * 3. 启动兜底轮询（WS 可用 60s / 不可用 15s）
+ * 采用纯 HTTP 轮询（60s），不在页面加载时建立 WS 连接避免 403 噪音。
+ * WS 连接可通过 connectApprovalWs() 按需建立。
  */
 export function startApprovalPolling(): () => void {
   stopApprovalPolling()
@@ -164,39 +163,38 @@ export function startApprovalPolling(): () => void {
   const solution = useAppStore.getState().currentSolution()
   if (!solution) return stopApprovalPolling
 
-  // 建立 WS 连接
-  approvalWsManager.connectAll(solution)
-
-  // 注册事件处理
-  wsUnsubscribe = approvalWsManager.onEvent((event) => {
-    useApprovalStore.getState().handleWsEvent(event)
-  })
-
-  // 定期检查 WS 状态并动态调整轮询间隔
-  const updateWsStatus = () => {
-    const connected = approvalWsManager.connected
-    useApprovalStore.setState({ wsConnected: connected })
-  }
+  if (!solution.enabledTabs.includes('approvals')) return stopApprovalPolling
 
   // 立即做一次全量拉取
   useApprovalStore.getState().refresh()
-  updateWsStatus()
 
-  // 兜底轮询（动态间隔）
+  // HTTP 轮询
   pollTimer = setInterval(() => {
-    updateWsStatus()
-    const interval = approvalWsManager.connected ? POLL_INTERVAL_WS : POLL_INTERVAL_FALLBACK
-    if (pollTimer) {
-      clearInterval(pollTimer)
-      pollTimer = setInterval(() => {
-        useApprovalStore.getState().refresh()
-        updateWsStatus()
-      }, interval)
-    }
     useApprovalStore.getState().refresh()
-  }, approvalWsManager.connected ? POLL_INTERVAL_WS : POLL_INTERVAL_FALLBACK)
+  }, POLL_INTERVAL_WS)
 
   return stopApprovalPolling
+}
+
+/**
+ * 按需建立 governance WS 连接（从审批 Panel 调用）
+ */
+export function connectApprovalWs() {
+  const solution = useAppStore.getState().currentSolution()
+  if (!solution) return
+
+  if (approvalWsManager.connected) return
+
+  approvalWsManager.connectAll(solution)
+
+  if (!wsUnsubscribe) {
+    wsUnsubscribe = approvalWsManager.onEvent((event) => {
+      useApprovalStore.getState().handleWsEvent(event)
+    })
+  }
+
+  const connected = approvalWsManager.connected
+  useApprovalStore.setState({ wsConnected: connected })
 }
 
 export function stopApprovalPolling() {

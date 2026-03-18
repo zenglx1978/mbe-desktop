@@ -1,225 +1,160 @@
-import { useAppStore } from '@/stores/app-store'
 import { useNavigate } from 'react-router-dom'
-import { useChatStore } from '@/stores/chat-store'
-import { useConversationStore } from '@/stores/conversation-store'
+import { useAppStore } from '@/stores/app-store'
 import { useToolStore } from '@/stores/tool-store'
-import { useApprovalStore } from '@/stores/approval-store'
-import ConversationList from '@/components/ConversationList'
+import { useAuthStore } from '@/stores/auth-store'
+import { useAdaptiveUIStore } from '@/stores/adaptive-ui-store'
+import { getTabMeta, SIDEBAR_ACTIONS } from '@/lib/tab-icons'
+import { Sparkles } from 'lucide-react'
+import type { WorkbenchTab } from '@/lib/solution-router'
+
+const api = (window as any).electronAPI
 
 export default function Sidebar() {
   const navigate = useNavigate()
-  const {
-    currentAgentIndex, currentSolution,
-    switchAgent, sidebarExpanded, toggleSidebar,
-  } = useAppStore()
-  const { clearMessages } = useChatStore()
-  const { selectConversation } = useConversationStore()
-  const { navigateToTool, setActiveTab } = useToolStore()
-  const pendingApprovals = useApprovalStore(s => s.pendingCount)
+  const { currentSolution, sidebarExpanded, toggleSidebar, solutionId } = useAppStore()
+  const { activeTab, setActiveTab } = useToolStore()
+  const { trackTabSwitch, getRecommendedTabOrder } = useAdaptiveUIStore()
+  const user = useAuthStore((s) => s.user)
   const solution = currentSolution()
 
-  function handleChangeSolution() {
-    navigate('/pick')
-  }
+  if (!solution) return null
 
-  function handleNewChat() {
-    clearMessages()
-    selectConversation(null)
-  }
+  const baseTabs = [...solution.enabledTabs] as WorkbenchTab[]
+  if (!baseTabs.includes('approvals')) baseTabs.push('approvals')
+  if (!baseTabs.includes('costs')) baseTabs.push('costs')
+  if (!baseTabs.includes('efficiency')) baseTabs.push('efficiency')
+
+  // 根据使用频率自动重排（高频 tab 靠前）
+  const recommended = getRecommendedTabOrder()
+  const enabledTabs = recommended && recommended.length > 0
+    ? [...baseTabs].sort((a, b) => {
+        const ai = recommended.indexOf(a)
+        const bi = recommended.indexOf(b)
+        return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
+      })
+    : baseTabs
+
+  const color = solution.color
+
+  const initials = user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || '?'
+
+  const SettingsIcon = SIDEBAR_ACTIONS.settings.icon
+  const LogoutIcon = SIDEBAR_ACTIONS.logout.icon
+  const CollapseIcon = sidebarExpanded ? SIDEBAR_ACTIONS.collapse.icon : SIDEBAR_ACTIONS.expand.icon
 
   return (
-    <aside className={`fixed left-0 top-0 h-full bg-card border-r border-border/50 flex flex-col transition-all duration-200 z-20 ${sidebarExpanded ? 'w-64' : 'w-16'}`}>
-      {/* Logo */}
-      <div className="h-12 border-b border-border/50 flex items-center px-4 shrink-0">
+    <aside
+      className={`fixed left-0 top-0 h-full bg-[hsl(var(--background))] border-r border-border/50 flex flex-col transition-all duration-200 z-20 ${
+        sidebarExpanded ? 'w-64' : 'w-16'
+      }`}
+    >
+      {/* 用户信息 */}
+      <div className={`shrink-0 border-b border-border/50 ${sidebarExpanded ? 'px-4 py-3' : 'px-2 py-3 flex justify-center'}`}>
         {sidebarExpanded ? (
-          <span className="font-bold text-sm tracking-tight">MBE Desktop</span>
-        ) : (
-          <span className="font-bold text-lg mx-auto">M</span>
-        )}
-        <button
-          onClick={toggleSidebar}
-          className="ml-auto text-muted-foreground hover:text-foreground transition-colors"
-          title={sidebarExpanded ? '收起' : '展开'}
-        >
-          {sidebarExpanded ? '◁' : '▷'}
-        </button>
-      </div>
-
-      {solution && (
-        <div className="flex-1 overflow-y-auto flex flex-col min-h-0">
-          {/* AI 专家团队 */}
-          {sidebarExpanded && (
-            <div className="px-4 pt-3 pb-1">
-              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                AI 专家团队
+          <div className="flex items-center gap-3 min-w-0">
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+              style={{ backgroundColor: color }}
+            >
+              {initials}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-foreground truncate">
+                {user?.name || '未登录'}
+              </p>
+              <p className="text-xs text-muted-foreground truncate">
+                {user?.email || ''}
               </p>
             </div>
-          )}
-          <div className="space-y-0.5 px-2 pb-3">
-            {solution.agents.map((agent, i) => (
-              <button
-                key={i}
-                onClick={() => switchAgent(i)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                  currentAgentIndex === i
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
-                }`}
-              >
-                <div
-                  className="w-2 h-2 rounded-full shrink-0"
-                  style={{ backgroundColor: currentAgentIndex === i ? solution.color : 'hsl(240 5% 30%)' }}
-                />
-                {sidebarExpanded && (
-                  <div className="text-left min-w-0">
-                    <div className="font-medium truncate">{agent.role}</div>
-                    <div className="text-xs text-muted-foreground truncate">{agent.handles}</div>
-                  </div>
-                )}
-              </button>
-            ))}
           </div>
-
-          {/* 快捷工具 */}
-          {sidebarExpanded && solution.tools.length > 0 && (
-            <>
-              <div className="border-t border-border/30 mx-4" />
-              <div className="px-4 pt-3 pb-1">
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                  快捷工具
-                </p>
-              </div>
-              <div className="space-y-0.5 px-2 pb-2">
-                {solution.tools.slice(0, 5).map(tool => (
-                  <button
-                    key={tool.id}
-                    onClick={() => navigateToTool(tool)}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-                  >
-                    <span className="text-base">{tool.icon}</span>
-                    <span className="truncate text-xs">{tool.name}</span>
-                    {tool.localScript && (
-                      <span className="ml-auto text-[9px] text-emerald-500/70">离线</span>
-                    )}
-                  </button>
-                ))}
-                {solution.tools.length > 5 && (
-                  <button
-                    onClick={() => setActiveTab('tools')}
-                    className="w-full px-3 py-1.5 text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors text-center"
-                  >
-                    查看全部 {solution.tools.length} 个工具 →
-                  </button>
-                )}
-              </div>
-            </>
-          )}
-          {!sidebarExpanded && solution.tools.length > 0 && (
-            <>
-              <div className="border-t border-border/30 mx-2 my-1" />
-              <div className="space-y-0.5 px-2">
-                {solution.tools.slice(0, 4).map(tool => (
-                  <button
-                    key={tool.id}
-                    onClick={() => navigateToTool(tool)}
-                    className="w-full flex items-center justify-center py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-                    title={tool.name}
-                  >
-                    <span className="text-sm">{tool.icon}</span>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* 对话历史 */}
-          {sidebarExpanded && (
-            <>
-              <div className="border-t border-border/30 mx-4" />
-              <div className="px-4 pt-3 pb-1">
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                  对话历史
-                </p>
-              </div>
-              <div className="flex-1 overflow-y-auto min-h-0">
-                <ConversationList />
-              </div>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* 底部操作 */}
-      <div className="border-t border-border/50 p-3 space-y-1 shrink-0">
-        {sidebarExpanded ? (
-          <>
-            <button
-              onClick={handleNewChat}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-            >
-              <span>✨</span> 新对话
-            </button>
-            <button
-              onClick={handleChangeSolution}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-            >
-              <span>🔄</span> 切换行业方案
-            </button>
-            <button
-              onClick={() => setActiveTab('approvals')}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors relative"
-            >
-              <span>🛡</span> 审批
-              {pendingApprovals > 0 && (
-                <span className="ml-auto px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-orange-500 text-white">
-                  {pendingApprovals > 99 ? '99+' : pendingApprovals}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => navigate('/settings')}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-            >
-              <span>⚙</span> 设置
-            </button>
-          </>
         ) : (
-          <>
-            <button
-              onClick={handleNewChat}
-              className="w-full flex items-center justify-center py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-              title="新对话"
-            >
-              ✨
-            </button>
-            <button
-              onClick={handleChangeSolution}
-              className="w-full flex items-center justify-center py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-              title="切换行业方案"
-            >
-              🔄
-            </button>
-            <button
-              onClick={() => setActiveTab('approvals')}
-              className="w-full flex items-center justify-center py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors relative"
-              title="审批"
-            >
-              🛡
-              {pendingApprovals > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-orange-500 text-white text-[8px] font-bold flex items-center justify-center">
-                  {pendingApprovals > 9 ? '!' : pendingApprovals}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => navigate('/settings')}
-              className="w-full flex items-center justify-center py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-              title="设置"
-            >
-              ⚙
-            </button>
-          </>
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white cursor-default"
+            style={{ backgroundColor: color }}
+            title={user?.email || '未登录'}
+          >
+            {initials}
+          </div>
         )}
+      </div>
+
+      <div className="flex-1 overflow-y-auto py-3">
+        {enabledTabs.map((tab) => {
+          const meta = getTabMeta(tab)
+          const Icon = meta.icon
+          const isActive = activeTab === tab
+          return (
+            <button
+              key={tab}
+              onClick={() => {
+                setActiveTab(tab)
+                if (solutionId) trackTabSwitch(solutionId, tab)
+              }}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors relative ${
+                isActive
+                  ? 'bg-primary/10'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/30'
+              }`}
+              style={isActive ? { color } : undefined}
+              title={sidebarExpanded ? undefined : meta.label}
+            >
+              {isActive && (
+                <div
+                  className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 rounded-r"
+                  style={{ backgroundColor: color }}
+                />
+              )}
+              <Icon className="w-4 h-4 shrink-0" />
+              {sidebarExpanded && <span className="truncate">{meta.label}</span>}
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="border-t border-border/50 p-3 space-y-1 shrink-0">
+        <button
+          onClick={() => api?.copilot?.toggle()}
+          className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition-colors ${
+            sidebarExpanded ? '' : 'justify-center px-2'
+          }`}
+          title={sidebarExpanded ? undefined : 'AI 副驾驶 (Ctrl+Shift+Space)'}
+        >
+          <Sparkles className="w-4 h-4 shrink-0" />
+          {sidebarExpanded && <span>AI 副驾驶</span>}
+        </button>
+        <button
+          onClick={() => navigate('/settings')}
+          className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/30 transition-colors ${
+            sidebarExpanded ? '' : 'justify-center px-2'
+          }`}
+          title={sidebarExpanded ? undefined : '设置'}
+        >
+          <SettingsIcon className="w-4 h-4 shrink-0" />
+          {sidebarExpanded && <span>设置</span>}
+        </button>
+        <button
+          onClick={() => {
+            useAuthStore.getState().logout()
+            navigate('/auth', { replace: true })
+          }}
+          className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors ${
+            sidebarExpanded ? '' : 'justify-center px-2'
+          }`}
+          title={sidebarExpanded ? undefined : '退出登录'}
+        >
+          <LogoutIcon className="w-4 h-4 shrink-0" />
+          {sidebarExpanded && <span>退出登录</span>}
+        </button>
+        <button
+          onClick={toggleSidebar}
+          className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/30 transition-colors ${
+            sidebarExpanded ? '' : 'justify-center px-2'
+          }`}
+          title={sidebarExpanded ? '收起' : '展开'}
+        >
+          <CollapseIcon className="w-4 h-4 shrink-0" />
+          {sidebarExpanded && <span>{sidebarExpanded ? '收起' : '展开'}</span>}
+        </button>
       </div>
     </aside>
   )

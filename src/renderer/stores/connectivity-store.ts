@@ -6,6 +6,7 @@
  */
 
 import { create } from 'zustand'
+import { API_BASE } from '@/lib/api-client'
 
 export type ConnectivityMode = 'online' | 'offline' | 'degraded'
 
@@ -26,7 +27,7 @@ interface ConnectivityState {
   setPythonStatus: (available: boolean, scripts: string[]) => void
 }
 
-const BACKEND_HEALTH_URL = 'https://mbe.hi-maker.com/api/health'
+const BACKEND_HEALTH_URL = `${API_BASE}/api/health`
 const CHECK_INTERVAL = 30_000
 
 export const useConnectivityStore = create<ConnectivityState>((set) => ({

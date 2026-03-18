@@ -357,7 +357,7 @@ async function executeSingle(
         }
 
         // 完整配置模式
-        const config = action.params.pipeline_config as Record<string, unknown>
+        const config = action.params!.pipeline_config as Record<string, unknown>
 
         // 检查是否需要目录/文件选择
         const steps = (config.steps ?? []) as { type: string; params: Record<string, unknown> }[]

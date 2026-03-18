@@ -8,6 +8,7 @@
  */
 
 import type { SolutionConfig, AgentEndpoint } from '@/lib/solution-router'
+import { authHeaders, getDeviceId } from '@/lib/api-client'
 
 export interface ApprovalItem {
   id: string
@@ -44,10 +45,10 @@ const RISK_PRIORITY: Record<string, number> = {
 /**
  * 从单个 Agent 后端获取待审批列表
  */
-async function fetchAgentApprovals(baseUrl: string, agentName: string): Promise<ApprovalItem[]> {
+async function fetchAgentApprovals(baseUrl: string, _agentName: string): Promise<ApprovalItem[]> {
   try {
-    const url = `${baseUrl}/api/${agentName}/governance/approvals/pending?limit=50`
-    const resp = await fetch(url, { signal: AbortSignal.timeout(5000) })
+    const url = `${baseUrl}/governance/approvals/pending?limit=50`
+    const resp = await fetch(url, { headers: authHeaders(), signal: AbortSignal.timeout(5000) })
     if (!resp.ok) return []
     const data = await resp.json()
     return (data.items || []) as ApprovalItem[]
@@ -87,12 +88,12 @@ export async function listPendingApprovals(solution: SolutionConfig): Promise<Ap
  */
 export async function getApprovalDetail(
   baseUrl: string,
-  agentName: string,
+  _agentName: string,
   approvalId: string,
 ): Promise<ApprovalItem | null> {
   try {
-    const url = `${baseUrl}/api/${agentName}/governance/approvals/${approvalId}`
-    const resp = await fetch(url, { signal: AbortSignal.timeout(5000) })
+    const url = `${baseUrl}/governance/approvals/${approvalId}`
+    const resp = await fetch(url, { headers: authHeaders(), signal: AbortSignal.timeout(5000) })
     if (!resp.ok) return null
     return await resp.json()
   } catch {
@@ -105,15 +106,15 @@ export async function getApprovalDetail(
  */
 export async function submitDecision(
   baseUrl: string,
-  agentName: string,
+  _agentName: string,
   approvalId: string,
   decision: ApprovalDecisionInput,
 ): Promise<ApprovalItem | null> {
   try {
-    const url = `${baseUrl}/api/${agentName}/governance/approvals/${approvalId}/decide`
+    const url = `${baseUrl}/governance/approvals/${approvalId}/decide`
     const resp = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify(decision),
       signal: AbortSignal.timeout(10000),
     })
@@ -239,7 +240,7 @@ class ApprovalWsManager {
     if (existingWs && existingWs.readyState === WebSocket.OPEN) return
 
     try {
-      const ws = new WebSocket(`${agent.wsUrl}?room=governance`)
+      const ws = new WebSocket(`${agent.wsUrl}?room=governance&device_id=${getDeviceId()}`)
       this.connections.set(key, ws)
 
       ws.onopen = () => {
@@ -261,22 +262,32 @@ class ApprovalWsManager {
         } catch { /* malformed message */ }
       }
 
-      ws.onclose = () => {
+      ws.onclose = (ev) => {
         this.connections.delete(key)
+        // 403/1008 = 认证失败或不支持，不重连避免日志噪音
+        if (ev.code === 1008 || ev.code === 403) return
         this.scheduleReconnect(agent)
       }
 
       ws.onerror = () => {
+        this.failCounts.set(key, (this.failCounts.get(key) || 0) + 1)
         try { ws.close() } catch { /* ignore */ }
       }
     } catch {
+      this.failCounts.set(key, (this.failCounts.get(key) || 0) + 1)
       this.scheduleReconnect(agent)
     }
   }
 
-  private scheduleReconnect(agent: AgentEndpoint, delayMs = 5000) {
+  /** 连续失败次数 — 超过阈值后停止重连 */
+  private failCounts = new Map<string, number>()
+  private static MAX_RETRIES = 3
+
+  private scheduleReconnect(agent: AgentEndpoint, delayMs = 10000) {
     if (this._closed) return
     const key = agent.id
+    const fails = this.failCounts.get(key) || 0
+    if (fails >= ApprovalWsManager.MAX_RETRIES) return
 
     if (this.reconnectTimers.has(key)) return
     const timer = setTimeout(() => {

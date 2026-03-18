@@ -1,6 +1,6 @@
 {
   "name": "mbe-desktop",
-  "version": "0.4.5",
+  "version": "0.5.1",
   "description": "MBE Desktop — AI 专业服务统一桌面端",
   "main": "dist/main/index.js",
   "author": "MBE Team",
@@ -24,12 +24,20 @@
     "test:e2e:report": "npx playwright show-report"
   },
   "dependencies": {
+    "chokidar": "^5.0.0",
+    "docx": "^9.6.1",
     "electron-updater": "^6.8.3",
+    "exceljs": "^4.4.0",
+    "mammoth": "^1.12.0",
+    "node-cron": "^4.2.1",
+    "pdf-parse": "^2.4.5",
+    "pptxgenjs": "^4.0.1",
     "sql.js": "^1.14.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
     "@types/node": "^20.11.0",
+    "@types/node-cron": "^3.0.11",
     "@types/react": "^18.2.55",
     "@types/react-dom": "^18.2.19",
     "@vitejs/plugin-react": "^4.2.1",
@@ -78,15 +86,15 @@
       "target": [
         {
           "target": "msi",
-          "arch": [
-            "x64"
-          ]
+          "arch": ["x64"]
         },
         {
           "target": "portable",
-          "arch": [
-            "x64"
-          ]
+          "arch": ["x64"]
+        },
+        {
+          "target": "nsis",
+          "arch": ["x64"]
         }
       ],
       "icon": "build/icon.ico",
@@ -117,17 +125,16 @@
         ]
       }
     ],
-    "msi": {
+    "nsis": {
       "oneClick": false,
-      "perMachine": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
       "runAfterFinish": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "MBE Desktop",
-      "warningsAsErrors": false
-    },
-    "portable": {
-      "artifactName": "MBE-Desktop-${version}-Portable.${ext}"
+      "artifactName": "MBE-Desktop-${version}-Setup.${ext}",
+      "uninstallDisplayName": "MBE Desktop"
     },
     "publish": [
       {

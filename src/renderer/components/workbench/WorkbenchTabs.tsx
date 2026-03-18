@@ -1,16 +1,5 @@
 import type { WorkbenchTab } from '@/lib/solution-router'
-import { useApprovalStore } from '@/stores/approval-store'
-
-const TAB_META: Record<WorkbenchTab, { icon: string; label: string }> = {
-  chat: { icon: '💬', label: '对话' },
-  tools: { icon: '🔧', label: '工具' },
-  documents: { icon: '📄', label: '文档' },
-  tasks: { icon: '✅', label: '任务' },
-  dashboard: { icon: '📊', label: '看板' },
-  workflows: { icon: '🔄', label: '流程' },
-  approvals: { icon: '🛡', label: '审批' },
-  costs: { icon: '💰', label: '成本' },
-}
+import { getTabMeta } from '@/lib/tab-icons'
 
 interface Props {
   activeTab: WorkbenchTab
@@ -19,31 +8,34 @@ interface Props {
   onTabChange: (tab: WorkbenchTab) => void
 }
 
-export default function WorkbenchTabs({ activeTab, enabledTabs, color, onTabChange }: Props) {
-  const pendingCount = useApprovalStore(s => s.pendingCount)
-
+export default function WorkbenchTabs({
+  activeTab,
+  enabledTabs,
+  color,
+  onTabChange,
+}: Props) {
   return (
-    <div className="flex items-center gap-1 px-2">
-      {enabledTabs.map(tab => {
-        const meta = TAB_META[tab]
-        const isActive = tab === activeTab
+    <div className="flex items-center gap-1">
+      {enabledTabs.map((tab) => {
+        const meta = getTabMeta(tab)
+        const Icon = meta.icon
+        const isActive = activeTab === tab
         return (
           <button
             key={tab}
             onClick={() => onTabChange(tab)}
-            className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-150 ${
-              isActive
-                ? 'text-white shadow-sm'
-                : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+            className={`relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              isActive ? '' : 'text-muted-foreground hover:text-foreground'
             }`}
-            style={isActive ? { backgroundColor: color } : undefined}
+            style={isActive ? { color } : undefined}
           >
-            <span>{meta.icon}</span>
+            <Icon className="w-4 h-4 shrink-0" />
             <span>{meta.label}</span>
-            {tab === 'approvals' && pendingCount > 0 && !isActive && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-orange-500 text-white text-[9px] font-bold flex items-center justify-center">
-                {pendingCount > 9 ? '9+' : pendingCount}
-              </span>
+            {isActive && (
+              <div
+                className="absolute bottom-0 left-2 right-2 h-0.5 rounded-t"
+                style={{ backgroundColor: color }}
+              />
             )}
           </button>
         )

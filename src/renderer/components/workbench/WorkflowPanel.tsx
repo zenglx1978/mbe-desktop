@@ -1,21 +1,79 @@
 /**
  * 工作流可视化执行器
- * 步骤条 + 实时进度 + 每步结果展示
+ * 步骤条 + 实时进度 + 每步结果展示（Markdown 渲染）
  * 可从 Chat Slash 命令 / WelcomeScreen / Sidebar 触发
  */
 
 import { useState, useCallback } from 'react'
-import type { SolutionConfig, WorkflowConfig, ScenarioConfig } from '@/lib/solution-router'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import { ArrowLeft, Copy, Play } from 'lucide-react'
+import type { SolutionConfig, WorkflowConfig, ScenarioConfig, ProfitImpact } from '@/lib/solution-router'
 import {
   executeWorkflow, executeScenario,
   type StepStatus, type WorkflowResult,
 } from '@/lib/workflow-service'
+import {
+  getWorkflowIcon, STATUS_ICONS, ORCHESTRATION_META, PROFIT_DIM_META,
+  DELIVERABLE_ICON, SUCCESS_ICON, EXPECTED_ICON,
+} from '@/lib/workflow-icons'
+
+/** Markdown 渲染器，统一样式 */
+function MarkdownContent({ content, className = '' }: { content: string; className?: string }) {
+  return (
+    <div className={`prose prose-sm prose-invert max-w-none ${className}`}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          table: ({ children, ...props }) => (
+            <div className="overflow-x-auto my-3">
+              <table className="min-w-full text-xs border-collapse" {...props}>{children}</table>
+            </div>
+          ),
+          th: ({ children, ...props }) => (
+            <th className="px-3 py-1.5 text-left font-semibold border-b border-border/40 bg-secondary/20 text-muted-foreground" {...props}>{children}</th>
+          ),
+          td: ({ children, ...props }) => (
+            <td className="px-3 py-1.5 border-b border-border/20" {...props}>{children}</td>
+          ),
+          h1: ({ children, ...props }) => <h2 className="text-base font-bold mt-4 mb-2" {...props}>{children}</h2>,
+          h2: ({ children, ...props }) => <h3 className="text-sm font-bold mt-3 mb-1.5" {...props}>{children}</h3>,
+          h3: ({ children, ...props }) => <h4 className="text-sm font-semibold mt-2 mb-1" {...props}>{children}</h4>,
+          p: ({ children, ...props }) => <p className="text-sm leading-relaxed mb-2" {...props}>{children}</p>,
+          li: ({ children, ...props }) => <li className="text-sm leading-relaxed" {...props}>{children}</li>,
+          strong: ({ children, ...props }) => <strong className="text-primary font-semibold" {...props}>{children}</strong>,
+          code: ({ children, className: cn, ...props }) => {
+            const isInline = !cn
+            return isInline
+              ? <code className="px-1 py-0.5 rounded bg-secondary/40 text-xs font-mono" {...props}>{children}</code>
+              : <code className={cn} {...props}>{children}</code>
+          },
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  )
+}
+
+/** 将技术错误转为用户友好提示 */
+function friendlyError(raw: string): { title: string; detail: string; suggestion: string } {
+  if (raw.includes('401') || raw.includes('Authorization'))
+    return { title: '认证未通过', detail: '当前会话可能已过期', suggestion: '请刷新页面后重试，或检查登录状态' }
+  if (raw.includes('404') || raw.includes('not found'))
+    return { title: '服务暂不可用', detail: '后端接口未部署或路径变更', suggestion: '请稍后重试，或联系技术支持' }
+  if (raw.includes('timeout') || raw.includes('TIMEOUT'))
+    return { title: '请求超时', detail: '后端处理时间过长', suggestion: '数据量较大时可能需要更长时间，请稍后重试' }
+  if (raw.includes('500') || raw.includes('Internal'))
+    return { title: '服务内部错误', detail: '后端处理异常', suggestion: '请稍后重试，问题将自动上报' }
+  if (raw.includes('NetworkError') || raw.includes('fetch'))
+    return { title: '网络连接失败', detail: '无法连接到后端服务', suggestion: '请检查网络连接，确认服务地址可达' }
+  return { title: '执行失败', detail: raw.slice(0, 100), suggestion: '请重试或换一种方式提问' }
+}
 
 interface Props {
   solution: SolutionConfig
-  /** 初始选中的工作流（从外部触发进入） */
   initialWorkflow?: WorkflowConfig
-  /** 初始选中的场景 */
   initialScenario?: ScenarioConfig
 }
 
@@ -92,60 +150,120 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
                 业务流程
               </h3>
               <div className="space-y-3">
-                {solution.workflows.map(wf => (
-                  <button
-                    key={wf.id}
-                    onClick={() => selectWorkflow(wf)}
-                    className="w-full flex items-start gap-4 p-4 rounded-xl border border-border/40 bg-card hover:border-primary/30 hover:bg-primary/5 transition-all text-left group"
-                  >
-                    <span className="text-2xl shrink-0">{wf.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-semibold group-hover:text-primary transition-colors">
-                        {wf.name}
-                      </h4>
-                      <p className="text-xs text-muted-foreground mt-0.5">{wf.description}</p>
-                      <div className="flex items-center gap-1.5 mt-2">
-                        {wf.steps.map((s, i) => (
-                          <span key={s.id} className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
-                            {i > 0 && <span>→</span>}
-                            {s.label}
-                          </span>
-                        ))}
+                {solution.workflows.map(wf => {
+                  const WfIcon = getWorkflowIcon(wf.icon)
+                  return (
+                    <button
+                      key={wf.id}
+                      onClick={() => selectWorkflow(wf)}
+                      className="w-full flex items-start gap-4 p-4 rounded-xl border border-border/40 bg-card hover:border-primary/30 hover:bg-primary/5 transition-all text-left group"
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                        <WfIcon className="w-5 h-5" />
                       </div>
-                    </div>
-                    <span className="text-xs px-2 py-1 rounded-lg bg-secondary/30 text-muted-foreground shrink-0">
-                      {wf.mode === 'sequential' ? '流水线' : '并行'}
-                    </span>
-                  </button>
-                ))}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-semibold group-hover:text-primary transition-colors">
+                          {wf.name}
+                        </h4>
+                        <p className="text-xs text-muted-foreground mt-0.5">{wf.description}</p>
+                        <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                          {wf.steps.map((s, i) => {
+                            const ModeIcon = ORCHESTRATION_META[wf.mode]?.icon
+                            return (
+                              <span key={s.id} className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
+                                {i > 0 && ModeIcon && <ModeIcon className="w-3 h-3" />}
+                                {s.label}
+                                {s.profitImpact && <ProfitBadge impact={s.profitImpact} />}
+                              </span>
+                            )
+                          })}
+                        </div>
+                      </div>
+                      <OrchestrationBadge mode={wf.mode} />
+                    </button>
+                  )
+                })}
               </div>
             </section>
           )}
 
-          {/* 快捷场景 */}
-          {solution.scenarios.length > 0 && (
-            <section>
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                快捷场景
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {solution.scenarios.map(sc => (
-                  <button
-                    key={sc.id}
-                    onClick={() => selectScenario(sc)}
-                    className="flex items-center gap-2.5 p-3 rounded-xl border border-border/40 hover:border-primary/30 hover:bg-primary/5 transition-all text-left text-sm"
-                  >
-                    <span className="text-lg">{sc.icon}</span>
-                    <span>{sc.label}</span>
-                  </button>
-                ))}
-              </div>
-            </section>
-          )}
+          {/* 快捷场景（四柱决策链 + 辅助） */}
+          {solution.scenarios.length > 0 && (() => {
+            const pillarScenarios = solution.scenarios.filter(sc => sc.id.startsWith('pillar_'))
+            const auxScenarios = solution.scenarios.filter(sc => !sc.id.startsWith('pillar_'))
+            return (
+              <>
+                {pillarScenarios.length > 0 && (
+                  <section>
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
+                      {(() => { const L = ORCHESTRATION_META.sequential.icon; return <L className="w-4 h-4" /> })()}
+                      投资决策链 — 四步到买卖
+                    </h3>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      每一步先走规则引擎和数据，确保结论可追溯。按顺序执行效果最佳。
+                    </p>
+                    <div className="space-y-2">
+                      {pillarScenarios.map((sc, i) => {
+                        const ScIcon = getWorkflowIcon(sc.icon)
+                        return (
+                          <button
+                            key={sc.id}
+                            onClick={() => selectScenario(sc)}
+                            className="w-full flex items-center gap-4 p-4 rounded-xl border border-border/40 hover:border-primary/30 hover:bg-primary/5 transition-all text-left group"
+                          >
+                            <span className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
+                              style={{ backgroundColor: `${solution.color}20`, color: solution.color }}>
+                              {i + 1}
+                            </span>
+                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                              <ScIcon className="w-4 h-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-sm font-semibold group-hover:text-primary transition-colors">
+                                {sc.label}
+                              </h4>
+                              <p className="text-xs text-muted-foreground mt-0.5">{sc.expectedOutcome}</p>
+                            </div>
+                            {i < pillarScenarios.length - 1 && (
+                              <span className="text-xs text-muted-foreground/40 shrink-0">→</span>
+                            )}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </section>
+                )}
+                {auxScenarios.length > 0 && (
+                  <section>
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                      辅助工具
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {auxScenarios.map(sc => {
+                        const ScIcon = getWorkflowIcon(sc.icon)
+                        return (
+                          <button
+                            key={sc.id}
+                            onClick={() => selectScenario(sc)}
+                            className="flex items-center gap-2.5 p-3 rounded-xl border border-border/40 hover:border-primary/30 hover:bg-primary/5 transition-all text-left text-sm"
+                          >
+                            <ScIcon className="w-4 h-4 text-primary shrink-0" />
+                            <span>{sc.label}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </section>
+                )}
+              </>
+            )
+          })()}
 
           {solution.workflows.length === 0 && solution.scenarios.length === 0 && (
             <div className="text-center py-12">
-              <span className="text-5xl block mb-4">🔄</span>
+              <div className="w-12 h-12 rounded-xl bg-muted/20 flex items-center justify-center mx-auto mb-4">
+                {(() => { const R = STATUS_ICONS.running; return <R className="w-6 h-6 text-muted-foreground/30" /> })()}
+              </div>
               <p className="text-sm text-muted-foreground">此方案暂未配置工作流</p>
             </div>
           )}
@@ -157,16 +275,26 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
   // ─── 输入视图 ───
   if (view === 'input') {
     const target = activeWf || activeScenario
+    const TargetIcon = target && 'icon' in target
+      ? getWorkflowIcon((target as any).icon)
+      : STATUS_ICONS.running
+    const Deliverable = DELIVERABLE_ICON
+    const SuccessCheck = SUCCESS_ICON
+    const Expected = EXPECTED_ICON
+
     return (
       <div className="flex-1 overflow-y-auto px-6 py-5">
         <div className="max-w-2xl mx-auto space-y-6">
           <button onClick={() => { setView('list'); resetState() }}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            ← 返回
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft className="w-4 h-4" />
+            返回
           </button>
 
           <div className="flex items-center gap-3">
-            <span className="text-3xl">{target && 'icon' in target ? (target as any).icon : '🔄'}</span>
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+              <TargetIcon className="w-5 h-5" />
+            </div>
             <div>
               <h2 className="text-base font-bold">
                 {activeWf?.name || activeScenario?.label}
@@ -179,11 +307,15 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
           {activeWf && (
             <div className="space-y-3">
               <div className="px-4 py-3 rounded-xl bg-primary/5 border border-primary/10">
-                <p className="text-xs font-semibold text-primary mb-1">📦 交付物</p>
+                <p className="text-xs font-semibold text-primary mb-1 flex items-center gap-1.5">
+                  <Deliverable className="w-3.5 h-3.5" /> 交付物
+                </p>
                 <p className="text-sm">{activeWf.deliverable}</p>
               </div>
               <div className="px-4 py-3 rounded-xl bg-secondary/20">
-                <p className="text-xs font-semibold text-muted-foreground mb-2">✅ 成功标准</p>
+                <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
+                  <SuccessCheck className="w-3.5 h-3.5 text-green-500" /> 成功标准
+                </p>
                 <ul className="space-y-1">
                   {activeWf.successCriteria.map((c, i) => (
                     <li key={i} className="text-xs text-muted-foreground flex items-start gap-2">
@@ -193,16 +325,31 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
                   ))}
                 </ul>
               </div>
-              <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-secondary/20 overflow-x-auto">
-                {activeWf.steps.map((s, i) => (
-                  <span key={s.id} className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
-                    {i > 0 && <span className="text-border">→</span>}
-                    <span className="w-5 h-5 rounded-full bg-secondary/40 flex items-center justify-center text-[10px] font-bold">
-                      {i + 1}
-                    </span>
-                    {s.label}
-                  </span>
-                ))}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-secondary/20 overflow-x-auto">
+                  <OrchestrationBadge mode={activeWf.mode} />
+                  {activeWf.steps.map((s, i) => {
+                    const ModeIcon = ORCHESTRATION_META[activeWf.mode]?.icon
+                    return (
+                      <span key={s.id} className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
+                        {i > 0 && ModeIcon && <ModeIcon className="w-3 h-3 text-border" />}
+                        <span className="w-5 h-5 rounded-full bg-secondary/40 flex items-center justify-center text-[10px] font-bold">
+                          {i + 1}
+                        </span>
+                        {s.label}
+                      </span>
+                    )
+                  })}
+                </div>
+                {activeWf.steps.some(s => s.profitImpact) && (
+                  <div className="flex flex-wrap gap-2 px-4">
+                    {activeWf.steps.filter(s => s.profitImpact).map(s => (
+                      <span key={s.id} className="text-[10px] text-muted-foreground">
+                        {s.label}: <ProfitBadge impact={s.profitImpact} />
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -210,7 +357,9 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
           {/* 期望输出（场景） */}
           {activeScenario && (
             <div className="px-4 py-3 rounded-xl bg-primary/5 border border-primary/10">
-              <p className="text-xs font-semibold text-primary mb-1">🎯 期望输出</p>
+              <p className="text-xs font-semibold text-primary mb-1 flex items-center gap-1.5">
+                <Expected className="w-3.5 h-3.5" /> 期望输出
+              </p>
               <p className="text-sm">{activeScenario.expectedOutcome}</p>
             </div>
           )}
@@ -231,9 +380,10 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
           <button
             onClick={handleRun}
             disabled={!activeScenario && !query.trim()}
-            className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-40 hover:opacity-90"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-40 hover:opacity-90"
             style={{ backgroundColor: solution.color }}
           >
+            <Play className="w-4 h-4" />
             {activeWf ? `启动流程 — ${activeWf.steps.length} 步` : '开始'}
           </button>
         </div>
@@ -245,103 +395,133 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
   return (
     <div className="flex-1 overflow-y-auto px-6 py-5">
       <div className="max-w-2xl mx-auto space-y-6">
-        {activeWf && (
-          <>
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">{activeWf.icon}</span>
-              <h2 className="text-base font-bold">{activeWf.name}</h2>
-              {view === 'running' && (
-                <span className="ml-auto text-xs px-2 py-1 rounded-full bg-primary/10 text-primary animate-pulse">
-                  执行中…
-                </span>
-              )}
-              {view === 'done' && result?.success && (
-                <span className="ml-auto text-xs px-2 py-1 rounded-full bg-green-500/10 text-green-500">
-                  已完成 · {(result.totalDurationMs / 1000).toFixed(1)}s
-                </span>
-              )}
-            </div>
-
-            {/* 步骤进度条 */}
-            <div className="space-y-3">
-              {activeWf.steps.map((step, i) => {
-                const status = stepStatuses[step.id] || 'pending'
-                const partial = stepPartials[step.id]
-                const sr = result?.steps.find(s => s.stepId === step.id)
-                return (
-                  <StepCard
-                    key={step.id}
-                    index={i}
-                    step={step}
-                    status={status}
-                    answer={sr?.answer || partial}
-                    error={sr?.error}
-                    durationMs={sr?.durationMs}
-                    color={solution.color}
-                  />
-                )
-              })}
-            </div>
-
-            {/* 合并结果 */}
-            {view === 'done' && result?.mergedAnswer && (
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold">📋 综合报告</h3>
-                <div className="px-5 py-4 rounded-xl border border-border/40 bg-card text-sm whitespace-pre-wrap max-h-[50vh] overflow-y-auto leading-relaxed">
-                  {result.mergedAnswer}
+        {activeWf && (() => {
+          const WfIcon = getWorkflowIcon(activeWf.icon)
+          return (
+            <>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                  <WfIcon className="w-4 h-4" />
                 </div>
-                <button
-                  onClick={() => navigator.clipboard.writeText(result.mergedAnswer || '')}
-                  className="px-3 py-1.5 rounded-lg text-xs border border-border/50 hover:bg-secondary/30 transition-colors"
-                >
-                  📋 复制报告
-                </button>
+                <h2 className="text-base font-bold">{activeWf.name}</h2>
+                <OrchestrationBadge mode={activeWf.mode} />
+                {view === 'running' && (
+                  <span className="ml-auto text-xs px-2 py-1 rounded-full bg-primary/10 text-primary animate-pulse">
+                    执行中…
+                  </span>
+                )}
+                {view === 'done' && result?.success && (
+                  <span className="ml-auto text-xs px-2 py-1 rounded-full bg-green-500/10 text-green-500">
+                    已完成 · {(result.totalDurationMs / 1000).toFixed(1)}s
+                  </span>
+                )}
               </div>
-            )}
-          </>
-        )}
 
-        {activeScenario && (
-          <>
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">{activeScenario.icon}</span>
-              <h2 className="text-base font-bold">{activeScenario.label}</h2>
-              {view === 'running' && (
-                <div
-                  className="ml-auto w-5 h-5 border-2 border-t-transparent rounded-full animate-spin"
-                  style={{ borderColor: `${solution.color}40`, borderTopColor: solution.color }}
-                />
+              {/* 步骤进度条 */}
+              <div className="space-y-3">
+                {activeWf.steps.map((step, i) => {
+                  const status = stepStatuses[step.id] || 'pending'
+                  const partial = stepPartials[step.id]
+                  const sr = result?.steps.find(s => s.stepId === step.id)
+                  return (
+                    <StepCard
+                      key={step.id}
+                      index={i}
+                      step={step}
+                      status={status}
+                      answer={sr?.answer || partial}
+                      error={sr?.error}
+                      durationMs={sr?.durationMs}
+                      color={solution.color}
+                    />
+                  )
+                })}
+              </div>
+
+              {/* 合并结果 */}
+              {view === 'done' && result?.mergedAnswer && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold flex items-center gap-1.5">
+                    <ClipboardListIcon className="w-4 h-4 text-primary" /> 综合报告
+                  </h3>
+                  <div className="px-5 py-4 rounded-xl border border-border/40 bg-card max-h-[50vh] overflow-y-auto">
+                    <MarkdownContent content={result.mergedAnswer} />
+                  </div>
+                  <button
+                    onClick={() => navigator.clipboard.writeText(result.mergedAnswer || '')}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border border-border/50 hover:bg-secondary/30 transition-colors"
+                  >
+                    <Copy className="w-3.5 h-3.5" /> 复制报告
+                  </button>
+                </div>
               )}
-            </div>
+            </>
+          )
+        })()}
 
-            {view === 'done' && scenarioAnswer && (
-              <div className="px-5 py-4 rounded-xl border border-border/40 bg-card text-sm whitespace-pre-wrap max-h-[60vh] overflow-y-auto leading-relaxed">
-                {scenarioAnswer}
+        {activeScenario && (() => {
+          const ScIcon = getWorkflowIcon(activeScenario.icon)
+          return (
+            <>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                  <ScIcon className="w-4 h-4" />
+                </div>
+                <h2 className="text-base font-bold">{activeScenario.label}</h2>
+                {view === 'running' && (
+                  <div
+                    className="ml-auto w-5 h-5 border-2 border-t-transparent rounded-full animate-spin"
+                    style={{ borderColor: `${solution.color}40`, borderTopColor: solution.color }}
+                  />
+                )}
               </div>
-            )}
 
-            {view === 'done' && error && (
-              <div className="px-4 py-3 rounded-xl border border-red-500/20 bg-red-500/5 text-sm text-red-400">
-                {error}
-              </div>
-            )}
-          </>
-        )}
+              {view === 'done' && scenarioAnswer && (
+                <div className="px-5 py-4 rounded-xl border border-border/40 bg-card max-h-[60vh] overflow-y-auto">
+                  <MarkdownContent content={scenarioAnswer} />
+                  {activeScenario?.apiEndpoint && (
+                    <div className="mt-3 pt-2 border-t border-border/20 flex items-center gap-2 text-[10px] text-muted-foreground/50">
+                      <span>数据来源：</span>
+                      <code className="px-1 py-0.5 rounded bg-secondary/30 font-mono">
+                        {activeScenario.apiEndpoint.split('?')[0]}
+                      </code>
+                      <span>（规则引擎 + 知识库）</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {view === 'done' && error && (() => {
+                const fe = friendlyError(error)
+                return (
+                  <div className="px-5 py-4 rounded-xl border border-red-500/20 bg-red-500/5 space-y-2">
+                    <p className="text-sm font-semibold text-red-400 flex items-center gap-1.5">
+                      {(() => { const X = STATUS_ICONS.error; return <X className="w-4 h-4" /> })()}
+                      {fe.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{fe.detail}</p>
+                    <p className="text-xs text-muted-foreground/80">{fe.suggestion}</p>
+                  </div>
+                )
+              })()}
+            </>
+          )
+        })()}
 
         {view === 'done' && (
           <div className="flex items-center gap-3">
             <button
               onClick={() => { setView('list'); resetState() }}
-              className="px-4 py-2 rounded-xl text-sm border border-border/50 hover:bg-secondary/30 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-border/50 hover:bg-secondary/30 transition-colors"
             >
-              ← 返回列表
+              <ArrowLeft className="w-4 h-4" /> 返回列表
             </button>
             <button
               onClick={() => { setView('input'); resetState() }}
-              className="px-4 py-2 rounded-xl text-sm text-white hover:opacity-90 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm text-white hover:opacity-90 transition-colors"
               style={{ backgroundColor: solution.color }}
             >
-              再次执行
+              <Play className="w-4 h-4" /> 再次执行
             </button>
           </div>
         )}
@@ -350,13 +530,33 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
   )
 }
 
-const STATUS_ICON: Record<StepStatus, string> = {
-  pending: '⏳', running: '🔄', done: '✅', error: '❌',
+import { ClipboardList as ClipboardListIcon } from 'lucide-react'
+
+function ProfitBadge({ impact }: { impact?: ProfitImpact }) {
+  if (!impact) return null
+  const dim = PROFIT_DIM_META[impact.dimension] || PROFIT_DIM_META.revenue
+  const DimIcon = dim.icon
+  return (
+    <span className={`inline-flex items-center gap-1 text-[10px] ${dim.cls} bg-secondary/30 rounded-full px-2 py-0.5`}>
+      <DimIcon className="w-3 h-3" /> {dim.label}：{impact.amount}
+    </span>
+  )
+}
+
+function OrchestrationBadge({ mode }: { mode: string }) {
+  const info = ORCHESTRATION_META[mode] || ORCHESTRATION_META.sequential
+  const ModeIcon = info.icon
+  return (
+    <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-secondary/30 text-muted-foreground"
+      title={info.desc}>
+      <ModeIcon className="w-3.5 h-3.5" /> {info.label}
+    </span>
+  )
 }
 
 function StepCard({ index, step, status, answer, error, durationMs, color }: {
   index: number
-  step: { id: string; label: string; agent: string; expert: string }
+  step: { id: string; label: string; agent: string; expert: string; profitImpact?: ProfitImpact }
   status: StepStatus
   answer?: string
   error?: string
@@ -364,6 +564,7 @@ function StepCard({ index, step, status, answer, error, durationMs, color }: {
   color: string
 }) {
   const [expanded, setExpanded] = useState(status === 'done' || status === 'error')
+  const StatusIcon = STATUS_ICONS[status] || STATUS_ICONS.pending
 
   return (
     <div className={`rounded-xl border transition-all ${
@@ -383,7 +584,11 @@ function StepCard({ index, step, status, answer, error, durationMs, color }: {
             <span className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin"
               style={{ borderColor: `${color}40`, borderTopColor: color }} />
           ) : (
-            <span>{STATUS_ICON[status]}</span>
+            <StatusIcon className={`w-4 h-4 ${
+              status === 'done' ? 'text-green-500' :
+              status === 'error' ? 'text-red-500' :
+              'text-muted-foreground/50'
+            }`} />
           )}
         </span>
 
@@ -394,6 +599,7 @@ function StepCard({ index, step, status, answer, error, durationMs, color }: {
           <p className="text-[10px] text-muted-foreground">
             {step.agent}.{step.expert}
           </p>
+          {step.profitImpact && <ProfitBadge impact={step.profitImpact} />}
         </div>
 
         {durationMs != null && (
@@ -408,18 +614,25 @@ function StepCard({ index, step, status, answer, error, durationMs, color }: {
       </button>
 
       {expanded && answer && (
-        <div className="px-4 pb-3 border-t border-border/20">
-          <div className="text-sm whitespace-pre-wrap max-h-48 overflow-y-auto mt-3 leading-relaxed">
-            {answer}
+        <div className="px-4 pb-3 border-t border-border/20 mt-1">
+          <div className="max-h-48 overflow-y-auto mt-2">
+            <MarkdownContent content={answer} />
           </div>
         </div>
       )}
 
-      {expanded && error && (
-        <div className="px-4 pb-3 border-t border-red-500/10">
-          <p className="text-sm text-red-400 mt-3">{error}</p>
-        </div>
-      )}
+      {expanded && error && (() => {
+        const fe = friendlyError(error)
+        return (
+          <div className="px-4 pb-3 border-t border-red-500/10 mt-1">
+            <p className="text-sm font-semibold text-red-400 mt-2 flex items-center gap-1.5">
+              {(() => { const X = STATUS_ICONS.error; return <X className="w-4 h-4" /> })()}
+              {fe.title}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">{fe.detail}</p>
+          </div>
+        )
+      })()}
     </div>
   )
 }

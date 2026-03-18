@@ -17,6 +17,14 @@ import { useLocalFeedbackStore } from '@/stores/local-feedback-store'
 import { useAdaptiveUIStore } from '@/stores/adaptive-ui-store'
 import { routeMessage } from '@/lib/intent-router'
 import type { AgentEndpoint, SolutionConfig } from '@/lib/solution-router'
+import {
+  executeActions,
+  getAutoExecutableActions,
+  isElectronAvailable,
+  type LocalAction,
+} from '@/lib/local-action-executor'
+
+import { getDeviceId, authHeaders } from '@/lib/api-client'
 
 /** WebSocket 连接池 */
 const wsPool = new Map<string, WebSocket>()
@@ -37,6 +45,12 @@ export async function sendMessage(
   const connectivity = useConnectivityStore.getState()
   const appStore = useAppStore.getState()
   const _sendStartMs = Date.now()
+
+  // Phase 6: 从对话中自动学习用户事实
+  autoLearnFromMessage(text, solution.id, convStore.currentConversationId ?? undefined)
+
+  // Phase 6: 获取 memory context 注入到 Agent 请求
+  const memoryContext = await getMemoryPromptText(solution.id)
 
   // 智能路由：分析消息内容，匹配最合适的专家
   const currentIdx = appStore.currentAgentIndex
@@ -74,18 +88,22 @@ export async function sendMessage(
     content: text,
   })
 
-  // 离线检查
+  // 离线检查 — Phase 7: 离线时走本地推理而非直接拒绝
   if (connectivity.mode === 'offline') {
+    const offlineResult = await tryLocalInference(text, solution.id)
+    const badge = offlineSourceBadge(offlineResult.source)
+    const content = `${badge}\n\n${offlineResult.text}${offlineResult.suggestOnline ? '\n\n---\n💡 _连接网络后可获得更完整的 AI 专家分析_' : ''}`
+
     const offlineId = chatStore.addMessage({
       role: 'assistant',
-      content: offlineHint(solution),
+      content,
       agentRole: agent.role,
     })
     convStore.persistMessage({
       id: offlineId,
       conversationId: convId,
       role: 'assistant',
-      content: offlineHint(solution),
+      content,
       agentRole: agent.role,
     })
     return
@@ -106,10 +124,10 @@ export async function sendMessage(
   })
 
   try {
-    await streamViaWebSocket(text, agent, assistantId, convId)
+    await streamViaWebSocket(text, agent, assistantId, convId, memoryContext)
   } catch {
     try {
-      await streamViaHTTP(text, agent, assistantId, convId)
+      await streamViaHTTP(text, agent, assistantId, convId, memoryContext)
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : '请求失败'
       chatStore.updateMessage(assistantId, {
@@ -151,6 +169,7 @@ async function streamViaWebSocket(
   agent: AgentEndpoint,
   messageId: string,
   _convId: string,
+  memoryContext?: string,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const chatStore = useChatStore.getState()
@@ -158,8 +177,9 @@ async function streamViaWebSocket(
 
     let ws = wsPool.get(wsKey)
     if (!ws || ws.readyState !== WebSocket.OPEN) {
-      const legacyWsUrl = `wss://mbe.hi-maker.com/ws/${agent.id}/chat`
-      const urls = [agent.wsUrl, legacyWsUrl]
+      const deviceId = getDeviceId()
+      const wsUrlWithAuth = `${agent.wsUrl}?device_id=${deviceId}`
+      const urls = [wsUrlWithAuth]
       let connected = false
       for (const url of urls) {
         try {
@@ -181,7 +201,10 @@ async function streamViaWebSocket(
       reject(new Error('WebSocket 超时'))
     }, 30000)
 
-    const payload = JSON.stringify({ query: text })
+    const payload = JSON.stringify({
+      query: text,
+      ...(memoryContext ? { memory_context: memoryContext } : {}),
+    })
 
     socket.onopen = () => {
       socket.send(payload)
@@ -207,7 +230,16 @@ async function streamViaWebSocket(
           if (data.sources) updates.sources = data.sources
           if (data.source_citation) updates.sources = data.source_citation
           if (data.confidence != null) updates.confidence = data.confidence
+          if (data.workflow_suggestion) updates.workflowSuggestion = data.workflow_suggestion
+          if (data.workflow_instance) updates.workflowInstance = data.workflow_instance
+          if (data.local_actions?.length) updates.localActions = data.local_actions
           chatStore.updateMessage(messageId, updates)
+
+          // 自动执行安全等级 ≤ L1 的操作
+          if (data.local_actions?.length && isElectronAvailable()) {
+            autoExecuteLocalActions(data.local_actions as LocalAction[], messageId)
+          }
+
           clearTimeout(timeout)
           resolve()
         } else if (data.type === 'error') {
@@ -247,22 +279,26 @@ async function streamViaHTTP(
   agent: AgentEndpoint,
   messageId: string,
   _convId: string,
+  memoryContext?: string,
 ): Promise<void> {
   const chatStore = useChatStore.getState()
 
   const candidates = [
+    `${agent.baseUrl}/consult`,
     `${agent.baseUrl}/secretary/chat`,
     `${agent.baseUrl}/chat`,
-    `${agent.baseUrl}/consult`,
   ]
-  const body = JSON.stringify({ query: text, question: text, message: text, stream: true })
-  const headers = { 'Content-Type': 'application/json' }
+  const body = JSON.stringify({
+    query: text, request: text, question: text, message: text, stream: true,
+    ...(memoryContext ? { memory_context: memoryContext } : {}),
+  })
+  const headers = authHeaders()
 
   let response: Response | null = null
   for (const url of candidates) {
     try {
       const r = await fetch(url, { method: 'POST', headers, body })
-      if (r.ok || r.status === 401 || r.status === 422) {
+      if (r.ok || r.status === 401) {
         response = r
         break
       }
@@ -277,6 +313,41 @@ async function streamViaHTTP(
     throw new Error(`HTTP ${response.status}`)
   }
 
+  const contentType = response.headers.get('content-type') || ''
+  const isSSE = contentType.includes('text/event-stream')
+  const isJSON = contentType.includes('application/json')
+
+  // 非流式 JSON 响应（/consult 端点的标准返回格式）
+  if (isJSON || !isSSE) {
+    try {
+      const data = await response.json()
+      const answer = data.answer || data.text || data.content || data.message || ''
+      if (answer) {
+        chatStore.appendToMessage(messageId, answer)
+      } else {
+        chatStore.appendToMessage(messageId, JSON.stringify(data, null, 2))
+      }
+      if (data.sources || data.source_citation) {
+        chatStore.updateMessage(messageId, { sources: data.sources ?? data.source_citation })
+      }
+      if (data.confidence != null) {
+        chatStore.updateMessage(messageId, { confidence: data.confidence })
+      }
+      if (data.local_actions?.length) {
+        chatStore.updateMessage(messageId, { localActions: data.local_actions })
+        if (isElectronAvailable()) {
+          autoExecuteLocalActions(data.local_actions as LocalAction[], messageId)
+        }
+      }
+    } catch {
+      const text = await response.text()
+      if (text) chatStore.appendToMessage(messageId, text)
+    }
+    chatStore.updateMessage(messageId, { streaming: false })
+    return
+  }
+
+  // SSE 流式响应
   const reader = response.body?.getReader()
   if (!reader) throw new Error('No response body')
 
@@ -318,28 +389,83 @@ async function streamViaHTTP(
 
 // ── 离线提示 ──
 
-function offlineHint(solution: SolutionConfig): string {
-  const scripts = solution.localScripts
-  if (scripts.length === 0) {
-    return '⚡ 当前处于离线状态，AI 对话暂不可用。\n\n请连接网络后重试。'
+// ── LocalAction 自动执行 ──
+
+async function autoExecuteLocalActions(actions: LocalAction[], messageId: string) {
+  const chatStore = useChatStore.getState()
+  const autoActions = getAutoExecutableActions(actions)
+  if (autoActions.length === 0) return
+
+  const results = await executeActions(autoActions, (result) => {
+    chatStore.updateMessage(messageId, {
+      localActionStatus: {
+        ...useChatStore.getState().messages.find(m => m.id === messageId)?.localActionStatus,
+        [result.index]: result.status === 'completed' ? 'auto_done'
+          : result.status === 'failed' ? 'failed' : 'pending',
+      },
+    })
+  })
+
+  // 如果所有自动操作都成功，在消息末尾追加确认
+  const allOk = results.every(r => r.status === 'completed')
+  if (allOk && results.length > 0) {
+    const summary = results.map(r => `✓ ${r.action.label}`).join('\n')
+    chatStore.appendToMessage(messageId, `\n\n---\n${summary}`)
   }
+}
 
-  const features = scripts.map(s => {
-    const names: Record<string, string> = {
-      calc_iit: '个人所得税计算',
-      calc_vat: '增值税计算',
-      calc_labor_compensation: '劳动补偿金计算',
-      calc_litigation_fee: '诉讼费计算',
-      calc_statute: '诉讼时效查询',
-      calc_cost_estimate: '造价快速估算',
-      calc_cost_fee: '取费计算',
-      calc_cost_tax: '工程税金计算',
-      calc_clinical_score: '临床评分',
-      calc_pft: '肺功能解读',
-      calc_ventilator: '呼吸机参数计算',
+// ── Phase 7: 本地轻量推理 — 离线智能回答 ──
+
+interface LocalInferenceResult {
+  text: string
+  source: 'calc' | 'knowledge' | 'pattern' | 'fallback'
+  confidence: number
+  suggestOnline: boolean
+}
+
+async function tryLocalInference(text: string, solutionId?: string): Promise<LocalInferenceResult> {
+  try {
+    const api = (window as any).electronAPI
+    if (api?.inference?.answer) {
+      return await api.inference.answer(text, solutionId)
     }
-    return `  - ${names[s] || s}`
-  }).join('\n')
+  } catch { /* 非 Electron 环境或 IPC 失败 */ }
 
-  return `⚡ 当前处于离线状态，AI 对话暂不可用。\n\n以下功能仍可使用（无需网络）：\n${features}\n\n请在输入框使用 \`/calc\` 命令执行本地计算。`
+  return {
+    text: '⚡ 当前处于离线状态，AI 对话暂不可用。\n\n请连接网络后重试。',
+    source: 'fallback',
+    confidence: 0,
+    suggestOnline: true,
+  }
+}
+
+function offlineSourceBadge(source: string): string {
+  const badges: Record<string, string> = {
+    calc: '> 🔢 **离线计算** — 本地精确计算引擎',
+    knowledge: '> 📚 **离线知识** — 内置知识库匹配',
+    pattern: '> 🧠 **离线推理** — 本地意图识别',
+    fallback: '> ⚡ **离线模式**',
+  }
+  return badges[source] ?? badges.fallback
+}
+
+// ── Phase 6: 用户偏好记忆 — 自动学习 + 上下文注入 ──
+
+async function getMemoryPromptText(solutionId?: string): Promise<string> {
+  try {
+    const api = (window as any).electronAPI
+    if (api?.memory?.getPromptText) {
+      return await api.memory.getPromptText(solutionId) ?? ''
+    }
+  } catch { /* 非 Electron 环境 */ }
+  return ''
+}
+
+function autoLearnFromMessage(text: string, solutionId?: string, conversationId?: string): void {
+  try {
+    const api = (window as any).electronAPI
+    if (api?.memory?.learn) {
+      api.memory.learn(text, solutionId, conversationId).catch(() => {})
+    }
+  } catch { /* 静默失败 */ }
 }

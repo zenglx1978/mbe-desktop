@@ -6,6 +6,7 @@
  */
 
 import type { SolutionConfig } from '@/lib/solution-router'
+import { authHeaders } from '@/lib/api-client'
 
 export type CostDimension = 'expert_id' | 'solution_id' | 'workflow_step' | 'action'
 export type CostPeriod = 'today' | 'week' | 'month' | 'all'
@@ -61,7 +62,7 @@ async function fetchCostAttribution(
   try {
     const params = new URLSearchParams({ period, group_by: groupBy })
     const resp = await fetch(`${baseUrl}/billing/cost-attribution?${params}`, {
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       signal: AbortSignal.timeout(8000),
     })
     if (!resp.ok) return null
@@ -87,7 +88,7 @@ async function fetchCostTrend(
 ): Promise<CostTrend | null> {
   try {
     const resp = await fetch(`${baseUrl}/billing/cost-trend?days=${days}`, {
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       signal: AbortSignal.timeout(8000),
     })
     if (!resp.ok) return null
@@ -111,6 +112,11 @@ export async function loadCostData(
   groupBy: CostDimension = 'expert_id',
   trendDays: number = 7,
 ): Promise<AggregatedCostData> {
+  // billing 端点尚未部署，dev 模式返回空数据避免 404 噪音
+  if (import.meta.env.DEV) {
+    return { totalCostYuan: 0, totalTokens: 0, totalCalls: 0, byAgent: [], mergedBreakdown: [], trend: [] }
+  }
+
   const agents = solution.agents
 
   const [attrResults, trendResults] = await Promise.all([

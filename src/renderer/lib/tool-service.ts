@@ -7,6 +7,7 @@
 
 import type { ToolConfig } from './solution-router'
 import { useAdaptiveUIStore } from '@/stores/adaptive-ui-store'
+import { authHeaders, API_BASE } from '@/lib/api-client'
 
 export interface CalcResult {
   success: boolean
@@ -134,22 +135,8 @@ async function runLocal(tool: ToolConfig, values: Record<string, any>): Promise<
   }
 }
 
-/** Agent ID → 远端 base URL */
-const AGENT_BASE: Record<string, string> = {
-  legal: 'https://mbe.hi-maker.com',
-  finance: 'https://mbe.hi-maker.com',
-  cost: 'https://mbe.hi-maker.com',
-  pulmonary: 'https://mbe.hi-maker.com',
-  hr: 'https://mbe.hi-maker.com',
-  cs: 'https://mbe.hi-maker.com',
-  education: 'https://mbe.hi-maker.com',
-  sales: 'https://mbe.hi-maker.com',
-  growth: 'https://mbe.hi-maker.com',
-  invest: 'https://mbe.hi-maker.com',
-}
-
-export function resolveAgentBase(agentId: string): string {
-  return AGENT_BASE[agentId] || 'https://mbe.hi-maker.com'
+export function resolveAgentBase(_agentId: string): string {
+  return API_BASE
 }
 
 /** 调用远端 Agent API */
@@ -159,7 +146,7 @@ async function runRemote(tool: ToolConfig, values: Record<string, any>): Promise
     const base = resolveAgentBase(tool.agent)
     const resp = await fetch(`${base}${tool.apiPath}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify(values),
       signal: AbortSignal.timeout(15000),
     })

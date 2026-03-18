@@ -157,12 +157,12 @@ export default function DocGeneratorForm({ tool, color }: Props) {
             {result.content}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => navigator.clipboard.writeText(result.content || '')}
               className="px-3 py-1.5 rounded-lg text-xs border border-border/50 hover:bg-secondary/30 transition-colors"
             >
-              📋 复制全文
+              复制全文
             </button>
             <button
               onClick={() => {
@@ -174,11 +174,62 @@ export default function DocGeneratorForm({ tool, color }: Props) {
                 a.click()
                 URL.revokeObjectURL(url)
               }}
-              className="px-3 py-1.5 rounded-lg text-xs text-white hover:opacity-90 transition-colors"
-              style={{ backgroundColor: color }}
+              className="px-3 py-1.5 rounded-lg text-xs border border-border/50 hover:bg-secondary/30 transition-colors"
             >
-              💾 导出文件
+              导出 TXT
             </button>
+            {window.electronAPI?.localApp && (
+              <>
+                <button
+                  onClick={async () => {
+                    const sections = (result.content || '').split('\n').filter(Boolean)
+                    const res = await window.electronAPI!.localApp.docgen({
+                      format: 'docx',
+                      data: {
+                        title: result.title || tool.name,
+                        author: 'MBE AI 专家',
+                        theme: 'mbe',
+                        sections: sections.map(text => ({
+                          type: text.startsWith('#') ? 'heading' : 'paragraph',
+                          level: text.startsWith('###') ? 3 : text.startsWith('##') ? 2 : 1,
+                          text: text.replace(/^#+\s*/, ''),
+                        })),
+                      },
+                      fileName: `${result.title || tool.name}.docx`,
+                    })
+                    if (!res.success) alert(res.error || '导出失败')
+                  }}
+                  className="px-3 py-1.5 rounded-lg text-xs text-white hover:opacity-90 transition-colors"
+                  style={{ backgroundColor: color }}
+                >
+                  导出 Word
+                </button>
+                <button
+                  onClick={async () => {
+                    const sections = (result.content || '').split('\n').filter(Boolean)
+                    const res = await window.electronAPI!.localApp.docgen({
+                      format: 'pptx',
+                      data: {
+                        title: result.title || tool.name,
+                        author: 'MBE AI 专家',
+                        theme: 'mbe',
+                        slides: [{
+                          layout: 'content',
+                          title: result.title || tool.name,
+                          bullets: sections.slice(0, 8),
+                        }],
+                      },
+                      fileName: `${result.title || tool.name}.pptx`,
+                    })
+                    if (!res.success) alert(res.error || '导出失败')
+                  }}
+                  className="px-3 py-1.5 rounded-lg text-xs text-white hover:opacity-90 transition-colors"
+                  style={{ backgroundColor: '#6366f1' }}
+                >
+                  导出 PPT
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

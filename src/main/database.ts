@@ -1,15 +1,108 @@
 /**
- * 本地 SQLite 存储层
+ * 本地 SQLite 存储层 — sql.js（纯 WASM，零原生模块）
  *
- * 统一数据库，各行业方案共享一个 MBE Desktop 数据库。
- * 存储：对话历史、任务记录、方案偏好、文档元数据。
+ * 替代 better-sqlite3 以消除 Windows Defender 对原生 .node 二进制的误报。
+ * sql.js 在内存中运行 SQLite，写操作后自动持久化到磁盘。
  */
 
 import path from 'path'
 import fs from 'fs'
 import { app, ipcMain } from 'electron'
 
-let db: any = null
+// ────────────────────── sql.js 状态 ──────────────────────
+
+let SQL: any = null
+let sqlDb: any = null
+let dbFilePath = ''
+let dirty = false
+let saveTimer: ReturnType<typeof setTimeout> | null = null
+
+// ────────────────────── 磁盘持久化 ──────────────────────
+
+function scheduleSave(): void {
+  dirty = true
+  if (saveTimer) clearTimeout(saveTimer)
+  saveTimer = setTimeout(() => flushSave(), 2000)
+}
+
+function flushSave(): void {
+  if (!dirty || !sqlDb) return
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null }
+  try {
+    const data = sqlDb.export()
+    fs.writeFileSync(dbFilePath, Buffer.from(data))
+    dirty = false
+  } catch (err) {
+    console.error('[Database] Persist failed:', err)
+  }
+}
+
+// ────────────────────── better-sqlite3 兼容适配器 ──────────────────────
+
+function createAdapter(sDb: any) {
+  return {
+    pragma(stmt: string): void {
+      sDb.run(`PRAGMA ${stmt}`)
+    },
+
+    exec(sql: string): void {
+      sDb.exec(sql)
+      scheduleSave()
+    },
+
+    prepare(sql: string) {
+      return {
+        all(...params: any[]): any[] {
+          const result = sDb.exec(sql, params)
+          if (!result.length) return []
+          const { columns, values } = result[0]
+          return values.map((row: any[]) => {
+            const obj: Record<string, any> = {}
+            columns.forEach((col: string, i: number) => { obj[col] = row[i] })
+            return obj
+          })
+        },
+        get(...params: any[]): any {
+          const result = sDb.exec(sql, params)
+          if (!result.length || !result[0].values.length) return undefined
+          const { columns, values } = result[0]
+          const obj: Record<string, any> = {}
+          columns.forEach((col: string, i: number) => { obj[col] = values[0][i] })
+          return obj
+        },
+        run(...params: any[]): { changes: number } {
+          sDb.run(sql, params)
+          scheduleSave()
+          return { changes: sDb.getRowsModified() }
+        },
+      }
+    },
+
+    serialize(): Buffer {
+      return Buffer.from(sDb.export())
+    },
+
+    close(): void {
+      flushSave()
+      try { sDb.close() } catch { /* already closed */ }
+    },
+  }
+}
+
+let db: ReturnType<typeof createAdapter> | null = null
+
+// ────────────────────── WASM 加载 ──────────────────────
+
+function loadWasmBinary(): Buffer {
+  try {
+    const mainJs = require.resolve('sql.js')
+    return fs.readFileSync(path.join(path.dirname(mainJs), 'sql-wasm.wasm'))
+  } catch {
+    return fs.readFileSync(path.join(process.resourcesPath, 'sql-wasm.wasm'))
+  }
+}
+
+// ────────────────────── 路径 ──────────────────────
 
 function getDbPath(): string {
   const docs = app.getPath('documents')
@@ -20,11 +113,23 @@ function getDbPath(): string {
   return path.join(dir, 'mbe-desktop.db')
 }
 
-export function initDatabase(): void {
+// ────────────────────── 初始化 ──────────────────────
+
+export async function initDatabase(): Promise<void> {
   try {
-    const Database = require('better-sqlite3')
-    db = new Database(getDbPath())
-    db.pragma('journal_mode = WAL')
+    const initSqlJs = require('sql.js')
+    SQL = await initSqlJs({ wasmBinary: loadWasmBinary() })
+
+    dbFilePath = getDbPath()
+
+    if (fs.existsSync(dbFilePath)) {
+      const fileData = fs.readFileSync(dbFilePath)
+      sqlDb = new SQL.Database(new Uint8Array(fileData))
+    } else {
+      sqlDb = new SQL.Database()
+    }
+
+    db = createAdapter(sqlDb)
     db.pragma('foreign_keys = ON')
 
     db.exec(`
@@ -62,7 +167,6 @@ export function initDatabase(): void {
       CREATE INDEX IF NOT EXISTS idx_conversations_solution ON conversations(solution_id);
       CREATE INDEX IF NOT EXISTS idx_documents_solution ON documents(solution_id);
 
-      -- 计算历史（可离线回溯）
       CREATE TABLE IF NOT EXISTS calc_history (
         id TEXT PRIMARY KEY,
         solution_id TEXT NOT NULL,
@@ -75,7 +179,6 @@ export function initDatabase(): void {
         created_at TEXT DEFAULT (datetime('now'))
       );
 
-      -- 任务管理
       CREATE TABLE IF NOT EXISTS tasks (
         id TEXT PRIMARY KEY,
         solution_id TEXT NOT NULL,
@@ -95,9 +198,6 @@ export function initDatabase(): void {
       CREATE INDEX IF NOT EXISTS idx_tasks_solution ON tasks(solution_id);
       CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 
-      -- ── Bitter Lesson: 客户端智能 ──
-
-      -- 使用行为分析（驱动缓存学习 + 自适应 UI）
       CREATE TABLE IF NOT EXISTS usage_events (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         event_type TEXT NOT NULL,
@@ -109,7 +209,6 @@ export function initDatabase(): void {
         created_at TEXT DEFAULT (datetime('now'))
       );
 
-      -- Expert 本地反馈（驱动本地路由优化）
       CREATE TABLE IF NOT EXISTS expert_feedback (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         solution_id TEXT NOT NULL,
@@ -122,7 +221,6 @@ export function initDatabase(): void {
         created_at TEXT DEFAULT (datetime('now'))
       );
 
-      -- 智能缓存条目（学习出的缓存策略）
       CREATE TABLE IF NOT EXISTS cache_entries (
         cache_key TEXT PRIMARY KEY,
         solution_id TEXT NOT NULL,
@@ -139,8 +237,6 @@ export function initDatabase(): void {
       CREATE INDEX IF NOT EXISTS idx_expert_feedback_solution ON expert_feedback(solution_id);
       CREATE INDEX IF NOT EXISTS idx_cache_entries_priority ON cache_entries(priority DESC);
 
-      -- ── Bitter Lesson Phase 10.4: 云端配置快照 ──
-
       CREATE TABLE IF NOT EXISTS config_snapshots (
         solution_id TEXT NOT NULL,
         version INTEGER NOT NULL,
@@ -150,13 +246,72 @@ export function initDatabase(): void {
       );
 
       CREATE INDEX IF NOT EXISTS idx_config_snapshots_solution ON config_snapshots(solution_id);
+
+      CREATE TABLE IF NOT EXISTS scheduled_jobs (
+        id TEXT PRIMARY KEY,
+        type TEXT NOT NULL CHECK(type IN ('cron', 'watch', 'once')),
+        label TEXT NOT NULL,
+        cron_expr TEXT,
+        watch_path TEXT,
+        watch_file_types TEXT,
+        delay_ms INTEGER,
+        action_json TEXT NOT NULL,
+        solution_id TEXT,
+        conversation_id TEXT,
+        status TEXT DEFAULT 'active' CHECK(status IN ('active', 'paused', 'completed', 'failed')),
+        run_count INTEGER DEFAULT 0,
+        last_run_at TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_scheduled_jobs_status ON scheduled_jobs(status);
+      CREATE INDEX IF NOT EXISTS idx_scheduled_jobs_solution ON scheduled_jobs(solution_id);
+
+      -- Phase 6: 用户偏好记忆
+      CREATE TABLE IF NOT EXISTS user_memory (
+        key TEXT PRIMARY KEY,
+        data_json TEXT NOT NULL,
+        updated_at TEXT DEFAULT (datetime('now'))
+      );
+
+      CREATE TABLE IF NOT EXISTS memory_facts (
+        id TEXT PRIMARY KEY,
+        category TEXT NOT NULL CHECK(category IN ('contact', 'business', 'preference', 'parameter', 'context', 'custom')),
+        key TEXT NOT NULL,
+        value TEXT NOT NULL,
+        source TEXT,
+        solution_id TEXT,
+        confidence REAL DEFAULT 0.5,
+        usage_count INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+      );
+
+      CREATE TABLE IF NOT EXISTS frequent_params (
+        id TEXT PRIMARY KEY,
+        tool_id TEXT NOT NULL,
+        param_key TEXT NOT NULL,
+        param_value TEXT NOT NULL,
+        usage_count INTEGER DEFAULT 1,
+        last_used_at TEXT DEFAULT (datetime('now'))
+      );
+
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_memory_facts_cat_key ON memory_facts(category, key);
+      CREATE INDEX IF NOT EXISTS idx_memory_facts_solution ON memory_facts(solution_id);
+      CREATE INDEX IF NOT EXISTS idx_memory_facts_confidence ON memory_facts(confidence DESC);
+      CREATE INDEX IF NOT EXISTS idx_frequent_params_tool ON frequent_params(tool_id);
+      CREATE INDEX IF NOT EXISTS idx_frequent_params_usage ON frequent_params(usage_count DESC);
     `)
 
-    console.log('[Database] Initialized at', getDbPath())
+    flushSave()
+    console.log('[Database] Initialized at', dbFilePath)
   } catch (err) {
     console.error('[Database] Failed to initialize:', err)
   }
 }
+
+// ────────────────────── IPC ──────────────────────
 
 export function setupDatabaseIPC(): void {
   ipcMain.handle('db:conversations:list', (_, solutionId: string) => {
@@ -264,7 +419,7 @@ export function setupDatabaseIPC(): void {
     db.prepare('DELETE FROM tasks WHERE id = ?').run(id)
   })
 
-  // ── Bitter Lesson: 客户端智能 IPC ──
+  // ── 客户端智能 IPC ──
 
   ipcMain.handle('db:usage:track', (_, data: {
     eventType: string; solutionId?: string; agentRole?: string
@@ -339,7 +494,7 @@ export function setupDatabaseIPC(): void {
     return { perAgent, switchPairs }
   })
 
-  // ── Bitter Lesson Phase 10: 反馈导出（供上报服务端） ──
+  // ── 反馈导出 ──
 
   ipcMain.handle('db:feedback:export', (_, solutionId: string, sinceTs?: string) => {
     if (!db) return []
@@ -386,7 +541,7 @@ export function setupDatabaseIPC(): void {
 
   ipcMain.handle('db:cache:prune', (_, maxEntries: number = 500) => {
     if (!db) return 0
-    const total = db.prepare('SELECT COUNT(*) as c FROM cache_entries').get().c
+    const total = db.prepare('SELECT COUNT(*) as c FROM cache_entries').get()?.c ?? 0
     if (total <= maxEntries) return 0
     const pruneCount = total - maxEntries
     db.prepare(`
@@ -397,7 +552,7 @@ export function setupDatabaseIPC(): void {
     return pruneCount
   })
 
-  // ── Bitter Lesson Phase 10.4: 云端配置快照 IPC ──
+  // ── 云端配置快照 IPC ──
 
   ipcMain.handle('db:snapshot:save', (_, solutionId: string, version: number, snapshotJson: string) => {
     if (!db) return
@@ -434,6 +589,7 @@ export function setupDatabaseIPC(): void {
   })
 
   registerBackupHandlers()
+  registerDataManagementHandlers()
 }
 
 /**
@@ -466,7 +622,7 @@ function registerBackupHandlers() {
     return { ok: true, path: filePath, password }
   })
 
-  ipcMain.handle('db:backup:restore', async () => {
+  ipcMain.handle('db:backup:restore', async (_event, password?: string) => {
     if (!db) throw new Error('数据库未初始化')
     const { filePaths } = await dialog.showOpenDialog({
       filters: [{ name: 'MBE 备份', extensions: ['mbebackup'] }],
@@ -474,8 +630,187 @@ function registerBackupHandlers() {
     })
     if (!filePaths?.length) return { ok: false }
 
-    return { ok: true, message: '备份恢复需要输入备份时生成的密码，此功能将在下个版本完善' }
+    if (!password) {
+      return { ok: false, needPassword: true, filePath: filePaths[0] }
+    }
+
+    const raw = fs.readFileSync(filePaths[0])
+    const newlineIdx = raw.indexOf(0x0a)
+    if (newlineIdx < 0) throw new Error('备份文件格式错误：缺少 header')
+
+    const header = JSON.parse(raw.subarray(0, newlineIdx).toString('utf-8'))
+    const encrypted = raw.subarray(newlineIdx + 1)
+
+    const iv = Buffer.from(header.iv, 'hex')
+    const tag = Buffer.from(header.tag, 'hex')
+    const key = crypto.scryptSync(password, 'mbe-desktop-salt', 32)
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv)
+    decipher.setAuthTag(tag)
+
+    let decrypted: Buffer
+    try {
+      decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()])
+    } catch {
+      return { ok: false, error: '密码错误或备份文件已损坏' }
+    }
+
+    const backupPath = dbFilePath + '.pre-restore.' + Date.now()
+    if (fs.existsSync(dbFilePath)) fs.copyFileSync(dbFilePath, backupPath)
+
+    db.close()
+    db = null
+    sqlDb = null
+
+    fs.writeFileSync(dbFilePath, decrypted)
+    sqlDb = new SQL.Database(new Uint8Array(decrypted))
+    db = createAdapter(sqlDb)
+    db.pragma('foreign_keys = ON')
+
+    const tables = db.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+    ).all()
+    const tableNames = tables.map((t: any) => t.name)
+
+    return {
+      ok: true,
+      tables: tableNames,
+      preRestoreBackup: backupPath,
+    }
   })
+}
+
+/**
+ * 数据管理 IPC（统计 + 清缓存 + 自动备份检查）
+ */
+function registerDataManagementHandlers() {
+  ipcMain.handle('db:stats', () => {
+    if (!db) return null
+    const tables = db.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+    ).all() as { name: string }[]
+
+    const stats: Record<string, number> = {}
+    for (const t of tables) {
+      try {
+        const row = db.prepare(`SELECT COUNT(*) as c FROM "${t.name}"`).get() as { c: number }
+        stats[t.name] = row.c
+      } catch {
+        stats[t.name] = -1
+      }
+    }
+
+    let dbSizeBytes = 0
+    try {
+      const s = fs.statSync(dbFilePath)
+      dbSizeBytes = s.size
+    } catch { /* ignore */ }
+
+    return { tables: stats, dbSizeBytes }
+  })
+
+  ipcMain.handle('db:clearCache', () => {
+    if (!db) return 0
+    const r = db.prepare('DELETE FROM cache_entries').run()
+    return r.changes
+  })
+
+  ipcMain.handle('db:backup:restoreWithPassword', async (_, filePath: string, password: string) => {
+    if (!db) throw new Error('数据库未初始化')
+    const crypto = require('crypto')
+
+    const raw = fs.readFileSync(filePath)
+    const newlineIdx = raw.indexOf(0x0a)
+    if (newlineIdx < 0) throw new Error('备份文件格式错误')
+
+    const header = JSON.parse(raw.subarray(0, newlineIdx).toString('utf-8'))
+    const encrypted = raw.subarray(newlineIdx + 1)
+
+    const iv = Buffer.from(header.iv, 'hex')
+    const tag = Buffer.from(header.tag, 'hex')
+    const key = crypto.scryptSync(password, 'mbe-desktop-salt', 32)
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv)
+    decipher.setAuthTag(tag)
+
+    let decrypted: Buffer
+    try {
+      decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()])
+    } catch {
+      return { ok: false, error: '密码错误或备份文件已损坏' }
+    }
+
+    const backupPath = dbFilePath + '.pre-restore.' + Date.now()
+    if (fs.existsSync(dbFilePath)) fs.copyFileSync(dbFilePath, backupPath)
+
+    db.close()
+    db = null
+    sqlDb = null
+
+    fs.writeFileSync(dbFilePath, decrypted)
+    sqlDb = new SQL.Database(new Uint8Array(decrypted))
+    db = createAdapter(sqlDb)
+    db.pragma('foreign_keys = ON')
+
+    return { ok: true, preRestoreBackup: backupPath }
+  })
+}
+
+/**
+ * 自动备份检查（启动时调用）
+ * 超过 7 天未备份，自动保存到 ~/Documents/MBE Desktop/backups/
+ */
+export function checkAutoBackup(): void {
+  if (!db) return
+  try {
+    const crypto = require('crypto')
+    const docs = app.getPath('documents')
+    const backupDir = path.join(docs, 'MBE Desktop', 'backups')
+    if (!fs.existsSync(backupDir)) {
+      fs.mkdirSync(backupDir, { recursive: true })
+    }
+
+    const existing = fs.readdirSync(backupDir)
+      .filter(f => f.endsWith('.mbebackup'))
+      .sort()
+      .reverse()
+
+    if (existing.length > 0) {
+      const latestPath = path.join(backupDir, existing[0])
+      const stat = fs.statSync(latestPath)
+      const ageMs = Date.now() - stat.mtimeMs
+      if (ageMs < 7 * 86400_000) return
+    }
+
+    const data = db.serialize()
+    const password = crypto.randomBytes(16).toString('hex')
+    const iv = crypto.randomBytes(16)
+    const key = crypto.scryptSync(password, 'mbe-desktop-salt', 32)
+    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv)
+    const encrypted = Buffer.concat([cipher.update(data), cipher.final()])
+    const tag = cipher.getAuthTag()
+
+    const header = JSON.stringify({ v: 1, algo: 'aes-256-gcm', iv: iv.toString('hex'), tag: tag.toString('hex') })
+    const headerBuf = Buffer.from(header + '\n')
+
+    const filename = `auto-backup-${new Date().toISOString().slice(0, 10)}.mbebackup`
+    const filePath = path.join(backupDir, filename)
+    fs.writeFileSync(filePath, Buffer.concat([headerBuf, encrypted]))
+
+    const pwFile = path.join(backupDir, `${filename}.key`)
+    fs.writeFileSync(pwFile, password, 'utf-8')
+
+    const oldFiles = existing.slice(4)
+    for (const f of oldFiles) {
+      try {
+        fs.unlinkSync(path.join(backupDir, f))
+        const keyF = path.join(backupDir, f + '.key')
+        if (fs.existsSync(keyF)) fs.unlinkSync(keyF)
+      } catch { /* ignore */ }
+    }
+
+    console.log('[AutoBackup] Saved to', filePath)
+  } catch (err) {
+    console.error('[AutoBackup] Failed:', err)
+  }
 }
 
 export function getDb(): any {
@@ -486,5 +821,6 @@ export function closeDatabase(): void {
   if (db) {
     db.close()
     db = null
+    sqlDb = null
   }
 }

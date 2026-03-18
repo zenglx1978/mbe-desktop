@@ -913,10 +913,10 @@ function WorkflowSuggestionCard({ suggestion, messageId }: {
           status: result.status || 'running',
           progress_percent: result.progress_percent ?? 0,
           total_steps: result.total_steps ?? suggestion.steps.length,
-          steps: (result.steps || suggestion.steps).map((s: Record<string, string>) => ({
-            id: s.step_id || s.id,
-            name: s.step_name || s.name,
-            status: s.status || 'pending',
+          steps: (result.steps || suggestion.steps).map((s: Record<string, unknown>) => ({
+            id: String(s.step_id || s.id || ''),
+            name: String(s.step_name || s.name || ''),
+            status: String(s.status || 'pending'),
           })),
         },
       })
@@ -997,7 +997,7 @@ function MemorySaveResultView({ action, result }: { action: { params?: Record<st
       <p className="text-xs text-emerald-600/80 dark:text-emerald-400/80 mt-1">
         {key}: {value}
       </p>
-      {result.saved && (
+      {!!result.saved && (
         <p className="text-[10px] text-emerald-500/60 mt-1">下次对话时会自动使用这个信息</p>
       )}
     </div>

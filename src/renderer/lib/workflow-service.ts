@@ -5,8 +5,7 @@
  */
 
 import type { WorkflowConfig, ScenarioConfig, WorkflowStep } from './solution-router'
-
-const API_BASE = 'https://mbe.hi-maker.com'
+import { authHeaders, API_BASE } from '@/lib/api-client'
 
 export type StepStatus = 'pending' | 'running' | 'done' | 'error'
 
@@ -67,7 +66,7 @@ async function trySSE(
     const url = `${API_BASE}/api/v1/solutions/${solutionId}/workflows/${workflow.id}/stream`
     const resp = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify({ query, params }),
     })
 
@@ -82,16 +81,24 @@ async function trySSE(
       if (done) break
       buffer += decoder.decode(value, { stream: true })
 
-      const lines = buffer.split('\n')
-      buffer = lines.pop() || ''
+      // SSE 协议：事件以空行分隔，每个事件含 event: 和 data: 行
+      const blocks = buffer.split('\n\n')
+      buffer = blocks.pop() || ''
 
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue
-        const data = line.slice(6).trim()
-        if (data === '[DONE]') break
+      for (const block of blocks) {
+        if (!block.trim()) continue
+        let eventType = ''
+        let dataStr = ''
+        for (const line of block.split('\n')) {
+          if (line.startsWith('event: ')) eventType = line.slice(7).trim()
+          else if (line.startsWith('data: ')) dataStr = line.slice(6).trim()
+        }
+        if (dataStr === '[DONE]') break
+        if (!dataStr) continue
 
         try {
-          const evt = JSON.parse(data)
+          const evt = JSON.parse(dataStr)
+          evt.type = eventType || evt.type
           processEvent(evt, workflow.steps, stepResults, onProgress)
         } catch {
           // 忽略解析失败的事件
@@ -141,23 +148,9 @@ async function executeStandard(
           ? `${query}\n\n[上一步分析结果]\n${prevAnswer}`
           : query
 
-        const url = `${API_BASE}/api/v1/solutions/${solutionId}/ask`
-        const resp = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            query: enrichedQuery,
-            expert_hint: `${step.agent}.${step.expert}`,
-            params,
-          }),
-          signal: AbortSignal.timeout(60000),
-        })
-
-        if (!resp.ok) {
-          throw new Error(`API ${resp.status}`)
-        }
-
-        const data = await resp.json()
+        const data = await callStepWithFallback(
+          solutionId, step, enrichedQuery, params,
+        )
         sr.status = 'done'
         sr.answer = data.answer || data.text || data.content || JSON.stringify(data)
         sr.expert = `${step.agent}.${step.expert}`
@@ -206,6 +199,30 @@ export async function executeScenario(
 ): Promise<{ success: boolean; answer?: string; error?: string; durationMs: number }> {
   const start = Date.now()
   try {
+    // 专用 API 端点直调（绕过通用 /consult，如 WorldMonitor 宏观数据管线）
+    if (scenario.apiEndpoint) {
+      try {
+        const method = scenario.apiMethod || 'GET'
+        const url = `${API_BASE}${scenario.apiEndpoint}`
+        const opts: RequestInit = {
+          method,
+          headers: authHeaders(),
+          signal: AbortSignal.timeout(60000),
+        }
+        if (method === 'POST') {
+          opts.body = JSON.stringify({ query: userInput || scenario.prompt })
+        }
+        const directResp = await fetch(url, opts)
+        if (directResp.ok) {
+          const data = await directResp.json()
+          const answer = extractAnswer(data)
+          if (answer) {
+            return { success: true, answer, durationMs: Date.now() - start }
+          }
+        }
+      } catch { /* 专用端点失败，走通用路径 */ }
+    }
+
     const query = userInput
       ? `${scenario.prompt}\n\n${userInput}`
       : scenario.prompt
@@ -216,24 +233,138 @@ export async function executeScenario(
 
     const resp = await fetch(`${API_BASE}/api/v1/solutions/${solutionId}/ask`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(60000),
     })
 
-    if (!resp.ok) {
-      return { success: false, error: `API ${resp.status}`, durationMs: Date.now() - start }
+    if (resp.ok) {
+      const data = await resp.json()
+      if (data.answer || data.text || data.content) {
+        return {
+          success: true,
+          answer: data.answer || data.text || data.content || JSON.stringify(data),
+          durationMs: Date.now() - start,
+        }
+      }
     }
 
-    const data = await resp.json()
-    return {
-      success: true,
-      answer: data.answer || data.text || data.content || JSON.stringify(data),
-      durationMs: Date.now() - start,
+    // 降级：直接调用 Agent /consult
+    if (scenario.expert) {
+      const agentId = scenario.expert.split('.')[0]
+      const directResp = await fetch(`${API_BASE}/api/${agentId}/consult`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ request: query, query, question: query }),
+        signal: AbortSignal.timeout(60000),
+      })
+      if (directResp.ok) {
+        const data = await directResp.json()
+        return {
+          success: true,
+          answer: data.answer || data.text || data.content || JSON.stringify(data),
+          durationMs: Date.now() - start,
+        }
+      }
     }
+
+    return { success: false, error: `API ${resp.status}`, durationMs: Date.now() - start }
   } catch (err: any) {
     return { success: false, error: err.message, durationMs: Date.now() - start }
   }
+}
+
+/**
+ * 从各种 API 响应格式中提取可读答案
+ */
+function extractAnswer(data: any): string | null {
+  if (typeof data === 'string') return data
+  if (data.answer) return data.answer
+  if (data.text) return data.text
+  if (data.content) return data.content
+
+  // 四柱系统 / 宏观报告格式：{ success: true, data: { ... } }
+  if (data.success && data.data) {
+    const d = data.data
+    // macro-report 格式
+    if (d.report || d.summary || d.analysis) {
+      return d.report || d.summary || d.analysis
+    }
+    // macro pillar 格式：格式化 JSON 为可读文本
+    if (d.signal || d.scores || d.indicators) {
+      const parts: string[] = []
+      if (d.signal) parts.push(`## 宏观信号: ${d.signal}`)
+      if (d.scores) parts.push(`## 评分\n${JSON.stringify(d.scores, null, 2)}`)
+      if (d.risk_on_off) parts.push(`## Risk-On/Off: ${d.risk_on_off}`)
+      if (d.recommendation) parts.push(`## 建议\n${d.recommendation}`)
+      if (d.indicators) parts.push(`## 指标\n${JSON.stringify(d.indicators, null, 2)}`)
+      if (parts.length > 0) return parts.join('\n\n')
+    }
+    // 通用 data 对象
+    return JSON.stringify(d, null, 2)
+  }
+
+  return JSON.stringify(data, null, 2)
+}
+
+/**
+ * 带降级的步骤调用：先走 Solution Runtime /ask，401/404 时直接调 Agent /consult
+ */
+async function callStepWithFallback(
+  solutionId: string,
+  step: WorkflowStep,
+  query: string,
+  params: Record<string, string>,
+): Promise<any> {
+  // 1. 先尝试 Solution Runtime API
+  try {
+    const url = `${API_BASE}/api/v1/solutions/${solutionId}/ask`
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({
+        query,
+        expert_hint: `${step.agent}.${step.expert}`,
+        params,
+      }),
+      signal: AbortSignal.timeout(60000),
+    })
+
+    if (resp.ok) {
+      const data = await resp.json()
+      if (data.answer || data.text || data.content) return data
+    }
+
+    // 401/404/500 → 降级到 Agent 直连
+    if (resp.status === 401 || resp.status === 404 || resp.status >= 500) {
+      return await callAgentDirect(step, query)
+    }
+    throw new Error(`API ${resp.status}`)
+  } catch (err: any) {
+    // 网络错误也走降级
+    if (err.message?.includes('API ')) throw err
+    return await callAgentDirect(step, query)
+  }
+}
+
+async function callAgentDirect(step: WorkflowStep, query: string): Promise<any> {
+  const candidates = [
+    `${API_BASE}/api/${step.agent}/consult`,
+    `${API_BASE}/api/${step.agent}/chat`,
+  ]
+
+  for (const url of candidates) {
+    try {
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ request: query, query, question: query }),
+        signal: AbortSignal.timeout(60000),
+      })
+      if (resp.ok) return await resp.json()
+    } catch { /* try next */ }
+  }
+  throw new Error('所有端点均不可用')
 }
 
 function processEvent(
@@ -242,26 +373,48 @@ function processEvent(
   stepResults: StepResult[],
   onProgress?: StepProgressCallback,
 ) {
-  if (evt.type === 'step_start' && evt.step_id) {
-    const idx = steps.findIndex(s => s.id === evt.step_id)
+  // 匹配步骤：优先用 step_id，降级用 agent+expert 或 step 序号
+  const findIdx = (): number => {
+    if (evt.step_id) {
+      const i = steps.findIndex(s => s.id === evt.step_id)
+      if (i >= 0) return i
+    }
+    if (evt.agent && evt.expert) {
+      const i = steps.findIndex(s => s.agent === evt.agent && s.expert === evt.expert)
+      if (i >= 0) return i
+    }
+    if (typeof evt.step === 'number') return evt.step - 1
+    return -1
+  }
+
+  const type = evt.type || ''
+  const idx = findIdx()
+
+  if (type === 'step_start') {
     if (idx >= 0) {
       stepResults[idx].status = 'running'
-      onProgress?.(evt.step_id, 'running')
+      onProgress?.(steps[idx].id, 'running')
     }
-  } else if (evt.type === 'step_done' && evt.step_id) {
-    const idx = steps.findIndex(s => s.id === evt.step_id)
+  } else if (type === 'step_complete' || type === 'step_done') {
     if (idx >= 0) {
-      stepResults[idx].status = 'done'
-      stepResults[idx].answer = evt.answer || evt.text
-      stepResults[idx].durationMs = evt.duration_ms
-      onProgress?.(evt.step_id, 'done', evt.answer)
+      const stepId = steps[idx].id
+      if (evt.success === false) {
+        stepResults[idx].status = 'error'
+        stepResults[idx].error = evt.error || '步骤执行失败'
+        onProgress?.(stepId, 'error', evt.error)
+      } else {
+        stepResults[idx].status = 'done'
+        stepResults[idx].answer = evt.answer || evt.text
+        stepResults[idx].durationMs = evt.elapsed_ms || evt.duration_ms
+        stepResults[idx].expert = `${evt.agent}.${evt.expert}`
+        onProgress?.(stepId, 'done', evt.answer)
+      }
     }
-  } else if (evt.type === 'step_error' && evt.step_id) {
-    const idx = steps.findIndex(s => s.id === evt.step_id)
+  } else if (type === 'step_error') {
     if (idx >= 0) {
       stepResults[idx].status = 'error'
-      stepResults[idx].error = evt.error
-      onProgress?.(evt.step_id, 'error', evt.error)
+      stepResults[idx].error = evt.error || evt.message
+      onProgress?.(steps[idx].id, 'error', evt.error)
     }
   }
 }

@@ -1,74 +1,85 @@
 import { create } from 'zustand'
-import type { ToolCardData } from '@/components/chat/InlineToolCard'
 
-export interface SourceCitation {
-  title: string
-  snippet: string
-  doc_id?: string
-  confidence?: number
+export interface WorkflowSuggestion {
+  suggested_task_type: string
+  workflow_name: string
+  workflow_description: string
+  steps: { id: string; name: string }[]
+  message: string
+  confidence?: 'high' | 'medium' | 'low'
 }
+
+export interface WorkflowInstanceInfo {
+  instance_id: string
+  workflow_name: string
+  status: string
+  progress_percent: number
+  total_steps: number
+  steps: { id: string; name: string; status: string }[]
+}
+
+export interface LocalActionInfo {
+  type: string
+  label: string
+  target?: string
+  params?: Record<string, unknown>
+  auto_execute?: boolean
+  security_level?: number
+  depends_on?: number
+}
+
+export type LocalActionStatus = 'pending' | 'auto_done' | 'user_done' | 'failed'
 
 export interface ChatMessage {
   id: string
-  role: 'user' | 'assistant' | 'system'
+  role: 'user' | 'assistant'
   content: string
-  agentRole?: string
-  timestamp: number
-  /** 知识来源溯源（source_citation） */
-  sources?: SourceCitation[]
-  /** AI 回答整体置信度（0-1） */
-  confidence?: number
-  /** 是否正在流式输出 */
   streaming?: boolean
-  /** 内联工具卡片 */
-  toolCard?: ToolCardData
+  agentRole?: string
+  sources?: { title: string; authority?: string; snippet?: string }[]
+  confidence?: number
+  workflowSuggestion?: WorkflowSuggestion
+  workflowInstance?: WorkflowInstanceInfo
+  localActions?: LocalActionInfo[]
+  localActionStatus?: Record<number, LocalActionStatus>
+  localActionResults?: Record<number, unknown>
 }
 
 interface ChatState {
   messages: ChatMessage[]
   isLoading: boolean
-  /** 当前流式回复的消息 ID */
-  streamingId: string | null
-
-  addMessage: (msg: Omit<ChatMessage, 'id' | 'timestamp'>) => string
-  updateMessage: (id: string, partial: Partial<ChatMessage>) => void
-  appendToMessage: (id: string, chunk: string) => void
-  clearMessages: () => void
+  addMessage: (msg: Omit<ChatMessage, 'id'>) => string
+  updateMessage: (id: string, patch: Partial<ChatMessage>) => void
+  appendToMessage: (id: string, text: string) => void
   setLoading: (v: boolean) => void
+  clearMessages: () => void
 }
 
-let msgCounter = 0
+let msgSeq = 0
 
 export const useChatStore = create<ChatState>((set) => ({
   messages: [],
   isLoading: false,
-  streamingId: null,
 
   addMessage: (msg) => {
-    const id = `msg_${Date.now()}_${++msgCounter}`
-    const message: ChatMessage = { ...msg, id, timestamp: Date.now() }
-    set(s => ({ messages: [...s.messages, message], streamingId: msg.streaming ? id : s.streamingId }))
+    const id = `msg-${Date.now()}-${++msgSeq}`
+    set((s) => ({ messages: [...s.messages, { ...msg, id }] }))
     return id
   },
 
-  updateMessage: (id, partial) => {
-    set(s => ({
-      messages: s.messages.map(m => m.id === id ? { ...m, ...partial } : m),
-      streamingId: partial.streaming === false && s.streamingId === id ? null : s.streamingId,
-    }))
-  },
+  updateMessage: (id, patch) =>
+    set((s) => ({
+      messages: s.messages.map((m) => (m.id === id ? { ...m, ...patch } : m)),
+    })),
 
-  appendToMessage: (id, chunk) => {
-    set(s => ({
-      messages: s.messages.map(m => m.id === id ? { ...m, content: m.content + chunk } : m),
-    }))
-  },
+  appendToMessage: (id, text) =>
+    set((s) => ({
+      messages: s.messages.map((m) =>
+        m.id === id ? { ...m, content: m.content + text } : m,
+      ),
+    })),
 
-  clearMessages: () => {
-    set({ messages: [], streamingId: null })
-  },
+  setLoading: (v) => set({ isLoading: v }),
 
-  setLoading: (v) => {
-    set({ isLoading: v })
-  },
+  clearMessages: () => set({ messages: [] }),
 }))

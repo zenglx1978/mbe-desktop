@@ -1,14 +1,15 @@
 import { Suspense, lazy, useEffect, useState } from 'react'
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
-import { useAppStore, restoreSolution } from '@/stores/app-store'
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useAppStore } from '@/stores/app-store'
 import { useAuthStore } from '@/stores/auth-store'
 
+const AuthPage = lazy(() => import('@/pages/AuthPage'))
 const SolutionPicker = lazy(() => import('@/pages/SolutionPicker'))
 const Workspace = lazy(() => import('@/pages/Workspace'))
 const MigrationWizard = lazy(() => import('@/pages/MigrationWizard'))
 const Settings = lazy(() => import('@/pages/Settings'))
-
-declare const __APP_VERSION__: string
+const CopilotPanel = lazy(() => import('@/pages/CopilotPanel'))
+const DataSourceSetup = lazy(() => import('@/pages/DataSourceSetup'))
 
 function LoadingScreen() {
   return (
@@ -24,62 +25,92 @@ function LoadingScreen() {
   )
 }
 
-export default function App() {
-  const [ready, setReady] = useState(false)
-  const navigate = useNavigate()
-  const { hasPickedSolution, pickSolution } = useAppStore()
-  const { restoreAuth } = useAuthStore()
+/** 需要登录才能访问的路由守卫 */
+function RequireAuth({ children }: { children: React.ReactNode }) {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  if (!isAuthenticated()) {
+    return <Navigate to="/auth" replace />
+  }
+  return <>{children}</>
+}
 
-  useEffect(() => {
-    async function init() {
-      await restoreAuth()
-
-      // 首次启动：检测旧版 Agent 数据，有的话引导迁移
-      const api = window.electronAPI
-      if (api) {
-        const migStatus = await api.migration.status()
-        if (!migStatus.hasMigrated) {
-          const legacy = await api.migration.detect()
-          if (legacy.length > 0) {
-            setReady(true)
-            navigate('/migration', { replace: true })
-            return
-          }
-        }
-      }
-
-      const lastSolution = await restoreSolution()
-      if (lastSolution) {
-        pickSolution(lastSolution)
-        navigate('/workspace', { replace: true })
-      }
-      setReady(true)
-    }
-    init()
-
-    // 监听 deep link 登录回调
-    const api = (window as any).electronAPI
-    if (api?.onAuthCallback) {
-      const unsubscribe = api.onAuthCallback((data: any) => {
-        useAuthStore.getState().login(data)
-      })
-      return unsubscribe
-    }
-  }, [])
-
-  if (!ready) return <LoadingScreen />
+function AppRoutes() {
+  const { hasPickedSolution } = useAppStore()
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
   return (
     <Suspense fallback={<LoadingScreen />}>
       <Routes>
-        <Route path="/" element={
-          hasPickedSolution ? <Navigate to="/workspace" replace /> : <Navigate to="/pick" replace />
-        } />
-        <Route path="/pick" element={<SolutionPicker />} />
-        <Route path="/workspace" element={<Workspace />} />
-        <Route path="/migration" element={<MigrationWizard />} />
-        <Route path="/settings" element={<Settings />} />
+        <Route
+          path="/auth"
+          element={isAuthenticated() ? <Navigate to="/pick" replace /> : <AuthPage />}
+        />
+        <Route
+          path="/"
+          element={
+            <RequireAuth>
+              {hasPickedSolution ? <Workspace /> : <Navigate to="/pick" replace />}
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/pick"
+          element={
+            <RequireAuth>
+              <SolutionPicker />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <RequireAuth>
+              <Settings />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/migrate"
+          element={
+            <RequireAuth>
+              <MigrationWizard />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/data-source-setup"
+          element={
+            <RequireAuth>
+              <DataSourceSetup />
+            </RequireAuth>
+          }
+        />
+        {/* AI 副驾驶悬浮窗（独立窗口加载，不需要认证） */}
+        <Route path="/copilot" element={<CopilotPanel />} />
+        {/* 未匹配路由：已登录 → 首页，未登录 → 登录 */}
+        <Route path="*" element={<Navigate to={isAuthenticated() ? '/' : '/auth'} replace />} />
       </Routes>
     </Suspense>
+  )
+}
+
+export default function App() {
+  const [restoring, setRestoring] = useState(true)
+
+  useEffect(() => {
+    const init = async () => {
+      await useAuthStore.getState().restoreAuth()
+      useAppStore.getState().initFromStorage()
+      setRestoring(false)
+    }
+    init()
+  }, [])
+
+  if (restoring) return <LoadingScreen />
+
+  return (
+    <HashRouter>
+      <AppRoutes />
+    </HashRouter>
   )
 }

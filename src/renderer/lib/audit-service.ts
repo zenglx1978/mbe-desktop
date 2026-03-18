@@ -6,6 +6,7 @@
 
 import type { SolutionConfig } from '@/lib/solution-router'
 import type { ApprovalItem } from '@/lib/approval-service'
+import { authHeaders } from '@/lib/api-client'
 
 export interface AuditFilters {
   status?: string
@@ -48,8 +49,8 @@ async function fetchAuditLog(
     params.set('limit', String(filters.limit || 50))
     params.set('offset', String(filters.offset || 0))
 
-    const url = `${baseUrl}/api/${agentName}/governance/approvals/audit?${params}`
-    const resp = await fetch(url, { signal: AbortSignal.timeout(8000) })
+    const url = `${baseUrl}/governance/approvals/audit?${params}`
+    const resp = await fetch(url, { headers: authHeaders(), signal: AbortSignal.timeout(8000) })
     if (!resp.ok) return null
     return await resp.json()
   } catch {
@@ -62,8 +63,8 @@ async function fetchAuditStats(
   agentName: string,
 ): Promise<AuditStats | null> {
   try {
-    const url = `${baseUrl}/api/${agentName}/governance/approvals/audit/stats`
-    const resp = await fetch(url, { signal: AbortSignal.timeout(8000) })
+    const url = `${baseUrl}/governance/approvals/audit/stats`
+    const resp = await fetch(url, { headers: authHeaders(), signal: AbortSignal.timeout(8000) })
     if (!resp.ok) return null
     return await resp.json()
   } catch {
@@ -142,8 +143,8 @@ export async function exportAuditCSV(
         const params = new URLSearchParams({ format: 'csv' })
         if (filters.status) params.set('status', filters.status)
         if (filters.agentName) params.set('agent_name', filters.agentName)
-        const url = `${a.baseUrl}/api/${a.id}/governance/approvals/audit/export?${params}`
-        const resp = await fetch(url, { signal: AbortSignal.timeout(15000) })
+        const url = `${a.baseUrl}/governance/approvals/audit/export?${params}`
+        const resp = await fetch(url, { headers: authHeaders(), signal: AbortSignal.timeout(15000) })
         if (!resp.ok) return ''
         const data = await resp.json()
         return data.csv || ''

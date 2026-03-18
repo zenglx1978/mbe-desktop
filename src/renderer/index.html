@@ -3,7 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.hi-maker.com ws://*.hi-maker.com wss://*.hi-maker.com http://localhost:* ws://localhost:*; img-src 'self' data: https:; font-src 'self' data:;">
+    <!-- CSP: Electron production 通过 session.webRequest 注入更严格策略；此处兼容 Vite dev 模式 -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.hi-maker.com ws://*.hi-maker.com wss://*.hi-maker.com http://localhost:* ws://localhost:*; img-src 'self' data: https:; font-src 'self' data:;">
     <title>MBE Desktop — AI 专业服务</title>
   </head>
   <body class="bg-background text-foreground antialiased">

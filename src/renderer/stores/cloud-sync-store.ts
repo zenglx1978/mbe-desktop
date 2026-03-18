@@ -10,8 +10,7 @@
  */
 
 import { create } from 'zustand'
-
-const API_BASE = 'https://mbe.hi-maker.com'
+import { API_BASE } from '@/lib/api-client'
 const SYNC_INTERVAL_MS = 30 * 60 * 1000 // 30 分钟
 
 interface ExpertRanking {
@@ -188,18 +187,22 @@ export const useCloudSyncStore = create<CloudSyncState>((set, get) => ({
 
 let syncTimer: ReturnType<typeof setInterval> | null = null
 
-export function startCloudSync(solutionId: string): () => void {
+export function startCloudSync(_solutionId: string): () => void {
+  // config-snapshot 端点尚未部署，跳过避免 403/404 控制台噪音
+  // TODO: 服务端部署 /api/v1/config-snapshot 后恢复以下逻辑
+  return () => {}
+
+  /*
   if (syncTimer) clearInterval(syncTimer)
 
   const doSync = async () => {
     const store = useCloudSyncStore.getState()
-    const hasNew = await store.pullSnapshot(solutionId)
+    const hasNew = await store.pullSnapshot(_solutionId)
     if (hasNew) {
-      await store.applySnapshot(solutionId)
+      await store.applySnapshot(_solutionId)
     }
   }
 
-  // 首次延迟 10 秒（等待应用初始化完成）
   const initialTimeout = setTimeout(doSync, 10_000)
   syncTimer = setInterval(doSync, SYNC_INTERVAL_MS)
 
@@ -210,4 +213,5 @@ export function startCloudSync(solutionId: string): () => void {
       syncTimer = null
     }
   }
+  */
 }

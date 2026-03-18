@@ -19,6 +19,19 @@ export default defineConfig({
   },
   server: {
     port: 5180,
+    proxy: {
+      '/api': {
+        target: 'https://mbe.hi-maker.com',
+        changeOrigin: true,
+        secure: true,
+      },
+      '/ws': {
+        target: 'wss://mbe.hi-maker.com',
+        changeOrigin: true,
+        secure: true,
+        ws: true,
+      },
+    },
   },
   base: './',
   build: {
