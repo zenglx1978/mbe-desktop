@@ -1,4 +1,5 @@
-import type { RefObject } from 'react'
+import { useCallback, type RefObject } from 'react'
+import { VoiceInput, ScreenshotInput } from '@/components/io'
 
 export interface ChatInputBarProps {
   input: string
@@ -6,6 +7,7 @@ export interface ChatInputBarProps {
   textareaRef: RefObject<HTMLTextAreaElement | null>
   onKeyDown: (e: React.KeyboardEvent) => void
   onSend: () => void
+  onImage?: (base64: string, filename: string) => void
   isLoading: boolean
 }
 
@@ -15,8 +17,14 @@ export function ChatInputBar({
   textareaRef,
   onKeyDown,
   onSend,
+  onImage,
   isLoading,
 }: ChatInputBarProps) {
+  const handleTranscript = useCallback(
+    (text: string) => setInput((prev: string) => (prev ? `${prev} ${text}` : text)),
+    [setInput],
+  )
+
   return (
     <div className="border-t border-border/50 p-4">
       <div className="max-w-3xl mx-auto">
@@ -31,6 +39,8 @@ export function ChatInputBar({
             className="flex-1 bg-transparent border-none outline-none resize-none text-sm leading-relaxed max-h-32 placeholder:text-muted-foreground/50"
             style={{ fieldSizing: 'content' } as React.CSSProperties}
           />
+          <VoiceInput onTranscript={handleTranscript} />
+          {onImage && <ScreenshotInput onImage={onImage} />}
           <button
             onClick={() => onSend()}
             disabled={!input.trim() || isLoading}

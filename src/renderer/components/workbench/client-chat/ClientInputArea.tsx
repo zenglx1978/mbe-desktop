@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { AI_AGENTS } from './shared'
 import ClientQuickReply from './ClientQuickReply'
+import { VoiceInput } from '@/components/io'
 
 interface ClientInputAreaProps {
   aiDraft: AIDraft | null
@@ -104,6 +105,7 @@ export default function ClientInputArea({ aiDraft, onAIDraftChange }: ClientInpu
             )}
           </div>
           <ClientQuickReply />
+          <VoiceInput onTranscript={(t) => setInputText((inputText ? `${inputText} ${t}` : t))} />
           <textarea
             value={inputText}
             onChange={e => setInputText(e.target.value)}

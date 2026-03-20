@@ -9,6 +9,7 @@ import OrchestrationPanel from '@/components/OrchestrationPanel'
 import SourcePanel from '@/components/SourcePanel'
 import ConfidenceBadge, { getConfidenceCssClass } from '@/components/ConfidenceBadge'
 import { ChatLocalActionCards } from './ChatLocalActionCards'
+import { ExportToolbar } from '@/components/io'
 
 export interface ChatMessageBubbleProps {
   message: ChatMessage
@@ -44,6 +45,9 @@ export function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
         )}
         {!isUser && message.confidence != null && (
           <ConfidenceBadge confidence={message.confidence} />
+        )}
+        {!isUser && !message.streaming && message.content.length > 50 && (
+          <ExportToolbar content={message.content} className="mt-1" />
         )}
         {message.sources && message.sources.length > 0 && (
           <SourcePanel sources={message.sources} />
