@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Plus, Trash2, CheckCircle2, Circle, Clock, AlertCircle, Filter } from 'lucide-react'
 import type { SolutionConfig } from '@/lib/solution-router'
 import {
@@ -62,20 +62,45 @@ export default function TasksPanel({ solution }: Props) {
     setTasks(prev => prev.filter(t => t.id !== id))
   }, [solution.id])
 
-  const activeTasks = tasks.filter(t => t.status !== 'done')
-  const completedTasks = tasks.filter(t => t.status === 'done')
+  const { activeTasks, completedTasks, filtered, counts } = useMemo(() => {
+    const active = tasks.filter((t) => t.status !== 'done')
+    const completed = tasks.filter((t) => t.status === 'done')
+    const pOrder: Record<Priority, number> = { high: 0, medium: 1, low: 2 }
+    const filt =
+      (filterStatus === 'all' ? active : active.filter((t) => t.status === filterStatus))
+        .slice()
+        .sort((a, b) => pOrder[a.priority] - pOrder[b.priority])
+    const cnt = {
+      todo: tasks.filter((t) => t.status === 'todo').length,
+      doing: tasks.filter((t) => t.status === 'doing').length,
+      done: completed.length,
+    }
+    return {
+      activeTasks: active,
+      completedTasks: completed,
+      filtered: filt,
+      counts: cnt,
+    }
+  }, [tasks, filterStatus])
 
-  const filtered = (filterStatus === 'all' ? activeTasks : activeTasks.filter(t => t.status === filterStatus))
-    .sort((a, b) => {
-      const pOrder: Record<Priority, number> = { high: 0, medium: 1, low: 2 }
-      return pOrder[a.priority] - pOrder[b.priority]
-    })
+  const setFilterAll = useCallback(() => setFilterStatus('all'), [])
+  const setFilterTodo = useCallback(() => setFilterStatus('todo'), [])
+  const setFilterDoing = useCallback(() => setFilterStatus('doing'), [])
 
-  const counts = {
-    todo: tasks.filter(t => t.status === 'todo').length,
-    doing: tasks.filter(t => t.status === 'doing').length,
-    done: completedTasks.length,
-  }
+  const filterHandlers = useMemo(
+    () =>
+      ({
+        all: setFilterAll,
+        todo: setFilterTodo,
+        doing: setFilterDoing,
+      }) as Record<'all' | 'todo' | 'doing', () => void>,
+    [setFilterAll, setFilterTodo, setFilterDoing],
+  )
+
+  const toggleShowAdd = useCallback(() => setShowAdd((v) => !v), [])
+  const openShowAdd = useCallback(() => setShowAdd(true), [])
+  const toggleShowCompleted = useCallback(() => setShowCompleted((v) => !v), [])
+  const cancelAdd = useCallback(() => setShowAdd(false), [])
 
   return (
     <div className="flex-1 overflow-y-auto p-6">
@@ -92,7 +117,8 @@ export default function TasksPanel({ solution }: Props) {
             {(['all', 'todo', 'doing'] as const).map(s => (
               <button
                 key={s}
-                onClick={() => setFilterStatus(s)}
+                type="button"
+                onClick={filterHandlers[s]}
                 className={`px-2.5 py-1 rounded-md text-xs transition-colors ${
                   filterStatus === s ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'
                 }`}
@@ -102,7 +128,8 @@ export default function TasksPanel({ solution }: Props) {
             ))}
           </div>
           <button
-            onClick={() => setShowAdd(!showAdd)}
+            type="button"
+            onClick={toggleShowAdd}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors ml-auto"
           >
             <Plus className="w-4 h-4" />
@@ -110,7 +137,7 @@ export default function TasksPanel({ solution }: Props) {
           </button>
         </div>
 
-        {showAdd && <AddTaskForm onAdd={addTask} onCancel={() => setShowAdd(false)} />}
+        {showAdd && <AddTaskForm onAdd={addTask} onCancel={cancelAdd} />}
 
         {loading && tasks.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground text-sm">加载中...</div>
@@ -126,13 +153,14 @@ export default function TasksPanel({ solution }: Props) {
             ))}
           </div>
         ) : (
-          <EmptyTasks hasAny={tasks.length > 0} onAdd={() => setShowAdd(true)} />
+          <EmptyTasks hasAny={tasks.length > 0} onAdd={openShowAdd} />
         )}
 
         {completedTasks.length > 0 && (
           <div>
             <button
-              onClick={() => setShowCompleted(!showCompleted)}
+              type="button"
+              onClick={toggleShowCompleted}
               className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               {showCompleted ? '▾' : '▸'}

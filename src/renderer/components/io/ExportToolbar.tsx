@@ -35,7 +35,7 @@ export default function ExportToolbar({ content, title = '对话导出', classNa
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      /* 权限或不可用 */
+      // Expected: 剪贴板权限拒绝或环境无 Clipboard API
     }
   }, [content])
 
@@ -61,7 +61,7 @@ export default function ExportToolbar({ content, title = '对话导出', classNa
       a.click()
       URL.revokeObjectURL(url)
     } catch {
-      /* 静默 */
+      // Expected: Electron 写文件或浏览器下载失败；用户无导出文件
     }
   }, [content, safeName])
 
@@ -92,7 +92,7 @@ export default function ExportToolbar({ content, title = '对话导出', classNa
         }
       }
     } catch {
-      /* 静默 */
+      // Expected: PDF/打印流程失败（Electron 或 window.open）
     }
   }, [content, title, safeName])
 
@@ -102,7 +102,7 @@ export default function ExportToolbar({ content, title = '对话导出', classNa
         await navigator.share({ title, text: content.slice(0, 120_000) })
       }
     } catch {
-      /* 用户取消或不可用 */
+      // Expected: 用户取消系统分享或 Web Share 不可用
     }
   }, [content, title])
 

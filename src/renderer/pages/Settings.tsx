@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { API_BASE, authFetch } from '@/lib/api-client'
 import { useAuthStore } from '@/stores/auth-store'
 import { useAppStore } from '@/stores/app-store'
@@ -91,7 +91,27 @@ export default function Settings() {
     loadDbStats()
   }, [loadDbStats])
 
-  const handleBackupCreate = async () => {
+  const handleOpenWebLogin = useCallback(() => {
+    const url = `${API_BASE}/user/login?redirect=mbe-desktop://auth`
+    const api = window.electronAPI
+    if (api?.openExternal) {
+      api.openExternal(url)
+    } else {
+      window.open(url, '_blank')
+    }
+  }, [])
+
+  const handleOpenAdminSolutions = useCallback(() => {
+    const url = `${API_BASE}/admin/solutions`
+    const api = window.electronAPI
+    if (api?.openExternal) {
+      api.openExternal(url)
+    } else {
+      window.open(url, '_blank')
+    }
+  }, [])
+
+  const handleBackupCreate = useCallback(async () => {
     const api = window.electronAPI
     if (!api?.db?.backup?.create) return
     setBackupMsg(null)
@@ -105,9 +125,9 @@ export default function Settings() {
     } catch (e: any) {
       setBackupMsg(`备份失败：${e.message}`)
     }
-  }
+  }, [])
 
-  const handleBackupRestore = async () => {
+  const handleBackupRestore = useCallback(async () => {
     const api = window.electronAPI
     if (!api?.db?.backup?.restore) return
     setRestoreMsg(null)
@@ -126,9 +146,9 @@ export default function Settings() {
     } catch (e: any) {
       setRestoreMsg(`恢复失败：${e.message}`)
     }
-  }
+  }, [loadDbStats])
 
-  const handleRestoreWithPassword = async () => {
+  const handleRestoreWithPassword = useCallback(async () => {
     if (!pendingRestorePath || !restorePassword) return
     const api = window.electronAPI
     if (!api?.db?.backup?.restoreWithPassword) return
@@ -145,9 +165,9 @@ export default function Settings() {
     } catch (e: any) {
       setRestoreMsg(`恢复失败：${e.message}`)
     }
-  }
+  }, [pendingRestorePath, restorePassword, loadDbStats])
 
-  const handleClearCache = async () => {
+  const handleClearCache = useCallback(async () => {
     const api = window.electronAPI
     if (!api?.db?.clearCache) return
     try {
@@ -157,34 +177,30 @@ export default function Settings() {
     } catch (e: any) {
       setBackupMsg(`清除失败：${e.message}`)
     }
-  }
+  }, [loadDbStats])
 
-  const handleOpenWebLogin = () => {
-    const url = `${API_BASE}/user/login?redirect=mbe-desktop://auth`
-    const api = window.electronAPI
-    if (api?.openExternal) {
-      api.openExternal(url)
-    } else {
-      window.open(url, '_blank')
-    }
-  }
+  const goBack = useCallback(() => navigate(-1), [navigate])
 
-  const handleOpenAdminSolutions = () => {
-    const url = `${API_BASE}/admin/solutions`
-    const api = window.electronAPI
-    if (api?.openExternal) {
-      api.openExternal(url)
-    } else {
-      window.open(url, '_blank')
-    }
-  }
+  const navigateKbGraph = useCallback(() => navigate('/kb-graph'), [navigate])
+  const navigateHeatmaps = useCallback(() => navigate('/analytics/heatmaps'), [navigate])
+  const navigateDeepmind = useCallback(() => navigate('/deepmind'), [navigate])
+
+  const dbTableChips = useMemo(() => {
+    if (!dbStats) return [] as { name: string; count: number }[]
+    return Object.entries(dbStats.tables)
+      .filter(([, c]) => c > 0)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 8)
+      .map(([name, count]) => ({ name, count }))
+  }, [dbStats])
 
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center gap-4 mb-8">
           <button
-            onClick={() => navigate(-1)}
+            type="button"
+            onClick={goBack}
             className="text-muted-foreground hover:text-foreground text-sm"
           >
             ← 返回
@@ -292,18 +308,14 @@ export default function Settings() {
                 </span>
               </p>
               <div className="flex flex-wrap gap-2 text-xs">
-                {Object.entries(dbStats.tables)
-                  .filter(([, c]) => c > 0)
-                  .sort(([, a], [, b]) => b - a)
-                  .slice(0, 8)
-                  .map(([name, count]) => (
-                    <span
-                      key={name}
-                      className="bg-muted/30 px-2 py-0.5 rounded text-muted-foreground"
-                    >
-                      {name}: {count}
-                    </span>
-                  ))}
+                {dbTableChips.map(({ name, count }) => (
+                  <span
+                    key={name}
+                    className="bg-muted/30 px-2 py-0.5 rounded text-muted-foreground"
+                  >
+                    {name}: {count}
+                  </span>
+                ))}
               </div>
             </div>
           )}
@@ -374,7 +386,8 @@ export default function Settings() {
           <h2 className="text-sm font-medium text-foreground mb-3">开发者工具</h2>
           <div className="space-y-2">
             <button
-              onClick={() => navigate('/kb-graph')}
+              type="button"
+              onClick={navigateKbGraph}
               className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md border border-border/50 hover:bg-muted/30 transition-colors text-muted-foreground hover:text-foreground"
             >
               <span className="text-base">🧠</span>
@@ -382,7 +395,8 @@ export default function Settings() {
               <span className="text-[10px] text-muted-foreground/50 ml-auto">11 Agent · 577 文件</span>
             </button>
             <button
-              onClick={() => navigate('/analytics/heatmaps')}
+              type="button"
+              onClick={navigateHeatmaps}
               className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md border border-border/50 hover:bg-muted/30 transition-colors text-muted-foreground hover:text-foreground"
             >
               <span className="text-base">🔥</span>
@@ -390,7 +404,8 @@ export default function Settings() {
               <span className="text-[10px] text-muted-foreground/50 ml-auto">法律风险 · 投资瓶颈 · 产业链</span>
             </button>
             <button
-              onClick={() => navigate('/deepmind')}
+              type="button"
+              onClick={navigateDeepmind}
               className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md border border-border/50 hover:bg-muted/30 transition-colors text-muted-foreground hover:text-foreground"
             >
               <span className="text-base">🔬</span>

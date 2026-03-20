@@ -26,6 +26,7 @@ export function formatTime(iso: string) {
     const d = new Date(iso.endsWith('Z') ? iso : iso + 'Z')
     return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
   } catch {
+    // Expected: ISO 时间非法；不显示时间
     return ''
   }
 }

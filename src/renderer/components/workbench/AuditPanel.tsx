@@ -5,7 +5,7 @@
  * 嵌入 ApprovalPanel 中作为"审计日志"视图。
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useAppStore } from '@/stores/app-store'
 import type { ApprovalItem, RiskLevel } from '@/lib/approval-service'
 import { RISK_META } from '@/lib/approval-service'
@@ -52,7 +52,7 @@ export default function AuditPanel() {
 
   useEffect(() => { refresh() }, [refresh])
 
-  async function handleExport() {
+  const handleExport = useCallback(async () => {
     if (!solution) return
     setExporting(true)
     try {
@@ -68,9 +68,54 @@ export default function AuditPanel() {
       }
     } catch { /* silent */ }
     setExporting(false)
-  }
+  }, [solution, filters])
 
-  const selected = selectedId ? items.find(i => i.id === selectedId) : null
+  const statusSelectOptions = useMemo(
+    () =>
+      STATUS_OPTIONS.map((v) => ({
+        value: v,
+        label: v ? (STATUS_META[v]?.label || v) : '全部',
+      })),
+    [],
+  )
+
+  const riskSelectOptions = useMemo(
+    () =>
+      RISK_OPTIONS.map((v) => ({
+        value: v,
+        label: v ? `${RISK_META[v as RiskLevel]?.label || v}风险` : '全部',
+      })),
+    [],
+  )
+
+  const onStatusFilterChange = useCallback((v: string) => {
+    setFilters((f) => ({ ...f, status: v || undefined, offset: 0 }))
+  }, [])
+
+  const onRiskFilterChange = useCallback((v: string) => {
+    setFilters((f) => ({ ...f, riskLevel: v || undefined, offset: 0 }))
+  }, [])
+
+  const closeDetail = useCallback(() => setSelectedId(null), [])
+
+  const pagePrev = useCallback(() => {
+    setFilters((f) => ({
+      ...f,
+      offset: Math.max(0, (f.offset || 0) - (f.limit || 50)),
+    }))
+  }, [])
+
+  const pageNext = useCallback(() => {
+    setFilters((f) => ({
+      ...f,
+      offset: (f.offset || 0) + (f.limit || 50),
+    }))
+  }, [])
+
+  const selected = useMemo(
+    () => (selectedId ? items.find((i) => i.id === selectedId) : null),
+    [selectedId, items],
+  )
 
   if (!solution) return null
 
@@ -138,20 +183,14 @@ export default function AuditPanel() {
         <FilterSelect
           label="状态"
           value={filters.status || ''}
-          options={STATUS_OPTIONS.map(v => ({
-            value: v,
-            label: v ? (STATUS_META[v]?.label || v) : '全部',
-          }))}
-          onChange={v => setFilters(f => ({ ...f, status: v || undefined, offset: 0 }))}
+          options={statusSelectOptions}
+          onChange={onStatusFilterChange}
         />
         <FilterSelect
           label="风险"
           value={filters.riskLevel || ''}
-          options={RISK_OPTIONS.map(v => ({
-            value: v,
-            label: v ? (RISK_META[v as RiskLevel]?.label || v) + '风险' : '全部',
-          }))}
-          onChange={v => setFilters(f => ({ ...f, riskLevel: v || undefined, offset: 0 }))}
+          options={riskSelectOptions}
+          onChange={onRiskFilterChange}
         />
 
         <div className="ml-auto flex items-center gap-2">
@@ -247,7 +286,8 @@ export default function AuditPanel() {
           {total > (filters.limit || 50) && (
             <div className="flex items-center justify-center gap-3 py-3 border-t border-border/20">
               <button
-                onClick={() => setFilters(f => ({ ...f, offset: Math.max(0, (f.offset || 0) - (f.limit || 50)) }))}
+                type="button"
+                onClick={pagePrev}
                 disabled={(filters.offset || 0) === 0}
                 className="text-[10px] px-2 py-1 rounded border border-border/40 disabled:opacity-30"
               >
@@ -257,7 +297,8 @@ export default function AuditPanel() {
                 {(filters.offset || 0) + 1}–{Math.min((filters.offset || 0) + (filters.limit || 50), total)} / {total}
               </span>
               <button
-                onClick={() => setFilters(f => ({ ...f, offset: (f.offset || 0) + (f.limit || 50) }))}
+                type="button"
+                onClick={pageNext}
                 disabled={(filters.offset || 0) + (filters.limit || 50) >= total}
                 className="text-[10px] px-2 py-1 rounded border border-border/40 disabled:opacity-30"
               >
@@ -270,7 +311,7 @@ export default function AuditPanel() {
         {/* 详情侧栏 */}
         {selected && (
           <div className="w-1/2 overflow-y-auto p-5">
-            <AuditDetail item={selected} onClose={() => setSelectedId(null)} />
+            <AuditDetail item={selected} onClose={closeDetail} />
           </div>
         )}
       </div>

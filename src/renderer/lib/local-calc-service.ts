@@ -30,7 +30,7 @@ export async function runLocalCalc(scriptName: string, args: string[]): Promise<
     try {
       result.parsed = JSON.parse(result.result)
     } catch {
-      // 非 JSON 输出，保持 result 字符串
+      // Expected: 脚本输出非 JSON；保留原始 result 字符串
     }
   }
   return result
@@ -44,6 +44,7 @@ export async function checkPythonAvailable(): Promise<boolean> {
     const { ipcRenderer } = window.require('electron')
     return await ipcRenderer.invoke('calc:pythonAvailable')
   } catch {
+    // Expected: Electron IPC 不可用；视为 Python 检测失败
     return false
   }
 }
@@ -56,6 +57,7 @@ export async function getAvailableScripts(): Promise<string[]> {
     const { ipcRenderer } = window.require('electron')
     return await ipcRenderer.invoke('calc:available')
   } catch {
+    // Expected: IPC 不可用；无本地脚本列表
     return []
   }
 }

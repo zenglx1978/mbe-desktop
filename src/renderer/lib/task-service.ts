@@ -62,6 +62,7 @@ function readLS(solutionId: string): TaskItem[] {
   try {
     return JSON.parse(localStorage.getItem(lsKey(solutionId)) || '[]')
   } catch {
+    // Expected: localStorage 任务缓存非合法 JSON；按空列表
     return []
   }
 }
@@ -91,6 +92,7 @@ export async function fetchTasks(solutionId: string): Promise<TaskItem[]> {
     writeLS(solutionId, tasks)
     return tasks
   } catch {
+    // Expected: 远端任务列表失败；读本地缓存
     return readLS(solutionId)
   }
 }
@@ -136,6 +138,7 @@ export async function createTask(
       solutionId: t.solutionId,
     }
   } catch {
+    // Expected: 远端创建失败；本地降级
     const tasks = readLS(solutionId)
     writeLS(solutionId, [fallback, ...tasks])
     return fallback
@@ -153,6 +156,7 @@ export async function updateTask(
     })
     return resp.ok
   } catch {
+    // Expected: 远端更新失败
     return false
   }
 }
@@ -168,6 +172,7 @@ export async function deleteTask(solutionId: string, taskId: string): Promise<bo
     }
     return resp.ok
   } catch {
+    // Expected: 远端删除失败；仍同步本地缓存
     const tasks = readLS(solutionId)
     writeLS(solutionId, tasks.filter(t => t.id !== taskId))
     return true

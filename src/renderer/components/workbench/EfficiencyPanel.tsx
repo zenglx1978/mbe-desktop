@@ -2,7 +2,7 @@
 // 核心功能：展示"用 MBE 前"vs"用 MBE 后"的时间对比，量化 ROI
 // 扩展功能：展示 ProactiveNotifier 的优化建议、已启用规则、仪表盘
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useAppStore } from '@/stores/app-store'
 import { authFetch, API_BASE } from '@/lib/api-client'
 import {
@@ -98,7 +98,7 @@ export default function EfficiencyPanel() {
         setReport(data)
       }
     } catch {
-      // ignore
+      // Expected: Electron miner.costBenefitReport 不可用或抛错；面板无报告数据
     } finally {
       setLoading(false)
     }
@@ -111,7 +111,7 @@ export default function EfficiencyPanel() {
       const res = await authFetch(`${API_BASE}/api/${agentName}/optimization/dashboard`)
       if (res.ok) setOptDashboard(await res.json())
     } catch {
-      // 优化 API 不可用时静默降级
+      // Expected: 优化看板 HTTP 不可达；静默降级无仪表盘
     } finally {
       setOptLoading(false)
     }
@@ -125,7 +125,9 @@ export default function EfficiencyPanel() {
         { method: 'POST' },
       )
       if (res.ok) loadOptDashboard()
-    } catch { /* ignore */ }
+    } catch {
+      // Expected: 接受建议 API 失败；不刷新仪表盘
+    }
   }, [agentName, loadOptDashboard])
 
   const handleDismiss = useCallback(async (suggestionId: string) => {
@@ -136,11 +138,54 @@ export default function EfficiencyPanel() {
         { method: 'POST' },
       )
       if (res.ok) loadOptDashboard()
-    } catch { /* ignore */ }
+    } catch {
+      // Expected: 忽略建议 API 失败；不刷新仪表盘
+    }
   }, [agentName, loadOptDashboard])
 
   useEffect(() => { loadReport() }, [loadReport])
   useEffect(() => { loadOptDashboard() }, [loadOptDashboard])
+
+  const periodClickHandlers = useMemo(
+    () =>
+      ({
+        7: () => setPeriod(7),
+        30: () => setPeriod(30),
+        90: () => setPeriod(90),
+      }) as Record<number, () => void>,
+    [],
+  )
+
+  const summaryBarData = useMemo(
+    () =>
+      report
+        ? [
+            {
+              label: '总耗时',
+              human: report.totalManualMs / 1000,
+              mbe: report.totalAssistedMs / 1000,
+            },
+          ]
+        : [],
+    [report],
+  )
+
+  const taskBarData = useMemo(
+    () =>
+      report?.tasks.map((t) => ({
+        name: t.name.length > 10 ? t.name.slice(0, 10) + '…' : t.name,
+        fullName: t.name,
+        human: t.avgManualMs / 1000,
+        mbe: t.avgAssistedMs / 1000,
+        saved: t.savedPercent,
+        count: t.count,
+      })) ?? [],
+    [report],
+  )
+
+  const handleExportReport = useCallback(() => {
+    if (report) exportReport(report)
+  }, [report])
 
   if (!solution) return null
 
@@ -162,7 +207,8 @@ export default function EfficiencyPanel() {
             {[7, 30, 90].map((d) => (
               <button
                 key={d}
-                onClick={() => setPeriod(d)}
+                type="button"
+                onClick={periodClickHandlers[d]}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   period === d
                     ? 'bg-primary/15 text-primary'
@@ -221,11 +267,7 @@ export default function EfficiencyPanel() {
               </div>
               <ResponsiveContainer width="100%" height={56}>
                 <BarChart
-                  data={[{
-                    label: '总耗时',
-                    human: report.totalManualMs / 1000,
-                    mbe: report.totalAssistedMs / 1000,
-                  }]}
+                  data={summaryBarData}
                   layout="vertical"
                   margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
                 >
@@ -261,7 +303,8 @@ export default function EfficiencyPanel() {
                 <div className="flex items-center justify-between px-5 py-3 border-b border-border/30">
                   <h3 className="text-sm font-semibold text-foreground">各任务效率明细</h3>
                   <button
-                    onClick={() => exportReport(report)}
+                    type="button"
+                    onClick={handleExportReport}
                     className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
                   >
                     <Download className="w-3.5 h-3.5" />
@@ -271,14 +314,7 @@ export default function EfficiencyPanel() {
                 <div className="p-4">
                   <ResponsiveContainer width="100%" height={Math.max(120, report.tasks.length * 52)}>
                     <BarChart
-                      data={report.tasks.map(t => ({
-                        name: t.name.length > 10 ? t.name.slice(0, 10) + '…' : t.name,
-                        fullName: t.name,
-                        human: t.avgManualMs / 1000,
-                        mbe: t.avgAssistedMs / 1000,
-                        saved: t.savedPercent,
-                        count: t.count,
-                      }))}
+                      data={taskBarData}
                       layout="vertical"
                       margin={{ top: 0, right: 60, left: 0, bottom: 0 }}
                     >
@@ -371,8 +407,8 @@ export default function EfficiencyPanel() {
                   <SuggestionCard
                     key={s.suggestion_id}
                     suggestion={s}
-                    onAccept={() => handleAccept(s.suggestion_id)}
-                    onDismiss={() => handleDismiss(s.suggestion_id)}
+                    onAccept={handleAccept}
+                    onDismiss={handleDismiss}
                   />
                 ))}
               </div>
@@ -422,8 +458,8 @@ export default function EfficiencyPanel() {
 
 function SuggestionCard({ suggestion, onAccept, onDismiss }: {
   suggestion: OptSuggestion
-  onAccept: () => void
-  onDismiss: () => void
+  onAccept: (suggestionId: string) => void | Promise<void>
+  onDismiss: (suggestionId: string) => void | Promise<void>
 }) {
   const currentTime = suggestion.current_avg_seconds >= 3600
     ? `${(suggestion.current_avg_seconds / 3600).toFixed(1)} 小时`
@@ -458,13 +494,15 @@ function SuggestionCard({ suggestion, onAccept, onDismiss }: {
           </div>
           <div className="flex items-center gap-2 mt-3">
             <button
-              onClick={onAccept}
+              type="button"
+              onClick={() => void onAccept(suggestion.suggestion_id)}
               className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
             >
               立即启用
             </button>
             <button
-              onClick={onDismiss}
+              type="button"
+              onClick={() => void onDismiss(suggestion.suggestion_id)}
               className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:bg-secondary/50 transition-colors"
             >
               下次再说

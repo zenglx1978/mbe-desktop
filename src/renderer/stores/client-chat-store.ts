@@ -95,7 +95,10 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
         const data = await res.json()
         set({ searchResults: data.results || [] })
       }
-    } catch { set({ searchResults: [] }) }
+    } catch {
+      // Expected: 客户门户搜索 API 不可达；清空结果
+      set({ searchResults: [] })
+    }
   },
 
   clearSearch: () => set({ searchResults: [] }),
@@ -110,7 +113,9 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
         const data = await res.json()
         set({ quickReplies: data.items || [] })
       }
-    } catch { /* noop */ }
+    } catch {
+      // Expected: 快捷回复列表可选；失败保持当前列表
+    }
   },
 
   createQuickReply: async (title, content, category = 'general', shortcut = '') => {
@@ -124,7 +129,9 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
         get().fetchQuickReplies()
         return true
       }
-    } catch { /* noop */ }
+    } catch {
+      // Expected: 创建快捷回复失败；返回 false
+    }
     return false
   },
 
@@ -138,7 +145,9 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
         set({ quickReplies: get().quickReplies.filter(r => r.reply_id !== replyId) })
         return true
       }
-    } catch { /* noop */ }
+    } catch {
+      // Expected: 删除快捷回复失败；返回 false
+    }
     return false
   },
 
@@ -152,7 +161,9 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
         const data = await res.json()
         return data.content || null
       }
-    } catch { /* noop */ }
+    } catch {
+      // Expected: 快捷回复使用记录/内容拉取失败；返回 null
+    }
     return null
   },
 
@@ -162,7 +173,9 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
       if (res.ok) {
         set({ channelAnalytics: await res.json() })
       }
-    } catch { /* noop */ }
+    } catch {
+      // Expected: 频道分析 API 不可达；保持当前 analytics
+    }
   },
 
   fetchGlobalDashboard: async (days = 30) => {
@@ -171,7 +184,9 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
       if (res.ok) {
         set({ globalDashboard: await res.json() })
       }
-    } catch { /* noop */ }
+    } catch {
+      // Expected: 全局看板 API 不可达；保持当前 dashboard
+    }
   },
 
   fetchMessages: async (channelId) => {
@@ -186,7 +201,7 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
         set({ messages: data.messages || [], error: null })
       }
     } catch {
-      /* silent */
+      // Expected: 消息列表拉取失败（网络/鉴权）；不覆盖已有消息
     }
   },
 
@@ -240,6 +255,7 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
       }
       return null
     } catch {
+      // Expected: 摘要生成请求失败；返回 null
       return null
     } finally {
       set({ loading: false })
@@ -255,7 +271,9 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
         const data = await res.json()
         set({ digests: data })
       }
-    } catch { /* noop */ }
+    } catch {
+      // Expected: 摘要列表拉取失败；保持当前 digests
+    }
   },
 
   publishDigest: async (digestId) => {
@@ -271,6 +289,7 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
       }
       return false
     } catch {
+      // Expected: 发布摘要失败；返回 false
       return false
     }
   },
@@ -292,6 +311,7 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
       }
       return null
     } catch {
+      // Expected: AI 调用失败；返回 null
       return null
     } finally {
       set({ loading: false })
@@ -315,6 +335,7 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
       }
       return false
     } catch {
+      // Expected: AI 审核提交失败；返回 false
       return false
     }
   },
@@ -325,7 +346,9 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
     try {
       const res = await fetch(`${API}/channels/${ch}/tasks`, { headers: authHeaders() })
       if (res.ok) set({ tasks: await res.json() })
-    } catch { /* noop */ }
+    } catch {
+      // Expected: 快捷回复列表可选；失败保持当前列表
+    }
   },
 
   createTask: async (channelId, title, opts = {}) => {
@@ -342,6 +365,7 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
       }
       return null
     } catch {
+      // Expected: 创建任务失败；返回 null
       return null
     }
   },
@@ -359,6 +383,7 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
       }
       return false
     } catch {
+      // Expected: 更新任务失败；返回 false
       return false
     }
   },
@@ -377,6 +402,7 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
       }
       return 0
     } catch {
+      // Expected: 从摘要批量建任务失败；返回 0
       return 0
     }
   },

@@ -202,7 +202,7 @@ export async function fetchSolutionStatuses(): Promise<Map<string, SolutionConfi
       _statusFetchedAt = Date.now()
     }
   } catch {
-    // 离线或后端不可达时保持本地硬编码状态
+    // Expected: 离线或方案状态 API 不可达；保留本地注册表状态
   }
   return _remoteStatuses
 }

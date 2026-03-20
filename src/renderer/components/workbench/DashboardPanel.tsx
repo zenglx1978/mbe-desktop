@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useVisibilityPolling } from '@/hooks/useVisibilityPolling'
+import { isAbortError } from '@/lib/chat-service'
 import { useToolStore } from '@/stores/tool-store'
 import { useAuthStore } from '@/stores/auth-store'
 import type { SolutionConfig } from '@/lib/solution-router'
@@ -89,15 +91,23 @@ export default function DashboardPanel({ solution }: Props) {
   const [startingTemplate, setStartingTemplate] = useState<string | null>(null)
 
   const [wsConnected, setWsConnected] = useState(false)
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const dashboardFetchRef = useRef<AbortController | null>(null)
 
   const agentName = solution.agents[0]?.id?.split('.')[0] || solution.id
 
   const loadDashboard = useCallback(async () => {
-    const data = await fetchDashboard(agentName, userId)
-    if (data) {
-      setDashboard(data)
-      setLoading(false)
+    dashboardFetchRef.current?.abort()
+    const ac = new AbortController()
+    dashboardFetchRef.current = ac
+    try {
+      const data = await fetchDashboard(agentName, userId, ac.signal)
+      if (ac.signal.aborted) return
+      if (data) {
+        setDashboard(data)
+        setLoading(false)
+      }
+    } catch (e) {
+      if (isAbortError(e)) return
     }
   }, [agentName, userId])
 
@@ -144,32 +154,33 @@ export default function DashboardPanel({ solution }: Props) {
     })
   }, [loadDashboard, agentName, userId])
 
-  useEffect(() => {
-    const needPoll = !wsConnected && dashboard && dashboard.summary.active > 0
-    if (needPoll) {
-      pollRef.current = setInterval(loadDashboard, POLL_INTERVAL)
-    }
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current)
-    }
-  }, [wsConnected, dashboard?.summary.active, loadDashboard])
+  useEffect(() => () => {
+    dashboardFetchRef.current?.abort()
+  }, [])
+
+  const needPoll = !wsConnected && !!dashboard && dashboard.summary.active > 0
+  useVisibilityPolling(loadDashboard, POLL_INTERVAL, needPoll)
 
   useEffect(() => {
     if (!selectedInstanceId) {
       setInstanceDetail(null)
       return
     }
-    let cancelled = false
+    const ac = new AbortController()
     async function load() {
       setDetailLoading(true)
-      const detail = await fetchInstance(agentName, selectedInstanceId!)
-      if (!cancelled) {
+      try {
+        const detail = await fetchInstance(agentName, selectedInstanceId!, ac.signal)
+        if (ac.signal.aborted) return
         setInstanceDetail(detail)
-        setDetailLoading(false)
+      } catch (e) {
+        if (!isAbortError(e)) setInstanceDetail(null)
+      } finally {
+        if (!ac.signal.aborted) setDetailLoading(false)
       }
     }
     load()
-    return () => { cancelled = true }
+    return () => ac.abort()
   }, [agentName, selectedInstanceId])
 
   const toggleInstance = (id: string) => {

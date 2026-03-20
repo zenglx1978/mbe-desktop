@@ -89,7 +89,9 @@ export const useClientSessionStore = create<ClientSessionState>((set, get) => ({
         const data = await res.json()
         set({ invites: data })
       }
-    } catch {
+    } catch (e) {
+      // Expected: 邀请列表 API 不可达；在聊天区提示错误
+      console.warn('[client-session-store] fetchInvites:', e)
       const { useClientChatMessagesStore } = await import('./client-chat-store')
       useClientChatMessagesStore.setState({ error: '获取对话列表失败' })
     }
@@ -118,7 +120,9 @@ export const useClientSessionStore = create<ClientSessionState>((set, get) => ({
         }
         set({ unreadCounts: newCounts, lastPreviews: data.previews || {} })
       }
-    } catch { /* noop */ }
+    } catch {
+      // Expected: 未读轮询失败（离线/鉴权）；下次轮询重试
+    }
   },
 
   createInvite: async (clientName, solutionId = 'general', agentId = 'cs') => {
@@ -152,6 +156,7 @@ export const useClientSessionStore = create<ClientSessionState>((set, get) => ({
       set(s => ({ invites: [invite, ...s.invites] }))
       return invite
     } catch {
+      // Expected: 创建邀请失败；返回 null
       return null
     }
   },
@@ -168,7 +173,7 @@ export const useClientSessionStore = create<ClientSessionState>((set, get) => ({
         set({ members: data })
       }
     } catch {
-      /* silent */
+      // Expected: 成员列表拉取失败；不覆盖已有 members
     }
   },
 
@@ -185,6 +190,7 @@ export const useClientSessionStore = create<ClientSessionState>((set, get) => ({
       }
       return false
     } catch {
+      // Expected: 添加成员失败；返回 false
       return false
     }
   },
@@ -201,6 +207,7 @@ export const useClientSessionStore = create<ClientSessionState>((set, get) => ({
       }
       return false
     } catch {
+      // Expected: 移除成员失败；返回 false
       return false
     }
   },

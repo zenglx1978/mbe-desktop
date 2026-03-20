@@ -55,6 +55,7 @@ async function fetchAuditLog(
     if (!resp.ok) return null
     return await resp.json()
   } catch {
+    // Expected: 审计日志接口超时/不可达；按无数据聚合
     return null
   }
 }
@@ -69,6 +70,7 @@ async function fetchAuditStats(
     if (!resp.ok) return null
     return await resp.json()
   } catch {
+    // Expected: 审计统计接口超时/不可达；按无数据聚合
     return null
   }
 }
@@ -150,6 +152,7 @@ export async function exportAuditCSV(
         const data = (await resp.json()) as AuditExportJsonResponse
         return data.csv || ''
       } catch {
+        // Expected: 单 Agent 导出失败；其他 Agent 结果仍合并
         return ''
       }
     })

@@ -127,11 +127,13 @@ async function runLocal(tool: ToolConfig, values: Record<string, unknown>): Prom
         }
         return { success: true, data, source: 'local', durationMs: duration }
       } catch {
+        // Expected: 本地脚本 stdout 非 JSON；按原始字符串包装
         return { success: true, data: { result: res.result }, source: 'local', durationMs: duration }
       }
     }
     return null
   } catch {
+    // Expected: runLocalCalc IPC 抛错；无本地结果
     return null
   }
 }
@@ -191,7 +193,7 @@ async function saveHistory(
       source: result.source,
     })
   } catch {
-    // SQLite 写入失败不影响主流程
+    // Expected: SQLite 历史写入失败；不影响计算主流程
   }
 }
 

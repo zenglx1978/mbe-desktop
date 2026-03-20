@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { DollarSign, TrendingUp, Activity, RefreshCw, BarChart3, Layers, Zap } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
@@ -39,7 +39,9 @@ export default function CostPanel({ solution }: Props) {
     try {
       const result = await loadCostData(solution, period, dimension, 7)
       setData(result)
-    } catch {
+    } catch (e) {
+      // Expected: 成本聚合 API 或 IPC 失败；清空图表
+      console.warn('[CostPanel] loadCostData:', e)
       setData(null)
     }
     setLoading(false)
@@ -48,6 +50,44 @@ export default function CostPanel({ solution }: Props) {
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  const periodClickHandlers = useMemo(
+    () =>
+      Object.fromEntries(
+        PERIOD_OPTIONS.map((opt) => [opt.value, () => setPeriod(opt.value)]),
+      ) as Record<CostPeriod, () => void>,
+    [],
+  )
+
+  const dimensionClickHandlers = useMemo(
+    () =>
+      Object.fromEntries(
+        DIMENSION_OPTIONS.map((opt) => [opt.value, () => setDimension(opt.value)]),
+      ) as Record<CostDimension, () => void>,
+    [],
+  )
+
+  const breakdownChartData = useMemo(
+    () =>
+      data?.mergedBreakdown.map((item) => ({
+        name: item.dimension || '未分类',
+        cost: item.cost_yuan,
+        calls: item.call_count,
+        tokens: item.total_tokens,
+        pct: item.percentage,
+      })) ?? [],
+    [data],
+  )
+
+  const trendChartData = useMemo(
+    () => data?.trend.map((p) => ({ date: p.date.slice(5), cost: p.cost_yuan })) ?? [],
+    [data],
+  )
+
+  const dimensionSectionLabel = useMemo(
+    () => DIMENSION_OPTIONS.find((d) => d.value === dimension)?.label ?? '',
+    [dimension],
+  )
 
   const formatCost = (yuan: number) => {
     if (yuan >= 10000) return `¥${(yuan / 10000).toFixed(2)}万`
@@ -70,6 +110,7 @@ export default function CostPanel({ solution }: Props) {
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">费用追踪</h2>
           <button
+            type="button"
             onClick={fetchData}
             disabled={loading}
             className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs bg-secondary/30 hover:bg-secondary/50 transition-colors disabled:opacity-40"
@@ -85,7 +126,8 @@ export default function CostPanel({ solution }: Props) {
             {PERIOD_OPTIONS.map(opt => (
               <button
                 key={opt.value}
-                onClick={() => setPeriod(opt.value)}
+                type="button"
+                onClick={periodClickHandlers[opt.value]}
                 className={`px-2.5 py-1 rounded-md text-xs transition-colors ${
                   period === opt.value ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'
                 }`}
@@ -100,7 +142,8 @@ export default function CostPanel({ solution }: Props) {
               return (
                 <button
                   key={opt.value}
-                  onClick={() => setDimension(opt.value)}
+                  type="button"
+                  onClick={dimensionClickHandlers[opt.value]}
                   className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs transition-colors ${
                     dimension === opt.value ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'
                   }`}
@@ -139,18 +182,12 @@ export default function CostPanel({ solution }: Props) {
         {!isEmpty && data!.mergedBreakdown.length > 0 ? (
           <div className="space-y-2">
             <h3 className="text-sm font-medium text-muted-foreground">
-              费用明细（{DIMENSION_OPTIONS.find(d => d.value === dimension)?.label}）
+              费用明细（{dimensionSectionLabel}）
             </h3>
             <div className="rounded-xl border border-border/40 bg-card/50 p-4">
               <ResponsiveContainer width="100%" height={Math.max(120, data!.mergedBreakdown.length * 44)}>
                 <BarChart
-                  data={data!.mergedBreakdown.map(item => ({
-                    name: item.dimension || '未分类',
-                    cost: item.cost_yuan,
-                    calls: item.call_count,
-                    tokens: item.total_tokens,
-                    pct: item.percentage,
-                  }))}
+                  data={breakdownChartData}
                   layout="vertical"
                   margin={{ top: 0, right: 60, left: 0, bottom: 0 }}
                 >
@@ -196,7 +233,7 @@ export default function CostPanel({ solution }: Props) {
             <div className="rounded-xl border border-border/40 bg-card/50 p-4">
               <ResponsiveContainer width="100%" height={100}>
                 <BarChart
-                  data={data.trend.map(p => ({ date: p.date.slice(5), cost: p.cost_yuan }))}
+                  data={trendChartData}
                   margin={{ top: 4, right: 4, left: 4, bottom: 0 }}
                 >
                   <XAxis dataKey="date" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />

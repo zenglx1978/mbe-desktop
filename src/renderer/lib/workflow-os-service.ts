@@ -110,17 +110,27 @@ function apiUrl(agentName: string, path: string): string {
   return `${BASE_URL}/api/${agentName}/workflow-os${path}`
 }
 
+function isAbortError(e: unknown): boolean {
+  if (e instanceof DOMException && e.name === 'AbortError') return true
+  if (e instanceof Error && e.name === 'AbortError') return true
+  return false
+}
+
 export async function fetchDashboard(
   agentName: string,
   userId: string,
+  signal?: AbortSignal,
 ): Promise<DashboardData | null> {
   try {
     const res = await fetch(
       apiUrl(agentName, `/dashboard?user_id=${encodeURIComponent(userId)}`),
+      { signal },
     )
     if (!res.ok) return null
     return await res.json()
-  } catch {
+  } catch (e) {
+    if (isAbortError(e)) throw e
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按无数据处理
     return null
   }
 }
@@ -139,6 +149,7 @@ export async function fetchInstances(
     const data = await res.json()
     return data.instances || []
   } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按空列表处理
     return []
   }
 }
@@ -158,6 +169,7 @@ export async function fetchDeliverables(
     const data = await res.json()
     return data.deliverables || []
   } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按空列表处理
     return []
   }
 }
@@ -183,6 +195,7 @@ export async function createInstance(
     if (!res.ok) return null
     return await res.json()
   } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按无数据处理
     return null
   }
 }
@@ -222,6 +235,7 @@ export async function startFromChat(
     }
     return instance
   } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按无数据处理
     return null
   }
 }
@@ -230,12 +244,15 @@ export async function startFromChat(
 export async function fetchInstance(
   agentName: string,
   instanceId: string,
+  signal?: AbortSignal,
 ): Promise<WorkflowInstanceDetail | null> {
   try {
-    const res = await fetch(apiUrl(agentName, `/instances/${instanceId}`))
+    const res = await fetch(apiUrl(agentName, `/instances/${instanceId}`), { signal })
     if (!res.ok) return null
     return await res.json()
-  } catch {
+  } catch (e) {
+    if (isAbortError(e)) throw e
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按无数据处理
     return null
   }
 }
@@ -300,6 +317,7 @@ export async function fetchTemplates(
     const data = await res.json()
     return data.templates || []
   } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按空列表处理
     return []
   }
 }
@@ -315,6 +333,7 @@ export async function fetchCrossAgentWorkflows(
     const data = await res.json()
     return data.workflows || []
   } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按空列表处理
     return []
   }
 }
@@ -338,6 +357,7 @@ export async function executeCrossAgentWorkflow(
     if (!res.ok) return null
     return (await res.json()) as CrossAgentWorkflowExecuteResponse
   } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按无数据处理
     return null
   }
 }
@@ -359,6 +379,7 @@ export async function fetchROI(agentName: string, userId: string = ''): Promise<
     if (!res.ok) return null
     return await res.json()
   } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按无数据处理
     return null
   }
 }
@@ -388,6 +409,7 @@ export async function fetchPendingApprovals(
     const data = await res.json()
     return data.pending || []
   } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按空列表处理
     return []
   }
 }
@@ -411,6 +433,7 @@ export async function approveStep(
     )
     return res.ok
   } catch {
+    // Expected: 请求失败或响应异常；按未执行处理
     return false
   }
 }
@@ -424,6 +447,7 @@ export async function fetchSchedules(
     const data = await res.json()
     return data.schedules || []
   } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按空列表处理
     return []
   }
 }
@@ -447,6 +471,7 @@ export async function fetchBillingUsage(agentName: string, orgId: string): Promi
     if (!res.ok) return null
     return await res.json()
   } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按无数据处理
     return null
   }
 }
@@ -475,7 +500,10 @@ export async function createCanvas(agentName: string, name: string): Promise<Des
     })
     if (!res.ok) return null
     return await res.json()
-  } catch { return null }
+  } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按无数据处理
+    return null
+  }
 }
 
 export async function fetchCanvas(agentName: string, canvasId: string): Promise<DesignerCanvasDef | null> {
@@ -483,7 +511,10 @@ export async function fetchCanvas(agentName: string, canvasId: string): Promise<
     const res = await fetch(apiUrl(agentName, `/designer/canvas/${canvasId}`))
     if (!res.ok) return null
     return await res.json()
-  } catch { return null }
+  } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按无数据处理
+    return null
+  }
 }
 
 export async function listCanvases(agentName: string): Promise<Array<{ canvas_id: string; name: string; nodes: number }>> {
@@ -491,7 +522,10 @@ export async function listCanvases(agentName: string): Promise<Array<{ canvas_id
     const res = await fetch(apiUrl(agentName, '/designer/canvases'))
     if (!res.ok) return []
     return await res.json()
-  } catch { return [] }
+  } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按空列表处理
+    return []
+  }
 }
 
 export async function validateCanvas(agentName: string, canvasId: string): Promise<{ valid: boolean; errors: string[]; warnings: string[] } | null> {
@@ -499,7 +533,10 @@ export async function validateCanvas(agentName: string, canvasId: string): Promi
     const res = await fetch(apiUrl(agentName, `/designer/canvas/${canvasId}/validate`))
     if (!res.ok) return null
     return await res.json()
-  } catch { return null }
+  } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按无数据处理
+    return null
+  }
 }
 
 export async function exportCanvas(agentName: string, canvasId: string): Promise<Record<string, unknown> | null> {
@@ -507,7 +544,10 @@ export async function exportCanvas(agentName: string, canvasId: string): Promise
     const res = await fetch(apiUrl(agentName, `/designer/canvas/${canvasId}/export`), { method: 'POST' })
     if (!res.ok) return null
     return await res.json()
-  } catch { return null }
+  } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按无数据处理
+    return null
+  }
 }
 
 // ── Analytics ──────────────────────────
@@ -545,7 +585,10 @@ export async function fetchAnalyticsOverview(agentName: string, days = 30): Prom
     const res = await fetch(apiUrl(agentName, `/analytics/overview?days=${days}`))
     if (!res.ok) return null
     return await res.json()
-  } catch { return null }
+  } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按无数据处理
+    return null
+  }
 }
 
 export async function fetchRecommendations(agentName: string, limit = 5): Promise<AnalyticsRecommendation[]> {
@@ -554,7 +597,10 @@ export async function fetchRecommendations(agentName: string, limit = 5): Promis
     if (!res.ok) return []
     const data = await res.json()
     return data.recommendations || []
-  } catch { return [] }
+  } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按空列表处理
+    return []
+  }
 }
 
 export async function fetchROIPrediction(agentName: string): Promise<ROIPredictionData | null> {
@@ -562,7 +608,10 @@ export async function fetchROIPrediction(agentName: string): Promise<ROIPredicti
     const res = await fetch(apiUrl(agentName, '/analytics/roi-prediction'))
     if (!res.ok) return null
     return await res.json()
-  } catch { return null }
+  } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按无数据处理
+    return null
+  }
 }
 
 // ── Marketplace ────────────────────────
@@ -601,6 +650,7 @@ export async function searchMarketplace(
     if (!res.ok) return null
     return await res.json()
   } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按无数据处理
     return null
   }
 }
@@ -615,6 +665,7 @@ export async function installFromMarketplace(
     )
     return res.ok
   } catch {
+    // Expected: 请求失败或响应异常；按未执行处理
     return false
   }
 }
@@ -639,6 +690,7 @@ export async function fetchSLADashboard(agentName: string): Promise<SLADashboard
     if (!res.ok) return null
     return await res.json()
   } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按无数据处理
     return null
   }
 }
@@ -661,24 +713,34 @@ export interface NotificationDef {
 }
 
 export async function fetchNotifications(
-  agentName: string, userId: string, limit = 20,
+  agentName: string, userId: string, limit = 20, signal?: AbortSignal,
 ): Promise<{ notifications: NotificationDef[]; unread: number }> {
   try {
-    const res = await fetch(apiUrl(agentName, `/notifications?user_id=${userId}&limit=${limit}`))
+    const res = await fetch(apiUrl(agentName, `/notifications?user_id=${userId}&limit=${limit}`), {
+      signal,
+    })
     if (!res.ok) return { notifications: [], unread: 0 }
     return await res.json()
-  } catch {
+  } catch (e) {
+    if (isAbortError(e)) throw e
+    // Expected: 通知接口不可达；按空列表与 0 未读处理
     return { notifications: [], unread: 0 }
   }
 }
 
-export async function fetchUnreadCount(agentName: string, userId: string): Promise<number> {
+export async function fetchUnreadCount(
+  agentName: string, userId: string, signal?: AbortSignal,
+): Promise<number> {
   try {
-    const res = await fetch(apiUrl(agentName, `/notifications/unread-count?user_id=${userId}`))
+    const res = await fetch(apiUrl(agentName, `/notifications/unread-count?user_id=${userId}`), {
+      signal,
+    })
     if (!res.ok) return 0
     const data = await res.json()
     return data.count || 0
-  } catch {
+  } catch (e) {
+    if (isAbortError(e)) throw e
+    // Expected: 未读计数接口不可达；按 0 处理
     return 0
   }
 }
@@ -688,6 +750,7 @@ export async function markNotificationRead(agentName: string, notificationId: st
     const res = await fetch(apiUrl(agentName, `/notifications/${notificationId}/read`), { method: 'POST' })
     return res.ok
   } catch {
+    // Expected: 请求失败或响应异常；按未执行处理
     return false
   }
 }
@@ -695,7 +758,9 @@ export async function markNotificationRead(agentName: string, notificationId: st
 export async function markAllRead(agentName: string, userId: string): Promise<void> {
   try {
     await fetch(apiUrl(agentName, `/notifications/read-all?user_id=${userId}`), { method: 'POST' })
-  } catch { /* ignore */ }
+  } catch {
+    // Expected: 全部已读为尽力而为；失败不阻断 UI
+  }
 }
 
 // ── 审计日志 ────────────────────────────────
@@ -721,6 +786,7 @@ export async function fetchAuditLogs(
     const data = await res.json()
     return data.entries || []
   } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按空列表处理
     return []
   }
 }
@@ -744,6 +810,7 @@ export async function fetchMembers(agentName: string, orgId: string): Promise<Ro
     const data = await res.json()
     return data.members || []
   } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按空列表处理
     return []
   }
 }
@@ -759,6 +826,7 @@ export async function assignRole(
     })
     return res.ok
   } catch {
+    // Expected: 请求失败或响应异常；按未执行处理
     return false
   }
 }
@@ -770,6 +838,7 @@ export async function rollbackTemplate(agentName: string, templateId: string): P
     const res = await fetch(apiUrl(agentName, `/templates/${templateId}/rollback`), { method: 'POST' })
     return res.ok
   } catch {
+    // Expected: 请求失败或响应异常；按未执行处理
     return false
   }
 }
@@ -779,6 +848,7 @@ export async function promoteCanary(agentName: string, templateId: string): Prom
     const res = await fetch(apiUrl(agentName, `/templates/${templateId}/promote`), { method: 'POST' })
     return res.ok
   } catch {
+    // Expected: 请求失败或响应异常；按未执行处理
     return false
   }
 }
@@ -814,6 +884,7 @@ export async function fetchWebhooks(agentName: string): Promise<WebhookDef[]> {
     if (!res.ok) return []
     return await res.json()
   } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按空列表处理
     return []
   }
 }
@@ -839,6 +910,7 @@ export async function registerWebhook(
     if (!res.ok) return null
     return await res.json()
   } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按无数据处理
     return null
   }
 }
@@ -848,6 +920,7 @@ export async function deleteWebhook(agentName: string, hookId: string): Promise<
     const res = await fetch(apiUrl(agentName, `/webhooks/${hookId}`), { method: 'DELETE' })
     return res.ok
   } catch {
+    // Expected: 请求失败或响应异常；按未执行处理
     return false
   }
 }
@@ -860,6 +933,7 @@ export async function fetchWebhookEvents(
     if (!res.ok) return []
     return await res.json()
   } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按空列表处理
     return []
   }
 }
@@ -884,6 +958,7 @@ export async function startFromTemplate(
     if (!res.ok) return null
     return await res.json()
   } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按无数据处理
     return null
   }
 }
@@ -942,7 +1017,10 @@ export async function fetchSchedulerStatus(agentName: string): Promise<Scheduler
     const res = await fetch(schedulerUrl(agentName, '/status'))
     if (!res.ok) return null
     return await res.json()
-  } catch { return null }
+  } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按无数据处理
+    return null
+  }
 }
 
 export async function fetchSchedulerJobs(agentName: string, includeRemoved = false): Promise<SchedulerJobDef[]> {
@@ -951,7 +1029,10 @@ export async function fetchSchedulerJobs(agentName: string, includeRemoved = fal
     if (!res.ok) return []
     const data = await res.json()
     return data.jobs || []
-  } catch { return [] }
+  } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按空列表处理
+    return []
+  }
 }
 
 export async function fetchSchedulerJob(agentName: string, jobId: string): Promise<SchedulerJobDef | null> {
@@ -959,7 +1040,10 @@ export async function fetchSchedulerJob(agentName: string, jobId: string): Promi
     const res = await fetch(schedulerUrl(agentName, `/jobs/${jobId}`))
     if (!res.ok) return null
     return await res.json()
-  } catch { return null }
+  } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按无数据处理
+    return null
+  }
 }
 
 export async function pauseSchedulerJob(agentName: string, jobId: string): Promise<SchedulerJobDef | null> {
@@ -967,7 +1051,10 @@ export async function pauseSchedulerJob(agentName: string, jobId: string): Promi
     const res = await fetch(schedulerUrl(agentName, `/jobs/${jobId}/pause`), { method: 'POST' })
     if (!res.ok) return null
     return await res.json()
-  } catch { return null }
+  } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按无数据处理
+    return null
+  }
 }
 
 export async function resumeSchedulerJob(agentName: string, jobId: string): Promise<SchedulerJobDef | null> {
@@ -975,7 +1062,10 @@ export async function resumeSchedulerJob(agentName: string, jobId: string): Prom
     const res = await fetch(schedulerUrl(agentName, `/jobs/${jobId}/resume`), { method: 'POST' })
     if (!res.ok) return null
     return await res.json()
-  } catch { return null }
+  } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按无数据处理
+    return null
+  }
 }
 
 export async function triggerSchedulerJob(agentName: string, jobId: string): Promise<SchedulerExecutionDef | null> {
@@ -983,14 +1073,20 @@ export async function triggerSchedulerJob(agentName: string, jobId: string): Pro
     const res = await fetch(schedulerUrl(agentName, `/jobs/${jobId}/trigger`), { method: 'POST' })
     if (!res.ok) return null
     return await res.json()
-  } catch { return null }
+  } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按无数据处理
+    return null
+  }
 }
 
 export async function removeSchedulerJob(agentName: string, jobId: string): Promise<boolean> {
   try {
     const res = await fetch(schedulerUrl(agentName, `/jobs/${jobId}`), { method: 'DELETE' })
     return res.ok
-  } catch { return false }
+  } catch {
+    // Expected: 请求失败或响应异常；按未执行处理
+    return false
+  }
 }
 
 export async function fetchSchedulerExecutions(
@@ -1004,7 +1100,10 @@ export async function fetchSchedulerExecutions(
     if (!res.ok) return []
     const data = await res.json()
     return data.executions || []
-  } catch { return [] }
+  } catch {
+    // Expected: Workflow OS 接口不可达或响应非 JSON；按空列表处理
+    return []
+  }
 }
 
 export async function cleanupSchedulerExecutions(
@@ -1017,5 +1116,8 @@ export async function cleanupSchedulerExecutions(
     )
     if (!res.ok) return { deleted: 0 }
     return await res.json()
-  } catch { return { deleted: 0 } }
+  } catch {
+    // Expected: 清理接口不可达；按无删除处理
+    return { deleted: 0 }
+  }
 }

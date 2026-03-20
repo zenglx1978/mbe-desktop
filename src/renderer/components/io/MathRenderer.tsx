@@ -68,6 +68,7 @@ function renderLatex(latex: string, display: boolean): string {
       trust: false,
     })
   } catch {
+    // Expected: KaTeX 无法渲染非法 LaTeX；下方回退为原始定界符
     return ''
   }
 }

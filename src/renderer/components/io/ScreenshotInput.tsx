@@ -52,7 +52,7 @@ export default function ScreenshotInput({ onImage, className = '' }: ScreenshotI
         setThumb(url)
         onImage(b64, name)
       } catch {
-        /* 读取失败 */
+        // Expected: FileReader 或对象 URL 失败；不更新缩略图
       }
     },
     [onImage, clearThumb],

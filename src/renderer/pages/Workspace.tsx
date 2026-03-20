@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '@/stores/app-store'
 import { useToolStore } from '@/stores/tool-store'
@@ -7,7 +7,7 @@ import { useAdaptiveUIStore } from '@/stores/adaptive-ui-store'
 import { useLocalFeedbackStore, startFeedbackSync } from '@/stores/local-feedback-store'
 import { useSmartCacheStore } from '@/stores/smart-cache-store'
 import { useCloudSyncStore, startCloudSync } from '@/stores/cloud-sync-store'
-import { applySolutionTheme, fetchSolutionStatuses, getEffectiveStatus } from '@/lib/solution-router'
+import { applySolutionTheme, fetchSolutionStatuses, getEffectiveStatus, type WorkbenchTab } from '@/lib/solution-router'
 import { getSolutionIcon } from '@/lib/solution-icons'
 import Sidebar from '@/components/Sidebar'
 import ChatPanel from '@/components/ChatPanel'
@@ -92,16 +92,25 @@ export default function Workspace() {
     return applySolutionTheme(solution.id)
   }, [solution?.id])
 
+  const allTabs = useMemo(() => {
+    if (!solution) return [] as WorkbenchTab[]
+    const tabs = [...solution.enabledTabs]
+    if (!tabs.includes('approvals')) tabs.push('approvals' as (typeof tabs)[number])
+    if (!tabs.includes('costs')) tabs.push('costs' as (typeof tabs)[number])
+    if (!tabs.includes('efficiency')) tabs.push('efficiency' as (typeof tabs)[number])
+    if (!tabs.includes('clients')) tabs.push('clients' as (typeof tabs)[number])
+    if (!tabs.includes('roi')) tabs.push('roi' as (typeof tabs)[number])
+    if (!tabs.includes('account')) tabs.push('account' as (typeof tabs)[number])
+    return tabs
+  }, [solution])
+
+  const SolutionIcon = useMemo(
+    () => (solution ? getSolutionIcon(solution.id) : getSolutionIcon('')),
+    [solution?.id],
+  )
+
   if (!solution) return null
 
-  const SolutionIcon = getSolutionIcon(solution.id)
-  const allTabs = [...solution.enabledTabs]
-  if (!allTabs.includes('approvals')) allTabs.push('approvals' as const)
-  if (!allTabs.includes('costs')) allTabs.push('costs' as const)
-  if (!allTabs.includes('efficiency')) allTabs.push('efficiency' as const)
-  if (!allTabs.includes('clients')) allTabs.push('clients' as const)
-  if (!allTabs.includes('roi')) allTabs.push('roi' as const)
-  if (!allTabs.includes('account')) allTabs.push('account' as const)
   const showTabs = allTabs.length > 1
 
   return (

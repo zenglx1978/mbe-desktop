@@ -14,6 +14,28 @@ import type {
   WorkflowStreamEvent,
 } from '@/types/api-responses'
 
+function isAbortError(err: unknown): boolean {
+  if (err instanceof DOMException && err.name === 'AbortError') return true
+  if (err instanceof Error && err.name === 'AbortError') return true
+  return false
+}
+
+/** 合并用户取消与超时，任一方触发即中止 */
+function withTimeoutAndUser(userSignal: AbortSignal | undefined, ms: number): AbortSignal {
+  const timeoutSig = AbortSignal.timeout(ms)
+  if (!userSignal) return timeoutSig
+  const c = new AbortController()
+  const forward = () => {
+    c.abort()
+  }
+  userSignal.addEventListener('abort', forward, { once: true })
+  timeoutSig.addEventListener('abort', forward, { once: true })
+  if (userSignal.aborted || timeoutSig.aborted) c.abort()
+  return c.signal
+}
+
+export type WorkflowRequestOptions = { signal?: AbortSignal }
+
 /** 获取当前计费归因字段（solution_role / sub_account_id） */
 function getBillingFields(): Record<string, string> {
   const b = useAppStore.getState().getBillingContext()
@@ -79,6 +101,7 @@ async function trySSE(
   params: Record<string, string>,
   stepResults: StepResult[],
   onProgress?: StepProgressCallback,
+  signal?: AbortSignal,
 ): Promise<Omit<WorkflowResult, 'totalDurationMs'> | null> {
   try {
     const url = `${API_BASE}/api/v1/solutions/${solutionId}/workflows/${workflow.id}/stream`
@@ -86,6 +109,7 @@ async function trySSE(
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify({ query, params, ...getBillingFields() }),
+      signal,
     })
 
     if (!resp.ok || !resp.body) return null
@@ -119,7 +143,7 @@ async function trySSE(
           evt.type = eventType || evt.type
           processEvent(evt, workflow.steps, stepResults, onProgress)
         } catch {
-          // 忽略解析失败的事件
+          // Expected: SSE 事件块非 JSON 或结构不兼容；跳过该块
         }
       }
     }
@@ -136,7 +160,9 @@ async function trySSE(
       steps: stepResults,
       mergedAnswer: mergedAnswer || undefined,
     }
-  } catch {
+  } catch (e) {
+    if (isAbortError(e)) throw e
+    // Expected: 工作流流式执行失败；返回 null
     return null
   }
 }
@@ -149,6 +175,7 @@ async function executeStandard(
   stepResults: StepResult[],
   startTime: number,
   onProgress?: StepProgressCallback,
+  signal?: AbortSignal,
 ): Promise<WorkflowResult> {
   try {
     // 按步骤依次执行（sequential 模式）
@@ -167,7 +194,7 @@ async function executeStandard(
           : query
 
         const data = await callStepWithFallback(
-          solutionId, step, enrichedQuery, params,
+          solutionId, step, enrichedQuery, params, signal,
         )
         sr.status = 'done'
         sr.answer =
@@ -176,6 +203,7 @@ async function executeStandard(
         sr.durationMs = Date.now() - stepStart
         onProgress?.(step.id, 'done', sr.answer)
       } catch (err: unknown) {
+        if (isAbortError(err)) throw err
         sr.status = 'error'
         sr.error = err instanceof Error ? err.message : '请求失败'
         sr.durationMs = Date.now() - stepStart
@@ -197,6 +225,7 @@ async function executeStandard(
       totalDurationMs: Date.now() - startTime,
     }
   } catch (err: unknown) {
+    if (isAbortError(err)) throw err
     return {
       success: false,
       workflowId: workflow.id,
@@ -215,23 +244,25 @@ export async function executeScenario(
   solutionId: string,
   scenario: ScenarioConfig,
   userInput?: string,
+  opts?: WorkflowRequestOptions,
 ): Promise<{ success: boolean; answer?: string; error?: string; durationMs: number }> {
   const start = Date.now()
+  const reqSignal = withTimeoutAndUser(opts?.signal, 60_000)
   try {
     // 专用 API 端点直调（绕过通用 /consult，如 WorldMonitor 宏观数据管线）
     if (scenario.apiEndpoint) {
       try {
         const method = scenario.apiMethod || 'GET'
         const url = `${API_BASE}${scenario.apiEndpoint}`
-        const opts: RequestInit = {
+        const reqInit: RequestInit = {
           method,
           headers: authHeaders(),
-          signal: AbortSignal.timeout(60000),
+          signal: reqSignal,
         }
         if (method === 'POST') {
-          opts.body = JSON.stringify({ query: userInput || scenario.prompt, ...getBillingFields() })
+          reqInit.body = JSON.stringify({ query: userInput || scenario.prompt, ...getBillingFields() })
         }
-        const directResp = await fetch(url, opts)
+        const directResp = await fetch(url, reqInit)
         if (directResp.ok) {
           const data = await directResp.json()
           const answer = extractAnswer(data)
@@ -239,7 +270,10 @@ export async function executeScenario(
             return { success: true, answer, durationMs: Date.now() - start }
           }
         }
-      } catch { /* 专用端点失败，走通用路径 */ }
+      } catch (e) {
+        if (isAbortError(e)) throw e
+        // Expected: 场景专用直连端点失败；回退到通用 ask 路径
+      }
     }
 
     const query = userInput
@@ -254,7 +288,7 @@ export async function executeScenario(
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(60000),
+      signal: reqSignal,
     })
 
     if (resp.ok) {
@@ -275,7 +309,7 @@ export async function executeScenario(
         method: 'POST',
         headers: authHeaders(),
         body: JSON.stringify({ request: query, query, question: query, ...getBillingFields() }),
-        signal: AbortSignal.timeout(60000),
+        signal: reqSignal,
       })
       if (directResp.ok) {
         const data = (await directResp.json()) as ConsultResponse
@@ -289,6 +323,9 @@ export async function executeScenario(
 
     return { success: false, error: `API ${resp.status}`, durationMs: Date.now() - start }
   } catch (err: unknown) {
+    if (isAbortError(err)) {
+      return { success: false, durationMs: Date.now() - start }
+    }
     return {
       success: false,
       error: err instanceof Error ? err.message : '请求失败',
@@ -340,6 +377,7 @@ async function callStepWithFallback(
   step: WorkflowStep,
   query: string,
   params: Record<string, string>,
+  signal?: AbortSignal,
 ): Promise<ConsultResponse> {
   // 1. 先尝试 Solution Runtime API
   try {
@@ -353,7 +391,7 @@ async function callStepWithFallback(
         params,
         ...getBillingFields(),
       }),
-      signal: AbortSignal.timeout(60000),
+      signal: signal ?? AbortSignal.timeout(60_000),
     })
 
     if (resp.ok) {
@@ -386,10 +424,13 @@ async function callAgentDirect(step: WorkflowStep, query: string): Promise<Consu
         method: 'POST',
         headers: authHeaders(),
         body: JSON.stringify({ request: query, query, question: query, ...getBillingFields() }),
-        signal: AbortSignal.timeout(60000),
+        signal: signal ?? AbortSignal.timeout(60_000),
       })
       if (resp.ok) return (await resp.json()) as ConsultResponse
-    } catch { /* try next */ }
+    } catch (e) {
+      if (isAbortError(e)) throw e
+      // Expected: 该 Agent URL 请求失败；试下一候选端点
+    }
   }
   throw new Error('所有端点均不可用')
 }

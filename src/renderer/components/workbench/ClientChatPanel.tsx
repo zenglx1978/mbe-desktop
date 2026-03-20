@@ -10,6 +10,7 @@
  *  └─────────┴──────────────────────┴──────────┘
  */
 import { useState, useEffect, useCallback } from 'react'
+import { useVisibilityPolling } from '@/hooks/useVisibilityPolling'
 import {
   useClientChatStore,
   type ClientInvite, type AIDraft,
@@ -30,7 +31,7 @@ export default function ClientChatPanel() {
   const {
     invites, activeChannel, members, digests, tasks,
     channelAnalytics, globalDashboard,
-    fetchInvites, fetchUnread,
+    fetchInvites,
     generateDigest, fetchDigests, publishDigest,
     fetchTasks, createTask, updateTask,
     fetchChannelAnalytics,
@@ -44,16 +45,19 @@ export default function ClientChatPanel() {
 
   useEffect(() => {
     fetchInvites()
-    fetchUnread()
+    useClientChatStore.getState().fetchUnread()
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission()
     }
   }, [])
 
-  useEffect(() => {
-    const timer = setInterval(() => fetchUnread(), 5000)
-    return () => clearInterval(timer)
-  }, [])
+  useVisibilityPolling(
+    useCallback(() => {
+      useClientChatStore.getState().fetchUnread()
+    }, []),
+    5000,
+    true,
+  )
 
   const handleCopyLink = useCallback(async (inv: ClientInvite) => {
     await navigator.clipboard.writeText(inv.link)

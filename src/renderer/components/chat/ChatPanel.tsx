@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useAppStore } from '@/stores/app-store'
 import { useChatStore } from '@/stores/chat-store'
 import { useAdaptiveUIStore } from '@/stores/adaptive-ui-store'
@@ -10,6 +10,11 @@ export default function ChatPanel() {
   const [input, setInput] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const sendAbortRef = useRef<AbortController | null>(null)
+
+  useEffect(() => () => {
+    sendAbortRef.current?.abort()
+  }, [])
   const { currentSolution, solutionId } = useAppStore()
   const { messages, isLoading } = useChatStore()
   const { trackTabSwitch } = useAdaptiveUIStore()
@@ -22,7 +27,9 @@ export default function ChatPanel() {
     if (!toSend || isLoading) return
     setInput('')
     if (solutionId) trackTabSwitch(solutionId, 'chat_send')
-    await sendMessage(toSend, solution)
+    sendAbortRef.current?.abort()
+    sendAbortRef.current = new AbortController()
+    await sendMessage(toSend, solution, undefined, { signal: sendAbortRef.current.signal })
     textareaRef.current?.focus()
   }
 

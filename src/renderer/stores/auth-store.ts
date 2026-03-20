@@ -40,6 +40,32 @@ interface AuthState {
 const TOKEN_KEY = 'auth_token'
 const USER_KEY = 'auth_user'
 
+/** POST 用户认证 JSON 接口，统一解析 body（失败时仍返回已解析的 detail 等字段） */
+type UserAuthPostResult =
+  | { ok: true; data: Record<string, unknown> }
+  | { ok: false; status: number; headers: Headers; data: Record<string, unknown> }
+
+async function postUserAuthJson(
+  path: string,
+  body: Record<string, unknown>,
+): Promise<UserAuthPostResult> {
+  const resp = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  const data = (await resp.json().catch(() => ({}))) as Record<string, unknown>
+  if (!resp.ok) {
+    return { ok: false, status: resp.status, headers: resp.headers, data }
+  }
+  return { ok: true, data }
+}
+
+function persistSessionFromToken(get: () => AuthState, accessToken: string, user: UserInfo): void {
+  get().setToken(accessToken)
+  get().setUser(user)
+}
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   token: null,
   user: null,
@@ -62,6 +88,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY)
       }
     } catch {
+      // Expected: Electron session API 不可用或抛错；降级到 localStorage
       t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY)
     }
   },
@@ -76,6 +103,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         u ? localStorage.setItem(USER_KEY, JSON.stringify(u)) : localStorage.removeItem(USER_KEY)
       }
     } catch {
+      // Expected: Electron session API 不可用或抛错；降级到 localStorage
       u ? localStorage.setItem(USER_KEY, JSON.stringify(u)) : localStorage.removeItem(USER_KEY)
     }
   },
@@ -104,46 +132,38 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         if (token) {
           let user: UserInfo | null = null
           if (userStr) {
-            try { user = JSON.parse(userStr) } catch { /* ignore */ }
+            try { user = JSON.parse(userStr) } catch { /* Expected: auth_user 非合法 JSON，忽略 */ }
           }
           set({ token, user })
         }
       }
     } catch {
-      // 静默忽略
+      // Expected: 浏览器环境无 session 或读存储失败；不阻断启动
     }
   },
 
   login: async (email: string, password: string) => {
     set({ loading: true, error: null, emailUnverified: false })
     try {
-      const resp = await fetch(`${API_BASE}/api/v1/users/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      })
-
-      if (!resp.ok) {
-        const data = await resp.json().catch(() => ({}))
-        const unverified = resp.status === 403 && resp.headers.get('X-Email-Unverified') === 'true'
+      const result = await postUserAuthJson('/api/v1/users/login', { email, password })
+      if (!result.ok) {
+        const unverified =
+          result.status === 403 && result.headers.get('X-Email-Unverified') === 'true'
         set({
           loading: false,
-          error: data.detail || `登录失败 (${resp.status})`,
+          error: (result.data.detail as string) || `登录失败 (${result.status})`,
           emailUnverified: unverified,
         })
         return false
       }
-
-      const data = await resp.json()
+      const data = result.data
       const user: UserInfo = {
-        name: data.username || email.split('@')[0],
+        name: (data.username as string) || email.split('@')[0],
         email,
-        role: data.role,
-        userId: data.user_id,
+        role: data.role as string | undefined,
+        userId: data.user_id as string | undefined,
       }
-
-      get().setToken(data.access_token)
-      get().setUser(user)
+      persistSessionFromToken(get, data.access_token as string, user)
       set({ loading: false, error: null })
       return true
     } catch (err: any) {
@@ -164,33 +184,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const ref = get().referralCode
       if (ref) payload.referral_code = ref
 
-      const resp = await fetch(`${API_BASE}/api/v1/users/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-
-      if (!resp.ok) {
-        const data = await resp.json().catch(() => ({}))
-        set({ loading: false, error: data.detail || `注册失败 (${resp.status})` })
+      const result = await postUserAuthJson('/api/v1/users/register', payload)
+      if (!result.ok) {
+        set({
+          loading: false,
+          error: (result.data.detail as string) || `注册失败 (${result.status})`,
+        })
         return { ok: false }
       }
-
-      const data = await resp.json()
-
+      const data = result.data
       if (data.access_token) {
         const user: UserInfo = {
           name: username || email.split('@')[0],
           email,
-          role: data.role || 'user',
-          userId: data.user_id,
+          role: (data.role as string) || 'user',
+          userId: data.user_id as string | undefined,
         }
-        get().setToken(data.access_token)
-        get().setUser(user)
+        persistSessionFromToken(get, data.access_token as string, user)
         set({ loading: false })
         return { ok: true }
       }
-
       set({ loading: false })
       return { ok: true, needVerify: true }
     } catch (err: any) {

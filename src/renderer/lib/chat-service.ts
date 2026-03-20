@@ -30,6 +30,18 @@ import type { ConsultResponse, WindowWithElectron } from '@/types/api-responses'
 /** WebSocket 连接池 */
 const wsPool = new Map<string, WebSocket>()
 
+/** 是否为 fetch / 流式取消（不向用户展示错误） */
+export function isAbortError(err: unknown): boolean {
+  if (err instanceof DOMException && err.name === 'AbortError') return true
+  if (err instanceof Error && err.name === 'AbortError') return true
+  return false
+}
+
+export type SendMessageOptions = {
+  /** 取消本次请求（新消息发送或组件卸载时 abort） */
+  signal?: AbortSignal
+}
+
 /**
  * 发送消息 — 自动路由到最合适的专家
  *
@@ -40,7 +52,11 @@ export async function sendMessage(
   text: string,
   solution: SolutionConfig,
   fallbackAgent?: AgentEndpoint,
+  options?: SendMessageOptions,
 ) {
+  const signal = options?.signal
+  if (signal?.aborted) return
+
   const chatStore = useChatStore.getState()
   const convStore = useConversationStore.getState()
   const connectivity = useConnectivityStore.getState()
@@ -127,21 +143,46 @@ export async function sendMessage(
   // 成本归因：注入方案角色和子账号
   const billing = appStore.getBillingContext()
 
+  let aborted = false
   try {
-    await streamViaWebSocket(text, agent, assistantId, convId, memoryContext, billing)
-  } catch {
-    try {
-      await streamViaHTTP(text, agent, assistantId, convId, memoryContext, billing)
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : '请求失败'
-      chatStore.updateMessage(assistantId, {
-        content: `⚠️ 连接${agent.role}失败：${errorMsg}\n\n请检查网络连接，或使用本地计算功能。`,
-        streaming: false,
-      })
+    await streamViaWebSocket(text, agent, assistantId, convId, memoryContext, billing, signal)
+  } catch (e) {
+    if (isAbortError(e)) {
+      aborted = true
+    } else {
+      try {
+        await streamViaHTTP(text, agent, assistantId, convId, memoryContext, billing, signal)
+      } catch (err) {
+        if (isAbortError(err)) {
+          aborted = true
+        } else {
+          const errorMsg = err instanceof Error ? err.message : '请求失败'
+          chatStore.updateMessage(assistantId, {
+            content: `⚠️ 连接${agent.role}失败：${errorMsg}\n\n请检查网络连接，或使用本地计算功能。`,
+            streaming: false,
+          })
+        }
+      }
     }
   } finally {
     chatStore.setLoading(false)
     const responseTimeMs = Date.now() - _sendStartMs
+
+    if (aborted) {
+      chatStore.updateMessage(assistantId, { streaming: false })
+      const partial = useChatStore.getState().messages.find(m => m.id === assistantId)
+      if (partial) {
+        convStore.persistMessage({
+          id: assistantId,
+          conversationId: convId,
+          role: 'assistant',
+          content: partial.content,
+          agentRole: partial.agentRole,
+          sources: partial.sources ? JSON.stringify(partial.sources) : undefined,
+        })
+      }
+      return
+    }
 
     // 流式完成后持久化助手消息
     const finalMsg = useChatStore.getState().messages.find(m => m.id === assistantId)
@@ -175,8 +216,14 @@ async function streamViaWebSocket(
   _convId: string,
   memoryContext?: string,
   billing?: BillingContext | null,
+  signal?: AbortSignal,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException('Aborted', 'AbortError'))
+      return
+    }
+
     const chatStore = useChatStore.getState()
     const wsKey = `${agent.id}_${agent.role}`
 
@@ -195,7 +242,9 @@ async function streamViaWebSocket(
           wsPool.set(wsKey, ws)
           connected = true
           break
-        } catch { /* try next */ }
+        } catch {
+          // Expected: 该 WS URL 建连失败；试下一候选
+        }
       }
       if (!connected || !ws) {
         reject(new Error('WebSocket 不可用'))
@@ -206,8 +255,28 @@ async function streamViaWebSocket(
     const socket = ws!
 
     const timeout = setTimeout(() => {
+      if (signal) signal.removeEventListener('abort', onAbort)
       reject(new Error('WebSocket 超时'))
     }, 30000)
+
+    const onAbort = () => {
+      clearTimeout(timeout)
+      if (signal) signal.removeEventListener('abort', onAbort)
+      socket.onopen = null
+      socket.onmessage = null
+      socket.onerror = null
+      socket.onclose = null
+      try {
+        socket.close()
+      } catch {
+        // Expected: 连接已关闭
+      }
+      wsPool.delete(wsKey)
+      reject(new DOMException('Aborted', 'AbortError'))
+    }
+    if (signal) {
+      signal.addEventListener('abort', onAbort)
+    }
 
     const payload = JSON.stringify({
       query: text,
@@ -311,21 +380,26 @@ async function streamViaWebSocket(
           }
 
           clearTimeout(timeout)
+          if (signal) signal.removeEventListener('abort', onAbort)
           resolve()
         } else if (data.type === 'error') {
           clearTimeout(timeout)
+          if (signal) signal.removeEventListener('abort', onAbort)
           reject(new Error(data.message || 'WS 错误'))
         } else if (data.type === 'auth_required') {
           clearTimeout(timeout)
+          if (signal) signal.removeEventListener('abort', onAbort)
           reject(new Error('需要登录后才能使用'))
         }
       } catch {
+        // Expected: WS 帧非 JSON；原样追加文本
         chatStore.appendToMessage(messageId, event.data)
       }
     }
 
     socket.onerror = () => {
       clearTimeout(timeout)
+      if (signal) signal.removeEventListener('abort', onAbort)
       wsPool.delete(wsKey)
       reject(new Error('WebSocket 连接失败'))
     }
@@ -336,6 +410,7 @@ async function streamViaWebSocket(
       if (msg?.streaming) {
         chatStore.updateMessage(messageId, { streaming: false })
         clearTimeout(timeout)
+        if (signal) signal.removeEventListener('abort', onAbort)
         resolve()
       }
     }
@@ -351,6 +426,7 @@ async function streamViaHTTP(
   _convId: string,
   memoryContext?: string,
   billing?: BillingContext | null,
+  signal?: AbortSignal,
 ): Promise<void> {
   const chatStore = useChatStore.getState()
 
@@ -371,12 +447,15 @@ async function streamViaHTTP(
   let response: Response | null = null
   for (const url of candidates) {
     try {
-      const r = await fetch(url, { method: 'POST', headers, body })
+      const r = await fetch(url, { method: 'POST', headers, body, signal })
       if (r.ok || r.status === 401) {
         response = r
         break
       }
-    } catch { /* try next */ }
+    } catch (e) {
+      if (isAbortError(e)) throw e
+      // Expected: 该 HTTP 端点不可用；试下一候选路径
+    }
   }
 
   if (!response) {
@@ -414,6 +493,7 @@ async function streamViaHTTP(
         }
       }
     } catch {
+      // Expected: 响应体非 JSON；降级为纯文本追加
       const text = await response.text()
       if (text) chatStore.appendToMessage(messageId, text)
     }
@@ -452,6 +532,7 @@ async function streamViaHTTP(
             chatStore.updateMessage(messageId, { confidence: parsed.confidence })
           }
         } catch {
+          // Expected: SSE data 行非 JSON；按纯文本块追加
           if (data) chatStore.appendToMessage(messageId, data)
         }
       }
@@ -503,7 +584,9 @@ async function tryLocalInference(text: string, solutionId?: string): Promise<Loc
     if (api?.inference?.answer) {
       return (await api.inference.answer(text, solutionId)) as LocalInferenceResult
     }
-  } catch { /* 非 Electron 环境或 IPC 失败 */ }
+  } catch {
+    // Expected: 非 Electron 或本地推理 IPC 不可用；走下方 fallback 文案
+  }
 
   return {
     text: '⚡ 当前处于离线状态，AI 对话暂不可用。\n\n请连接网络后重试。',
@@ -531,7 +614,9 @@ async function getMemoryPromptText(solutionId?: string): Promise<string> {
     if (api?.memory?.getPromptText) {
       return await api.memory.getPromptText(solutionId) ?? ''
     }
-  } catch { /* 非 Electron 环境 */ }
+  } catch {
+    // Expected: 非 Electron 或 memory.getPromptText 不可用；无记忆注入
+  }
   return ''
 }
 
@@ -539,7 +624,11 @@ function autoLearnFromMessage(text: string, solutionId?: string, conversationId?
   try {
     const api = (window as WindowWithElectron).electronAPI
     if (api?.memory?.learn) {
-      api.memory.learn(text, solutionId, conversationId).catch(() => {})
+      api.memory.learn(text, solutionId, conversationId).catch(() => {
+        // Expected: 后台学习 IPC 失败；不影响主对话
+      })
     }
-  } catch { /* 静默失败 */ }
+  } catch {
+    // Expected: memory.learn 入口不可用；跳过隐式学习
+  }
 }

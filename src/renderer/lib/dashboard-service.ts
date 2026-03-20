@@ -79,6 +79,7 @@ async function loadConvStats(solutionId: string): Promise<ConvStats> {
 
     return { total: (convs || []).length, thisWeek, totalMessages }
   } catch {
+    // Expected: SQLite/IPC 不可用；返回零统计
     return { total: 0, thisWeek: 0, totalMessages: 0 }
   }
 }
@@ -107,6 +108,7 @@ async function loadCalcStats(solutionId: string): Promise<CalcStats> {
 
     return { total: arr.length, localCount, remoteCount, topTools }
   } catch {
+    // Expected: SQLite/IPC 不可用；返回零统计
     return { total: 0, localCount: 0, remoteCount: 0, topTools: [] }
   }
 }
@@ -143,6 +145,7 @@ async function loadTaskStats(solutionId: string): Promise<TaskDashStats> {
       completionRate: arr.length > 0 ? Math.round((done / arr.length) * 100) : 0,
     }
   } catch {
+    // Expected: SQLite/IPC 不可用；返回零统计
     return { total: 0, pending: 0, inProgress: 0, done: 0, overdue: 0, completionRate: 0 }
   }
 }
@@ -189,7 +192,7 @@ async function loadRecentActivities(solutionId: string): Promise<Activity[]> {
       })
     }
   } catch {
-    // 静默
+    // Expected: 活动聚合 IPC 失败；仅用已收集片段
   }
 
   return activities
@@ -234,7 +237,7 @@ async function loadDailyTrend(solutionId: string): Promise<DailyPoint[]> {
       if (pt) pt.tasks++
     }
   } catch {
-    // 静默
+    // Expected: 日趋势聚合 IPC 失败；返回全零趋势骨架
   }
 
   return points

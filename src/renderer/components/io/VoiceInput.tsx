@@ -34,10 +34,11 @@ export function VoiceInput({ onTranscript, lang = 'zh-CN', className }: VoiceInp
       try {
         rec.stop()
       } catch {
+        // Expected: SpeechRecognition 已停止；尝试 abort
         try {
           rec.abort()
         } catch {
-          /* 忽略重复 stop/abort */
+          // Expected: 重复 stop/abort 浏览器抛错；忽略
         }
       }
     }
@@ -75,6 +76,7 @@ export function VoiceInput({ onTranscript, lang = 'zh-CN', className }: VoiceInp
           recognitionRef.current = next
           next.start()
         } catch {
+          // Expected: 连续识别重启失败；结束录音
           stopListening()
         }
       }
@@ -88,6 +90,7 @@ export function VoiceInput({ onTranscript, lang = 'zh-CN', className }: VoiceInp
       rec.start()
       setIsRecording(true)
     } catch {
+      // Expected: start() 被拒绝或浏览器限制；复位状态
       stopListening()
     }
   }, [lang, speechCtor, stopListening])
@@ -101,7 +104,7 @@ export function VoiceInput({ onTranscript, lang = 'zh-CN', className }: VoiceInp
         try {
           r.abort()
         } catch {
-          /* 卸载时忽略 */
+          // Expected: 卸载时 abort 竞态；忽略
         }
       }
     }

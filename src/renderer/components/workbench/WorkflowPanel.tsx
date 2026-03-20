@@ -4,10 +4,10 @@
  * 可从 Chat Slash 命令 / WelcomeScreen / Sidebar 触发
  */
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { ArrowLeft, Copy, Play } from 'lucide-react'
+import { ArrowLeft, Copy, Play, ClipboardList as ClipboardListIcon } from 'lucide-react'
 import type { SolutionConfig, WorkflowConfig, ScenarioConfig, ProfitImpact } from '@/lib/solution-router'
 import {
   executeWorkflow, executeScenario,
@@ -89,54 +89,90 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
   const [result, setResult] = useState<WorkflowResult | null>(null)
   const [scenarioAnswer, setScenarioAnswer] = useState<string | null>(null)
   const [error, setError] = useState('')
+  const runAbortRef = useRef<AbortController | null>(null)
+
+  useEffect(() => () => {
+    runAbortRef.current?.abort()
+  }, [])
 
   const onProgress = useCallback((stepId: string, status: StepStatus, partial?: string) => {
     setStepStatuses(prev => ({ ...prev, [stepId]: status }))
     if (partial) setStepPartials(prev => ({ ...prev, [stepId]: partial }))
   }, [])
 
-  function selectWorkflow(wf: WorkflowConfig) {
-    setActiveWf(wf)
-    setActiveScenario(null)
-    setView('input')
-    resetState()
-  }
-
-  function selectScenario(sc: ScenarioConfig) {
-    setActiveScenario(sc)
-    setActiveWf(null)
-    setQuery('')
-    setView('input')
-    resetState()
-  }
-
-  function resetState() {
+  const resetState = useCallback(() => {
     setStepStatuses({})
     setStepPartials({})
     setResult(null)
     setScenarioAnswer(null)
     setError('')
-  }
+  }, [])
 
-  async function handleRun() {
-    if (activeWf) {
-      setView('running')
-      setStepStatuses(Object.fromEntries(activeWf.steps.map(s => [s.id, 'pending' as StepStatus])))
-      const res = await executeWorkflow(solution.id, activeWf, query, {}, onProgress)
-      setResult(res)
-      setView('done')
-    } else if (activeScenario) {
-      setView('running')
-      setError('')
-      const res = await executeScenario(solution.id, activeScenario, query)
-      if (res.success) {
-        setScenarioAnswer(res.answer || '')
-      } else {
-        setError(res.error || '执行失败')
+  const selectWorkflow = useCallback((wf: WorkflowConfig) => {
+    setActiveWf(wf)
+    setActiveScenario(null)
+    setView('input')
+    resetState()
+  }, [resetState])
+
+  const selectScenario = useCallback((sc: ScenarioConfig) => {
+    setActiveScenario(sc)
+    setActiveWf(null)
+    setQuery('')
+    setView('input')
+    resetState()
+  }, [resetState])
+
+  const goToList = useCallback(() => {
+    setView('list')
+    resetState()
+  }, [resetState])
+
+  const goToInput = useCallback(() => {
+    setView('input')
+    resetState()
+  }, [resetState])
+
+  const { pillarScenarios, auxScenarios } = useMemo(() => {
+    const pillar = solution.scenarios.filter((sc) => sc.id.startsWith('pillar_'))
+    const aux = solution.scenarios.filter((sc) => !sc.id.startsWith('pillar_'))
+    return { pillarScenarios: pillar, auxScenarios: aux }
+  }, [solution.scenarios])
+
+  const handleRun = useCallback(async () => {
+    runAbortRef.current?.abort()
+    runAbortRef.current = new AbortController()
+    const { signal } = runAbortRef.current
+    try {
+      if (activeWf) {
+        setView('running')
+        setStepStatuses(Object.fromEntries(activeWf.steps.map(s => [s.id, 'pending' as StepStatus])))
+        const res = await executeWorkflow(solution.id, activeWf, query, {}, onProgress, { signal })
+        if (signal.aborted) return
+        setResult(res)
+        setView('done')
+      } else if (activeScenario) {
+        setView('running')
+        setError('')
+        const res = await executeScenario(solution.id, activeScenario, query, { signal })
+        if (signal.aborted) return
+        if (res.success) {
+          setScenarioAnswer(res.answer || '')
+        } else if (res.error) {
+          setError(res.error)
+        }
+        setView('done')
       }
+    } catch (e) {
+      if (isAbortError(e)) return
+      setError(e instanceof Error ? e.message : '执行失败')
       setView('done')
     }
-  }
+  }, [activeWf, activeScenario, query, solution.id, onProgress])
+
+  const copyMergedAnswer = useCallback(() => {
+    if (result?.mergedAnswer) void navigator.clipboard.writeText(result.mergedAnswer)
+  }, [result?.mergedAnswer])
 
   // ─── 列表视图 ───
   if (view === 'list') {
@@ -155,6 +191,7 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
                   return (
                     <button
                       key={wf.id}
+                      type="button"
                       onClick={() => selectWorkflow(wf)}
                       className="w-full flex items-start gap-4 p-4 rounded-xl border border-border/40 bg-card hover:border-primary/30 hover:bg-primary/5 transition-all text-left group"
                     >
@@ -188,10 +225,7 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
           )}
 
           {/* 快捷场景（四柱决策链 + 辅助） */}
-          {solution.scenarios.length > 0 && (() => {
-            const pillarScenarios = solution.scenarios.filter(sc => sc.id.startsWith('pillar_'))
-            const auxScenarios = solution.scenarios.filter(sc => !sc.id.startsWith('pillar_'))
-            return (
+          {solution.scenarios.length > 0 && (
               <>
                 {pillarScenarios.length > 0 && (
                   <section>
@@ -208,6 +242,7 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
                         return (
                           <button
                             key={sc.id}
+                            type="button"
                             onClick={() => selectScenario(sc)}
                             className="w-full flex items-center gap-4 p-4 rounded-xl border border-border/40 hover:border-primary/30 hover:bg-primary/5 transition-all text-left group"
                           >
@@ -244,6 +279,7 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
                         return (
                           <button
                             key={sc.id}
+                            type="button"
                             onClick={() => selectScenario(sc)}
                             className="flex items-center gap-2.5 p-3 rounded-xl border border-border/40 hover:border-primary/30 hover:bg-primary/5 transition-all text-left text-sm"
                           >
@@ -256,8 +292,7 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
                   </section>
                 )}
               </>
-            )
-          })()}
+          )}
 
           {solution.workflows.length === 0 && solution.scenarios.length === 0 && (
             <div className="text-center py-12">
@@ -285,7 +320,7 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
     return (
       <div className="flex-1 overflow-y-auto px-6 py-5">
         <div className="max-w-2xl mx-auto space-y-6">
-          <button onClick={() => { setView('list'); resetState() }}
+          <button type="button" onClick={goToList}
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" />
             返回
@@ -378,6 +413,7 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
           </div>
 
           <button
+            type="button"
             onClick={handleRun}
             disabled={!activeScenario && !query.trim()}
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-40 hover:opacity-90"
@@ -448,7 +484,8 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
                     <MarkdownContent content={result.mergedAnswer} />
                   </div>
                   <button
-                    onClick={() => navigator.clipboard.writeText(result.mergedAnswer || '')}
+                    type="button"
+                    onClick={copyMergedAnswer}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border border-border/50 hover:bg-secondary/30 transition-colors"
                   >
                     <Copy className="w-3.5 h-3.5" /> 复制报告
@@ -511,13 +548,15 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
         {view === 'done' && (
           <div className="flex items-center gap-3">
             <button
-              onClick={() => { setView('list'); resetState() }}
+              type="button"
+              onClick={goToList}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-border/50 hover:bg-secondary/30 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" /> 返回列表
             </button>
             <button
-              onClick={() => { setView('input'); resetState() }}
+              type="button"
+              onClick={goToInput}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm text-white hover:opacity-90 transition-colors"
               style={{ backgroundColor: solution.color }}
             >
@@ -529,8 +568,6 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
     </div>
   )
 }
-
-import { ClipboardList as ClipboardListIcon } from 'lucide-react'
 
 function ProfitBadge({ impact }: { impact?: ProfitImpact }) {
   if (!impact) return null

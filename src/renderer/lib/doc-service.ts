@@ -27,6 +27,7 @@ function readLS(solutionId: string): DocItem[] {
   try {
     return JSON.parse(localStorage.getItem(lsKey(solutionId)) || '[]')
   } catch {
+    // Expected: localStorage 文档缓存非合法 JSON；按空列表
     return []
   }
 }
@@ -54,6 +55,7 @@ export async function fetchDocs(solutionId: string): Promise<DocItem[]> {
     writeLS(solutionId, docs)
     return docs
   } catch {
+    // Expected: 远端文档列表失败；读本地缓存
     return readLS(solutionId)
   }
 }
@@ -91,6 +93,7 @@ export async function createDoc(
       solutionId: d.solutionId,
     }
   } catch {
+    // Expected: 远端创建失败；写入本地降级草稿
     const docs = readLS(solutionId)
     writeLS(solutionId, [fallback, ...docs])
     return fallback
@@ -108,6 +111,7 @@ export async function updateDoc(
     })
     return resp.ok
   } catch {
+    // Expected: 远端更新失败
     return false
   }
 }
@@ -123,6 +127,7 @@ export async function deleteDoc(solutionId: string, docId: string): Promise<bool
     }
     return resp.ok
   } catch {
+    // Expected: 远端删除失败；仍同步本地缓存
     const docs = readLS(solutionId)
     writeLS(solutionId, docs.filter(d => d.id !== docId))
     return true
