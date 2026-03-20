@@ -31,6 +31,8 @@ export default function TaskCard({ task, onStatusChange, onPriorityChange, onDel
       pending: 'in_progress',
       in_progress: 'done',
       done: 'pending',
+      todo: 'doing',
+      doing: 'done',
     }
     onStatusChange(task.id, next[task.status])
   }
@@ -102,7 +104,7 @@ export default function TaskCard({ task, onStatusChange, onPriorityChange, onDel
             )}
 
             {/* 时效 */}
-            {task.due_date && dueStatus !== 'none' && (
+            {task.dueDate && dueStatus !== 'none' && (
               <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${DUE_STYLE[dueStatus]}`}>
                 {dueStatus === 'overdue' && `逾期 ${Math.abs(daysLeft || 0)} 天`}
                 {dueStatus === 'today' && '今天到期'}

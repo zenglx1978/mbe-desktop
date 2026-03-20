@@ -7,7 +7,7 @@ import {
   MessageSquare, BarChart3, Wrench, FileText, CheckSquare,
   ShieldCheck, Coins, Landmark, LayoutDashboard,
   Calendar, Palette, Settings, LogOut, PanelLeftClose, PanelLeft,
-  TrendingUp,
+  TrendingUp, Users, Wallet,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -28,6 +28,9 @@ export const TAB_ICON_MAP: Record<string, TabMeta> = {
   scheduler:  { icon: Calendar,        label: '调度' },
   designer:   { icon: Palette,         label: '设计器' },
   efficiency: { icon: TrendingUp,      label: '效率报告' },
+  clients:    { icon: Users,           label: '客户沟通' },
+  roi:        { icon: BarChart3,       label: 'ROI 分析' },
+  account:    { icon: Wallet,         label: '账户' },
 }
 
 export const SIDEBAR_ACTIONS = {

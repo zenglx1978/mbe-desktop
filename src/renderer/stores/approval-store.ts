@@ -1,211 +1,178 @@
 /**
- * Approval Store — 审批状态管理（WS 实时 + 轮询降级）
+ * Approval Store — Zustand 审批状态管理
  *
- * 优先通过 WebSocket 接收 governance.* 事件实现即时更新，
- * WS 不可用时自动降级为 HTTP 轮询（60s 间隔）。
- * 提供 pendingCount 用于侧边栏徽标显示。
+ * 从各 Agent 的 /governance/approvals/pending 聚合审批请求，
+ * 支持 WS 实时推送 + HTTP 轮询降级。
  */
-
 import { create } from 'zustand'
+import { API_BASE, WS_BASE, authFetch, authHeaders } from '@/lib/api-client'
+import type { ApprovalItem } from '@/lib/approval-service'
 import { useAppStore } from '@/stores/app-store'
-import {
-  listPendingApprovals,
-  submitDecision,
-  resolveAgentUrl,
-  approvalWsManager,
-  type ApprovalItem,
-  type ApprovalDecisionInput,
-  type GovernanceWsEvent,
-} from '@/lib/approval-service'
 
 interface ApprovalState {
-  /** 待审批列表 */
   items: ApprovalItem[]
-  /** 待审批总数（用于侧边栏徽标） */
   pendingCount: number
-  /** 当前选中查看的审批项 */
-  selectedId: string | null
-  /** 加载中 */
   loading: boolean
-  /** 上次刷新时间 */
   lastRefreshed: number
-  /** WS 连接状态 */
   wsConnected: boolean
-  /** 最近一次 WS 事件（供 Toast 消费后清除） */
-  lastWsEvent: GovernanceWsEvent | null
+  selectedId: string | null
 
-  /** 刷新待审批列表（HTTP 全量拉取） */
   refresh: () => Promise<void>
-  /** 选中审批项 */
-  select: (id: string | null) => void
-  /** 提交审批决策 */
-  decide: (approvalId: string, agentName: string, decision: ApprovalDecisionInput) => Promise<boolean>
-  /** 收到 WS 事件后的增量更新 */
-  handleWsEvent: (event: GovernanceWsEvent) => void
-  /** 清除最近 WS 事件（Toast 消费后调用） */
-  clearLastWsEvent: () => void
+  select: (id: string) => void
+  decide: (id: string, agentName: string, decision: {
+    status: 'approved' | 'rejected'
+    decided_by: string
+    decision_note: string
+  }) => Promise<boolean>
 }
 
 export const useApprovalStore = create<ApprovalState>((set, get) => ({
   items: [],
   pendingCount: 0,
-  selectedId: null,
   loading: false,
   lastRefreshed: 0,
   wsConnected: false,
-  lastWsEvent: null,
+  selectedId: null,
+
+  select: (id: string) => set({ selectedId: id }),
 
   refresh: async () => {
-    const solution = useAppStore.getState().currentSolution()
-    if (!solution) return
-
     set({ loading: true })
     try {
-      const items = await listPendingApprovals(solution)
+      const solution = useAppStore.getState().currentSolution?.()
+      if (!solution) {
+        set({ items: [], pendingCount: 0, loading: false, lastRefreshed: Date.now() })
+        return
+      }
+
+      const results = await Promise.all(
+        solution.agents.map(async (agent) => {
+          try {
+            const resp = await authFetch(
+              `${agent.baseUrl}/governance/approvals/pending?limit=50`,
+              { signal: AbortSignal.timeout(8000) },
+            )
+            if (!resp.ok) return []
+            const data = await resp.json()
+            return (data.items || []).map((item: any) => ({
+              ...item,
+              agent_name: item.agent_name || agent.id,
+            })) as ApprovalItem[]
+          } catch {
+            return []
+          }
+        })
+      )
+
+      const allItems = results.flat().sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      )
+      const pending = allItems.filter(i => i.status === 'pending').length
+
       set({
-        items,
-        pendingCount: items.length,
+        items: allItems,
+        pendingCount: pending,
         loading: false,
         lastRefreshed: Date.now(),
       })
     } catch {
-      set({ loading: false })
+      set({ loading: false, lastRefreshed: Date.now() })
     }
   },
 
-  select: (id) => set({ selectedId: id }),
+  decide: async (id, agentName, decision) => {
+    try {
+      const solution = useAppStore.getState().currentSolution?.()
+      if (!solution) return false
+      const agent = solution.agents.find(a => a.id === agentName) || solution.agents[0]
+      if (!agent) return false
 
-  decide: async (approvalId, agentName, decision) => {
-    const solution = useAppStore.getState().currentSolution()
-    if (!solution) return false
-
-    const baseUrl = resolveAgentUrl(solution, agentName)
-    if (!baseUrl) return false
-
-    const result = await submitDecision(baseUrl, agentName, approvalId, decision)
-    if (result) {
-      set((state) => ({
-        items: state.items.filter(i => i.id !== approvalId),
-        pendingCount: Math.max(0, state.pendingCount - 1),
-      }))
-      return true
-    }
-    return false
-  },
-
-  handleWsEvent: (event) => {
-    const { type, data } = event
-
-    if (type === 'governance.approval_requested') {
-      const newItem: ApprovalItem = {
-        id: data.approval_id,
-        action: data.action,
-        risk_level: (data.risk_level as ApprovalItem['risk_level']) || 'medium',
-        status: 'pending',
-        agent_name: data.agent_name || '',
-        expert_id: data.expert_id || '',
-        solution_id: data.solution_id || '',
-        user_id: '',
-        org_id: '',
-        reason: data.reason || '',
-        context: {},
-        created_at: data.created_at || new Date().toISOString(),
-        decided_at: null,
-        decided_by: null,
-        decision_note: null,
-        expire_minutes: data.expire_minutes ?? 60,
+      const resp = await authFetch(
+        `${agent.baseUrl}/governance/approvals/${id}/decide`,
+        { method: 'POST', body: JSON.stringify(decision) },
+      )
+      if (resp.ok) {
+        await get().refresh()
+        return true
       }
-
-      set((state) => {
-        const exists = state.items.some(i => i.id === newItem.id)
-        if (exists) return state
-        const items = [newItem, ...state.items]
-        return {
-          items,
-          pendingCount: items.length,
-          lastWsEvent: event,
-        }
-      })
-    }
-
-    if (type === 'governance.approval_decided') {
-      set((state) => {
-        const items = state.items.filter(i => i.id !== data.approval_id)
-        return {
-          items,
-          pendingCount: items.length,
-          lastWsEvent: event,
-        }
-      })
+      return false
+    } catch {
+      return false
     }
   },
-
-  clearLastWsEvent: () => set({ lastWsEvent: null }),
 }))
 
-
-// ── 连接生命周期管理 ──
-
-let pollTimer: ReturnType<typeof setInterval> | null = null
-let wsUnsubscribe: (() => void) | null = null
-const POLL_INTERVAL_WS = 60_000    // WS 可用时，轮询仅作兜底（60s）
-const POLL_INTERVAL_FALLBACK = 15_000 // WS 不可用时，加速轮询（15s）
+let _ws: WebSocket | null = null
+let _pollTimer: ReturnType<typeof setInterval> | null = null
 
 /**
- * 启动审批轮询（方案切换时调用）
- *
- * 采用纯 HTTP 轮询（60s），不在页面加载时建立 WS 连接避免 403 噪音。
- * WS 连接可通过 connectApprovalWs() 按需建立。
+ * 启动审批轮询（WS 优先，降级 HTTP），返回清理函数
  */
 export function startApprovalPolling(): () => void {
-  stopApprovalPolling()
-
-  const solution = useAppStore.getState().currentSolution()
-  if (!solution) return stopApprovalPolling
-
-  if (!solution.enabledTabs.includes('approvals')) return stopApprovalPolling
-
-  // 立即做一次全量拉取
   useApprovalStore.getState().refresh()
-
-  // HTTP 轮询
-  pollTimer = setInterval(() => {
-    useApprovalStore.getState().refresh()
-  }, POLL_INTERVAL_WS)
-
+  connectApprovalWs()
   return stopApprovalPolling
 }
 
-/**
- * 按需建立 governance WS 连接（从审批 Panel 调用）
- */
-export function connectApprovalWs() {
-  const solution = useAppStore.getState().currentSolution()
-  if (!solution) return
-
-  if (approvalWsManager.connected) return
-
-  approvalWsManager.connectAll(solution)
-
-  if (!wsUnsubscribe) {
-    wsUnsubscribe = approvalWsManager.onEvent((event) => {
-      useApprovalStore.getState().handleWsEvent(event)
-    })
+export function stopApprovalPolling() {
+  stopPolling()
+  if (_ws) {
+    _ws.close()
+    _ws = null
   }
-
-  const connected = approvalWsManager.connected
-  useApprovalStore.setState({ wsConnected: connected })
 }
 
-export function stopApprovalPolling() {
-  if (pollTimer) {
-    clearInterval(pollTimer)
-    pollTimer = null
+export function connectApprovalWs() {
+  if (_ws) return
+
+  const solution = useAppStore.getState().currentSolution?.()
+  if (!solution || !solution.agents[0]) {
+    startPolling()
+    return
   }
-  if (wsUnsubscribe) {
-    wsUnsubscribe()
-    wsUnsubscribe = null
+
+  try {
+    const wsUrl = solution.agents[0].wsUrl || WS_BASE
+    _ws = new WebSocket(`${wsUrl}/ws/governance/approvals`)
+
+    _ws.onopen = () => {
+      useApprovalStore.setState({ wsConnected: true })
+      stopPolling()
+    }
+
+    _ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data)
+        if (msg.type === 'approval_update') {
+          useApprovalStore.getState().refresh()
+        }
+      } catch { /* ignore */ }
+    }
+
+    _ws.onclose = () => {
+      useApprovalStore.setState({ wsConnected: false })
+      _ws = null
+      startPolling()
+    }
+
+    _ws.onerror = () => {
+      _ws?.close()
+    }
+  } catch {
+    startPolling()
   }
-  approvalWsManager.disconnectAll()
-  useApprovalStore.setState({ wsConnected: false })
+}
+
+function startPolling() {
+  if (_pollTimer) return
+  _pollTimer = setInterval(() => {
+    useApprovalStore.getState().refresh()
+  }, 30000)
+}
+
+function stopPolling() {
+  if (_pollTimer) {
+    clearInterval(_pollTimer)
+    _pollTimer = null
+  }
 }

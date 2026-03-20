@@ -1,18 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Plus, Trash2, FileText, Search, Download, ChevronDown, ChevronRight } from 'lucide-react'
 import type { SolutionConfig } from '@/lib/solution-router'
-
-interface DocItem {
-  id: string
-  title: string
-  type: DocType
-  content: string
-  createdAt: string
-  updatedAt: string
-  source?: string
-}
-
-type DocType = 'report' | 'contract' | 'voucher' | 'checklist' | 'note' | 'other'
+import { fetchDocs, createDoc, deleteDoc as deleteDocApi, type DocItem, type DocType } from '@/lib/doc-service'
 
 const DOC_TYPE_META: Record<DocType, { label: string; icon: string; cls: string }> = {
   report:    { label: '报告', icon: '📊', cls: 'bg-blue-500/10 text-blue-500' },
@@ -21,22 +10,6 @@ const DOC_TYPE_META: Record<DocType, { label: string; icon: string; cls: string 
   checklist: { label: '清单', icon: '✅', cls: 'bg-purple-500/10 text-purple-500' },
   note:      { label: '笔记', icon: '📝', cls: 'bg-cyan-500/10 text-cyan-500' },
   other:     { label: '其他', icon: '📄', cls: 'bg-secondary text-muted-foreground' },
-}
-
-function storageKey(solutionId: string) {
-  return `mbe_docs_${solutionId}`
-}
-
-function loadDocs(solutionId: string): DocItem[] {
-  try {
-    return JSON.parse(localStorage.getItem(storageKey(solutionId)) || '[]')
-  } catch {
-    return []
-  }
-}
-
-function saveDocs(solutionId: string, docs: DocItem[]) {
-  localStorage.setItem(storageKey(solutionId), JSON.stringify(docs))
 }
 
 interface Props {
@@ -49,35 +22,24 @@ export default function DocumentsPanel({ solution }: Props) {
   const [filterType, setFilterType] = useState<DocType | 'all'>('all')
   const [showAdd, setShowAdd] = useState(false)
   const [selectedDoc, setSelectedDoc] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    setDocs(loadDocs(solution.id))
-    setSelectedDoc(null)
+    setLoading(true)
+    fetchDocs(solution.id).then(d => { setDocs(d); setSelectedDoc(null) }).finally(() => setLoading(false))
   }, [solution.id])
 
-  const persist = useCallback((next: DocItem[]) => {
-    setDocs(next)
-    saveDocs(solution.id, next)
-  }, [solution.id])
-
-  const addDoc = useCallback((title: string, type: DocType, content: string) => {
-    const doc: DocItem = {
-      id: `doc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      title,
-      type,
-      content,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      source: 'manual',
-    }
-    persist([doc, ...docs])
+  const addDoc = useCallback(async (title: string, type: DocType, content: string) => {
+    const doc = await createDoc(solution.id, title, type, content)
+    setDocs(prev => [doc, ...prev])
     setShowAdd(false)
-  }, [docs, persist])
+  }, [solution.id])
 
-  const deleteDoc = useCallback((id: string) => {
-    persist(docs.filter(d => d.id !== id))
+  const handleDelete = useCallback(async (id: string) => {
+    await deleteDocApi(solution.id, id)
+    setDocs(prev => prev.filter(d => d.id !== id))
     if (selectedDoc === id) setSelectedDoc(null)
-  }, [docs, selectedDoc, persist])
+  }, [solution.id, selectedDoc])
 
   const filtered = docs.filter(d => {
     if (filterType !== 'all' && d.type !== filterType) return false
@@ -96,7 +58,6 @@ export default function DocumentsPanel({ solution }: Props) {
   return (
     <div className="flex-1 overflow-y-auto p-6">
       <div className="max-w-3xl mx-auto space-y-6">
-        {/* 头部：搜索 + 新建 */}
         <div className="flex items-center gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -116,7 +77,6 @@ export default function DocumentsPanel({ solution }: Props) {
           </button>
         </div>
 
-        {/* 类型筛选标签 */}
         {typeGroups.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
             <button
@@ -141,14 +101,14 @@ export default function DocumentsPanel({ solution }: Props) {
           </div>
         )}
 
-        {/* 新建文档表单 */}
         {showAdd && <AddDocForm onAdd={addDoc} onCancel={() => setShowAdd(false)} />}
 
-        {/* 文档列表 */}
-        {filtered.length > 0 ? (
+        {loading && docs.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground text-sm">加载中...</div>
+        ) : filtered.length > 0 ? (
           <div className="space-y-2">
             {filtered.map(doc => {
-              const meta = DOC_TYPE_META[doc.type]
+              const meta = DOC_TYPE_META[doc.type] || DOC_TYPE_META.other
               const isSelected = selectedDoc === doc.id
               return (
                 <div key={doc.id}>
@@ -184,7 +144,7 @@ export default function DocumentsPanel({ solution }: Props) {
                           <Download className="w-3 h-3" /> 复制内容
                         </button>
                         <button
-                          onClick={() => deleteDoc(doc.id)}
+                          onClick={() => handleDelete(doc.id)}
                           className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs text-red-400 hover:bg-red-500/10 transition-colors ml-auto"
                         >
                           <Trash2 className="w-3 h-3" /> 删除

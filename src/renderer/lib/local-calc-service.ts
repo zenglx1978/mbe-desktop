@@ -1,3 +1,5 @@
+import type { RunLocalCalcRawResult, WindowWithElectron } from '@/types/api-responses'
+
 /**
  * 本地确定性计算服务（渲染进程端）
  *
@@ -9,11 +11,11 @@ export interface CalcResult {
   success: boolean
   result?: string
   error?: string
-  parsed?: Record<string, any>
+  parsed?: Record<string, unknown>
 }
 
 function getAPI() {
-  return (window as any).electronAPI
+  return (window as WindowWithElectron).electronAPI
 }
 
 /** 执行本地计算脚本 */
@@ -23,7 +25,7 @@ export async function runLocalCalc(scriptName: string, args: string[]): Promise<
     return { success: false, error: '非桌面端环境，本地计算不可用' }
   }
 
-  const result = await api.runLocalCalc(scriptName, args)
+  const result = (await api.runLocalCalc(scriptName, args)) as RunLocalCalcRawResult
   if (result.success && result.result) {
     try {
       result.parsed = JSON.parse(result.result)
@@ -119,7 +121,7 @@ export function calcCostEstimate(projectType: string, area: number, quality = 's
 }
 
 /** 临床评分（CURB-65 等） */
-export function calcClinicalScore(scoreType: string, params: Record<string, any>) {
+export function calcClinicalScore(scoreType: string, params: Record<string, unknown>) {
   return runLocalCalc('calc_clinical_score', [
     '--score-type', scoreType,
     '--params', JSON.stringify(params),

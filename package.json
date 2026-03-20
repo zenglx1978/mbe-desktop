@@ -55,6 +55,7 @@
     "react-dom": "^18.2.0",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^6.22.0",
+    "recharts": "^3.8.0",
     "remark-gfm": "^4.0.1",
     "tailwind-merge": "^2.2.1",
     "tailwindcss": "^3.4.1",
@@ -86,15 +87,21 @@
       "target": [
         {
           "target": "msi",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "build/icon.ico",

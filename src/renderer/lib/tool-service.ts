@@ -8,10 +8,11 @@
 import type { ToolConfig } from './solution-router'
 import { useAdaptiveUIStore } from '@/stores/adaptive-ui-store'
 import { authHeaders, API_BASE } from '@/lib/api-client'
+import type { RunLocalCalcRawResult, WindowWithElectron } from '@/types/api-responses'
 
 export interface CalcResult {
   success: boolean
-  data?: Record<string, any>
+  data?: Record<string, unknown>
   error?: string
   source: 'local' | 'remote'
   durationMs: number
@@ -76,7 +77,7 @@ const DISMISSAL_MAP: Record<string, string> = {
   '2N': 'illegal',
 }
 
-function buildArgs(scriptName: string, values: Record<string, any>): string[] {
+function buildArgs(scriptName: string, values: Record<string, unknown>): string[] {
   const map = FIELD_TO_ARG[scriptName]
   if (!map) {
     return Object.entries(values).flatMap(([k, v]) =>
@@ -86,17 +87,17 @@ function buildArgs(scriptName: string, values: Record<string, any>): string[] {
 
   const args: string[] = []
   for (const [fieldKey, argName] of Object.entries(map)) {
-    let val = values[fieldKey]
+    let val: unknown = values[fieldKey]
     if (val == null || val === '') continue
 
     // 个税：月薪 → 年收入
     if (scriptName === 'calc_iit' && fieldKey === 'salary') {
-      val = parseFloat(val) * 12
+      val = parseFloat(String(val)) * 12
     }
 
     // 劳动补偿：表单选项 → 脚本枚举值
     if (scriptName === 'calc_labor_compensation' && fieldKey === 'dismissal_type') {
-      val = DISMISSAL_MAP[val] || val
+      val = DISMISSAL_MAP[String(val)] || val
     }
 
     args.push(argName, String(val))
@@ -105,17 +106,17 @@ function buildArgs(scriptName: string, values: Record<string, any>): string[] {
 }
 
 /** 调用本地 Python 脚本 */
-async function runLocal(tool: ToolConfig, values: Record<string, any>): Promise<CalcResult | null> {
+async function runLocal(tool: ToolConfig, values: Record<string, unknown>): Promise<CalcResult | null> {
   if (!tool.localScript) return null
 
-  const api = (window as any).electronAPI
+  const api = (window as WindowWithElectron).electronAPI
   if (!api?.runLocalCalc) return null
 
   const args = buildArgs(tool.localScript, values)
   const start = Date.now()
 
   try {
-    const res = await api.runLocalCalc(tool.localScript, args)
+    const res = (await api.runLocalCalc(tool.localScript, args)) as RunLocalCalcRawResult
     const duration = Date.now() - start
 
     if (res.success && res.result) {
@@ -140,7 +141,7 @@ export function resolveAgentBase(_agentId: string): string {
 }
 
 /** 调用远端 Agent API */
-async function runRemote(tool: ToolConfig, values: Record<string, any>): Promise<CalcResult> {
+async function runRemote(tool: ToolConfig, values: Record<string, unknown>): Promise<CalcResult> {
   const start = Date.now()
   try {
     const base = resolveAgentBase(tool.agent)
@@ -155,12 +156,14 @@ async function runRemote(tool: ToolConfig, values: Record<string, any>): Promise
     if (!resp.ok) {
       return { success: false, error: `服务器错误 (${resp.status})`, source: 'remote', durationMs: duration }
     }
-    const data = await resp.json()
+    const data = (await resp.json()) as Record<string, unknown>
     return { success: true, data, source: 'remote', durationMs: duration }
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const name = err instanceof Error ? err.name : ''
+    const message = err instanceof Error ? err.message : '网络错误'
     return {
       success: false,
-      error: err.name === 'TimeoutError' ? '请求超时' : (err.message || '网络错误'),
+      error: name === 'TimeoutError' ? '请求超时' : message,
       source: 'remote',
       durationMs: Date.now() - start,
     }
@@ -171,11 +174,11 @@ async function runRemote(tool: ToolConfig, values: Record<string, any>): Promise
 async function saveHistory(
   solutionId: string,
   toolId: string,
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   result: CalcResult,
 ) {
   try {
-    const api = (window as any).electronAPI
+    const api = (window as WindowWithElectron).electronAPI
     if (!api?.db?.calc) return
 
     await api.db.calc.add({
@@ -200,7 +203,7 @@ async function saveHistory(
  */
 export async function runCalculation(
   tool: ToolConfig,
-  values: Record<string, any>,
+  values: Record<string, unknown>,
   solutionId: string,
 ): Promise<CalcResult> {
   // Bitter Lesson: 追踪工具使用频率

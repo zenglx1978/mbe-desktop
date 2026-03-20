@@ -544,7 +544,10 @@ function ProfitBadge({ impact }: { impact?: ProfitImpact }) {
 }
 
 function OrchestrationBadge({ mode }: { mode: string }) {
-  const info = ORCHESTRATION_META[mode] || ORCHESTRATION_META.sequential
+  const fallback = mode === 'parallel'
+    ? ORCHESTRATION_META.parallel
+    : ORCHESTRATION_META.sequential
+  const info = ORCHESTRATION_META[mode] || fallback
   const ModeIcon = info.icon
   return (
     <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-secondary/30 text-muted-foreground"

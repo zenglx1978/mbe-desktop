@@ -7,7 +7,7 @@ import { useAdaptiveUIStore } from '@/stores/adaptive-ui-store'
 import { useLocalFeedbackStore, startFeedbackSync } from '@/stores/local-feedback-store'
 import { useSmartCacheStore } from '@/stores/smart-cache-store'
 import { useCloudSyncStore, startCloudSync } from '@/stores/cloud-sync-store'
-import { applySolutionTheme } from '@/lib/solution-router'
+import { applySolutionTheme, fetchSolutionStatuses, getEffectiveStatus } from '@/lib/solution-router'
 import { getSolutionIcon } from '@/lib/solution-icons'
 import Sidebar from '@/components/Sidebar'
 import ChatPanel from '@/components/ChatPanel'
@@ -25,6 +25,10 @@ import CostPanel from '@/components/workbench/CostPanel'
 import SchedulerPanel from '@/components/workbench/SchedulerPanel'
 import DesignerPanel from '@/components/workbench/DesignerPanel'
 import EfficiencyPanel from '@/components/workbench/EfficiencyPanel'
+import ClientChatPanel from '@/components/workbench/ClientChatPanel'
+import ROIPanel from '@/components/workbench/ROIPanel'
+import AccountPanel from '@/components/workbench/AccountPanel'
+import NotificationBell from '@/components/NotificationBell'
 import { startApprovalPolling, stopApprovalPolling } from '@/stores/approval-store'
 import { useApprovalNotifications } from '@/hooks/useApprovalNotifications'
 
@@ -53,6 +57,15 @@ export default function Workspace() {
       clientIntelInitialized = true
     }
   }, [hasPickedSolution])
+
+  useEffect(() => {
+    if (!solution) return
+    fetchSolutionStatuses().then(() => {
+      if (getEffectiveStatus(solution.id) !== 'available') {
+        navigate('/pick', { replace: true })
+      }
+    })
+  }, [solution?.id])
 
   useEffect(() => {
     if (!solution) return
@@ -86,6 +99,9 @@ export default function Workspace() {
   if (!allTabs.includes('approvals')) allTabs.push('approvals' as const)
   if (!allTabs.includes('costs')) allTabs.push('costs' as const)
   if (!allTabs.includes('efficiency')) allTabs.push('efficiency' as const)
+  if (!allTabs.includes('clients')) allTabs.push('clients' as const)
+  if (!allTabs.includes('roi')) allTabs.push('roi' as const)
+  if (!allTabs.includes('account')) allTabs.push('account' as const)
   const showTabs = allTabs.length > 1
 
   return (
@@ -112,7 +128,8 @@ export default function Workspace() {
             </div>
           )}
 
-          <div className="ml-auto flex items-center gap-4">
+          <div className="ml-auto flex items-center gap-3">
+            <NotificationBell />
             <ConnectivityBadge />
           </div>
         </header>
@@ -153,6 +170,12 @@ function ActivePanel({ tab }: { tab: string }) {
       return <DesignerPanel solution={solution} />
     case 'efficiency':
       return <EfficiencyPanel />
+    case 'clients':
+      return <ClientChatPanel />
+    case 'roi':
+      return <ROIPanel />
+    case 'account':
+      return <AccountPanel />
     default:
       return <ChatPanel />
   }

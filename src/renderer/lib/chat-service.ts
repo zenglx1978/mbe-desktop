@@ -9,10 +9,10 @@
  * 无需用户手动切换。路由结果体现在回复标注中。
  */
 
-import { useChatStore } from '@/stores/chat-store'
+import { useChatStore, type OrchestrationState, type OrchestrationExpert } from '@/stores/chat-store'
 import { useConversationStore } from '@/stores/conversation-store'
 import { useConnectivityStore } from '@/stores/connectivity-store'
-import { useAppStore } from '@/stores/app-store'
+import { useAppStore, type BillingContext } from '@/stores/app-store'
 import { useLocalFeedbackStore } from '@/stores/local-feedback-store'
 import { useAdaptiveUIStore } from '@/stores/adaptive-ui-store'
 import { routeMessage } from '@/lib/intent-router'
@@ -25,6 +25,7 @@ import {
 } from '@/lib/local-action-executor'
 
 import { getDeviceId, authHeaders } from '@/lib/api-client'
+import type { ConsultResponse, WindowWithElectron } from '@/types/api-responses'
 
 /** WebSocket 连接池 */
 const wsPool = new Map<string, WebSocket>()
@@ -123,11 +124,14 @@ export async function sendMessage(
     streaming: true,
   })
 
+  // 成本归因：注入方案角色和子账号
+  const billing = appStore.getBillingContext()
+
   try {
-    await streamViaWebSocket(text, agent, assistantId, convId, memoryContext)
+    await streamViaWebSocket(text, agent, assistantId, convId, memoryContext, billing)
   } catch {
     try {
-      await streamViaHTTP(text, agent, assistantId, convId, memoryContext)
+      await streamViaHTTP(text, agent, assistantId, convId, memoryContext, billing)
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : '请求失败'
       chatStore.updateMessage(assistantId, {
@@ -170,6 +174,7 @@ async function streamViaWebSocket(
   messageId: string,
   _convId: string,
   memoryContext?: string,
+  billing?: BillingContext | null,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const chatStore = useChatStore.getState()
@@ -178,7 +183,10 @@ async function streamViaWebSocket(
     let ws = wsPool.get(wsKey)
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       const deviceId = getDeviceId()
-      const wsUrlWithAuth = `${agent.wsUrl}?device_id=${deviceId}`
+      const authToken = authHeaders()['Authorization']?.replace('Bearer ', '') ?? null
+      const wsUrlWithAuth = authToken
+        ? `${agent.wsUrl}?device_id=${deviceId}&token=${encodeURIComponent(authToken)}`
+        : `${agent.wsUrl}?device_id=${deviceId}`
       const urls = [wsUrlWithAuth]
       let connected = false
       for (const url of urls) {
@@ -204,6 +212,9 @@ async function streamViaWebSocket(
     const payload = JSON.stringify({
       query: text,
       ...(memoryContext ? { memory_context: memoryContext } : {}),
+      ...(billing?.solutionId ? { solution_id: billing.solutionId } : {}),
+      ...(billing?.solutionRole ? { solution_role: billing.solutionRole } : {}),
+      ...(billing?.subAccountId ? { sub_account_id: billing.subAccountId } : {}),
     })
 
     socket.onopen = () => {
@@ -217,7 +228,66 @@ async function streamViaWebSocket(
     socket.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data)
-        if (data.type === 'chat_chunk' && data.chunk) {
+        if (data.type === 'orchestration_start') {
+          const experts: OrchestrationExpert[] = (data.experts ?? []).map(
+            (e: { id: string; label: string }) => ({
+              id: e.id,
+              label: e.label,
+              status: 'idle' as const,
+            }),
+          )
+          const orch: OrchestrationState = {
+            active: true,
+            mode: data.mode ?? 'parallel',
+            experts,
+          }
+          chatStore.updateMessage(messageId, { orchestration: orch })
+        } else if (data.type === 'expert_start') {
+          const msg = useChatStore.getState().messages.find(m => m.id === messageId)
+          if (msg?.orchestration) {
+            const experts = msg.orchestration.experts.map(e =>
+              e.id === data.expert_id ? { ...e, status: 'working' as const } : e,
+            )
+            chatStore.updateMessage(messageId, {
+              orchestration: { ...msg.orchestration, experts },
+            })
+          }
+        } else if (data.type === 'expert_done') {
+          const msg = useChatStore.getState().messages.find(m => m.id === messageId)
+          if (msg?.orchestration) {
+            const experts = msg.orchestration.experts.map(e =>
+              e.id === data.expert_id
+                ? { ...e, status: 'done' as const, elapsed_ms: data.elapsed_ms }
+                : e,
+            )
+            chatStore.updateMessage(messageId, {
+              orchestration: { ...msg.orchestration, experts },
+            })
+          }
+        } else if (data.type === 'expert_error') {
+          const msg = useChatStore.getState().messages.find(m => m.id === messageId)
+          if (msg?.orchestration) {
+            const experts = msg.orchestration.experts.map(e =>
+              e.id === data.expert_id
+                ? { ...e, status: 'error' as const, error: data.error, elapsed_ms: data.elapsed_ms }
+                : e,
+            )
+            chatStore.updateMessage(messageId, {
+              orchestration: { ...msg.orchestration, experts },
+            })
+          }
+        } else if (data.type === 'orchestration_done') {
+          const msg = useChatStore.getState().messages.find(m => m.id === messageId)
+          if (msg?.orchestration) {
+            chatStore.updateMessage(messageId, {
+              orchestration: {
+                ...msg.orchestration,
+                active: false,
+                total_elapsed_ms: data.total_elapsed_ms,
+              },
+            })
+          }
+        } else if (data.type === 'chat_chunk' && data.chunk) {
           chatStore.appendToMessage(messageId, data.chunk)
         } else if (data.type === 'chunk' && data.content) {
           chatStore.appendToMessage(messageId, data.content)
@@ -280,6 +350,7 @@ async function streamViaHTTP(
   messageId: string,
   _convId: string,
   memoryContext?: string,
+  billing?: BillingContext | null,
 ): Promise<void> {
   const chatStore = useChatStore.getState()
 
@@ -291,6 +362,9 @@ async function streamViaHTTP(
   const body = JSON.stringify({
     query: text, request: text, question: text, message: text, stream: true,
     ...(memoryContext ? { memory_context: memoryContext } : {}),
+    ...(billing?.solutionId ? { solution_id: billing.solutionId } : {}),
+    ...(billing?.solutionRole ? { solution_role: billing.solutionRole } : {}),
+    ...(billing?.subAccountId ? { sub_account_id: billing.subAccountId } : {}),
   })
   const headers = authHeaders()
 
@@ -320,7 +394,7 @@ async function streamViaHTTP(
   // 非流式 JSON 响应（/consult 端点的标准返回格式）
   if (isJSON || !isSSE) {
     try {
-      const data = await response.json()
+      const data = (await response.json()) as ConsultResponse
       const answer = data.answer || data.text || data.content || data.message || ''
       if (answer) {
         chatStore.appendToMessage(messageId, answer)
@@ -425,9 +499,9 @@ interface LocalInferenceResult {
 
 async function tryLocalInference(text: string, solutionId?: string): Promise<LocalInferenceResult> {
   try {
-    const api = (window as any).electronAPI
+    const api = (window as WindowWithElectron).electronAPI
     if (api?.inference?.answer) {
-      return await api.inference.answer(text, solutionId)
+      return (await api.inference.answer(text, solutionId)) as LocalInferenceResult
     }
   } catch { /* 非 Electron 环境或 IPC 失败 */ }
 
@@ -453,7 +527,7 @@ function offlineSourceBadge(source: string): string {
 
 async function getMemoryPromptText(solutionId?: string): Promise<string> {
   try {
-    const api = (window as any).electronAPI
+    const api = (window as WindowWithElectron).electronAPI
     if (api?.memory?.getPromptText) {
       return await api.memory.getPromptText(solutionId) ?? ''
     }
@@ -463,7 +537,7 @@ async function getMemoryPromptText(solutionId?: string): Promise<string> {
 
 function autoLearnFromMessage(text: string, solutionId?: string, conversationId?: string): void {
   try {
-    const api = (window as any).electronAPI
+    const api = (window as WindowWithElectron).electronAPI
     if (api?.memory?.learn) {
       api.memory.learn(text, solutionId, conversationId).catch(() => {})
     }

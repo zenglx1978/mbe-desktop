@@ -79,7 +79,7 @@ export default function Settings() {
   }, [loadSolutionUsers])
 
   const loadDbStats = useCallback(async () => {
-    const api = (window as any).electronAPI
+    const api = window.electronAPI
     if (!api?.db?.stats) return
     try {
       const stats = await api.db.stats()
@@ -92,7 +92,7 @@ export default function Settings() {
   }, [loadDbStats])
 
   const handleBackupCreate = async () => {
-    const api = (window as any).electronAPI
+    const api = window.electronAPI
     if (!api?.db?.backup?.create) return
     setBackupMsg(null)
     try {
@@ -108,7 +108,7 @@ export default function Settings() {
   }
 
   const handleBackupRestore = async () => {
-    const api = (window as any).electronAPI
+    const api = window.electronAPI
     if (!api?.db?.backup?.restore) return
     setRestoreMsg(null)
     setPendingRestorePath(null)
@@ -130,7 +130,7 @@ export default function Settings() {
 
   const handleRestoreWithPassword = async () => {
     if (!pendingRestorePath || !restorePassword) return
-    const api = (window as any).electronAPI
+    const api = window.electronAPI
     if (!api?.db?.backup?.restoreWithPassword) return
     try {
       const result = await api.db.backup.restoreWithPassword(pendingRestorePath, restorePassword)
@@ -148,7 +148,7 @@ export default function Settings() {
   }
 
   const handleClearCache = async () => {
-    const api = (window as any).electronAPI
+    const api = window.electronAPI
     if (!api?.db?.clearCache) return
     try {
       const count = await api.db.clearCache()
@@ -161,7 +161,7 @@ export default function Settings() {
 
   const handleOpenWebLogin = () => {
     const url = `${API_BASE}/user/login?redirect=mbe-desktop://auth`
-    const api = (window as any).electronAPI
+    const api = window.electronAPI
     if (api?.openExternal) {
       api.openExternal(url)
     } else {
@@ -171,7 +171,7 @@ export default function Settings() {
 
   const handleOpenAdminSolutions = () => {
     const url = `${API_BASE}/admin/solutions`
-    const api = (window as any).electronAPI
+    const api = window.electronAPI
     if (api?.openExternal) {
       api.openExternal(url)
     } else {
@@ -367,6 +367,37 @@ export default function Settings() {
             备份会导出加密的 .mbebackup 文件，包含对话历史、计算记录和任务数据。
             系统每 7 天会自动备份到 文档/MBE Desktop/backups/ 目录。
           </p>
+        </section>
+
+        {/* 开发者工具 */}
+        <section className="rounded-lg border border-border bg-card p-4 mb-4">
+          <h2 className="text-sm font-medium text-foreground mb-3">开发者工具</h2>
+          <div className="space-y-2">
+            <button
+              onClick={() => navigate('/kb-graph')}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md border border-border/50 hover:bg-muted/30 transition-colors text-muted-foreground hover:text-foreground"
+            >
+              <span className="text-base">🧠</span>
+              知识图谱可视化
+              <span className="text-[10px] text-muted-foreground/50 ml-auto">11 Agent · 577 文件</span>
+            </button>
+            <button
+              onClick={() => navigate('/analytics/heatmaps')}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md border border-border/50 hover:bg-muted/30 transition-colors text-muted-foreground hover:text-foreground"
+            >
+              <span className="text-base">🔥</span>
+              数据热力图分析
+              <span className="text-[10px] text-muted-foreground/50 ml-auto">法律风险 · 投资瓶颈 · 产业链</span>
+            </button>
+            <button
+              onClick={() => navigate('/deepmind')}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md border border-border/50 hover:bg-muted/30 transition-colors text-muted-foreground hover:text-foreground"
+            >
+              <span className="text-base">🔬</span>
+              DeepMind Insights
+              <span className="text-[10px] text-muted-foreground/50 ml-auto">退火 · 波动 · 策略 · 暖启动</span>
+            </button>
+          </div>
         </section>
       </div>
     </div>

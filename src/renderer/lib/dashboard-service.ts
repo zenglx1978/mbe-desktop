@@ -1,3 +1,5 @@
+import type { WindowWithElectron } from '@/types/api-responses'
+
 /**
  * 仪表盘数据聚合服务
  * 从 SQLite 的 conversations / calc_history / tasks 表聚合统计。
@@ -61,7 +63,7 @@ export async function loadDashboardData(solutionId: string): Promise<DashboardDa
 
 async function loadConvStats(solutionId: string): Promise<ConvStats> {
   try {
-    const api = (window as any).electronAPI?.db
+    const api = (window as WindowWithElectron).electronAPI?.db
     if (!api?.conversations?.list) return { total: 0, thisWeek: 0, totalMessages: 0 }
 
     const convs = await api.conversations.list(solutionId)
@@ -83,7 +85,7 @@ async function loadConvStats(solutionId: string): Promise<ConvStats> {
 
 async function loadCalcStats(solutionId: string): Promise<CalcStats> {
   try {
-    const api = (window as any).electronAPI?.db?.calc
+    const api = (window as WindowWithElectron).electronAPI?.db?.calc
     if (!api?.list) return { total: 0, localCount: 0, remoteCount: 0, topTools: [] }
 
     const records = await api.list(solutionId)
@@ -111,7 +113,7 @@ async function loadCalcStats(solutionId: string): Promise<CalcStats> {
 
 async function loadTaskStats(solutionId: string): Promise<TaskDashStats> {
   try {
-    const api = (window as any).electronAPI?.db?.tasks
+    const api = (window as WindowWithElectron).electronAPI?.db?.tasks
     if (!api?.list) return { total: 0, pending: 0, inProgress: 0, done: 0, overdue: 0, completionRate: 0 }
 
     const tasks = await api.list(solutionId)
@@ -149,7 +151,7 @@ async function loadRecentActivities(solutionId: string): Promise<Activity[]> {
   const activities: Activity[] = []
 
   try {
-    const api = (window as any).electronAPI?.db
+    const api = (window as WindowWithElectron).electronAPI?.db
 
     // 最近对话
     const convs = await api?.conversations?.list?.(solutionId) || []
@@ -209,7 +211,7 @@ async function loadDailyTrend(solutionId: string): Promise<DailyPoint[]> {
   }
 
   try {
-    const api = (window as any).electronAPI?.db
+    const api = (window as WindowWithElectron).electronAPI?.db
 
     const convs = await api?.conversations?.list?.(solutionId) || []
     for (const c of convs) {

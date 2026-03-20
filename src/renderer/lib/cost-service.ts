@@ -112,11 +112,6 @@ export async function loadCostData(
   groupBy: CostDimension = 'expert_id',
   trendDays: number = 7,
 ): Promise<AggregatedCostData> {
-  // billing 端点尚未部署，dev 模式返回空数据避免 404 噪音
-  if (import.meta.env.DEV) {
-    return { totalCostYuan: 0, totalTokens: 0, totalCalls: 0, byAgent: [], mergedBreakdown: [], trend: [] }
-  }
-
   const agents = solution.agents
 
   const [attrResults, trendResults] = await Promise.all([

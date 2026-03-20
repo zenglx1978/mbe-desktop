@@ -10,6 +10,10 @@ const MigrationWizard = lazy(() => import('@/pages/MigrationWizard'))
 const Settings = lazy(() => import('@/pages/Settings'))
 const CopilotPanel = lazy(() => import('@/pages/CopilotPanel'))
 const DataSourceSetup = lazy(() => import('@/pages/DataSourceSetup'))
+const SolutionStory = lazy(() => import('@/pages/SolutionStory'))
+const KnowledgeGraphPage = lazy(() => import('@/pages/KnowledgeGraphPage'))
+const AnalyticsHeatmaps = lazy(() => import('@/pages/AnalyticsHeatmaps'))
+const DeepMindInsights = lazy(() => import('@/pages/DeepMindInsights'))
 
 function LoadingScreen() {
   return (
@@ -82,6 +86,42 @@ function AppRoutes() {
           element={
             <RequireAuth>
               <DataSourceSetup />
+            </RequireAuth>
+          }
+        />
+        {/* 方案 Scrollytelling 交互叙事 */}
+        <Route
+          path="/solution/:solutionId"
+          element={
+            <RequireAuth>
+              <SolutionStory />
+            </RequireAuth>
+          }
+        />
+        {/* 知识图谱可视化（开发者工具） */}
+        <Route
+          path="/kb-graph"
+          element={
+            <RequireAuth>
+              <KnowledgeGraphPage />
+            </RequireAuth>
+          }
+        />
+        {/* 数据热力图分析 */}
+        <Route
+          path="/analytics/heatmaps"
+          element={
+            <RequireAuth>
+              <AnalyticsHeatmaps />
+            </RequireAuth>
+          }
+        />
+        {/* DeepMind Insights 仪表盘（开发者工具） */}
+        <Route
+          path="/deepmind"
+          element={
+            <RequireAuth>
+              <DeepMindInsights />
             </RequireAuth>
           }
         />

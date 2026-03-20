@@ -6,6 +6,8 @@ interface UserInfo {
   email: string
   role?: string
   userId?: string
+  solutionRole?: string
+  subAccountId?: string
 }
 
 interface AuthState {

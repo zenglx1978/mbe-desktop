@@ -30,19 +30,49 @@ export interface LocalActionInfo {
 
 export type LocalActionStatus = 'pending' | 'auto_done' | 'user_done' | 'failed'
 
+export type ExpertStatus = 'idle' | 'working' | 'done' | 'error'
+
+export interface OrchestrationExpert {
+  id: string
+  label: string
+  status: ExpertStatus
+  elapsed_ms?: number
+  error?: string
+}
+
+export interface OrchestrationState {
+  active: boolean
+  mode: 'parallel' | 'sequential' | 'fan_out' | 'cross_domain'
+  experts: OrchestrationExpert[]
+  total_elapsed_ms?: number
+}
+
+export type SourceReliability = 'high' | 'medium' | 'low'
+
+export interface SourceCitation {
+  title: string
+  ref?: string
+  url?: string
+  reliability?: SourceReliability
+  confidence?: number
+  expired?: boolean
+  snippet?: string
+}
+
 export interface ChatMessage {
   id: string
   role: 'user' | 'assistant'
   content: string
   streaming?: boolean
   agentRole?: string
-  sources?: { title: string; authority?: string; snippet?: string }[]
+  sources?: SourceCitation[]
   confidence?: number
   workflowSuggestion?: WorkflowSuggestion
   workflowInstance?: WorkflowInstanceInfo
   localActions?: LocalActionInfo[]
   localActionStatus?: Record<number, LocalActionStatus>
   localActionResults?: Record<number, unknown>
+  orchestration?: OrchestrationState
 }
 
 interface ChatState {

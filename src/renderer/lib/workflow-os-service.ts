@@ -4,7 +4,10 @@
  * 更富更懒：不只是聊天，AI 直接替你干活、交付成果。
  */
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
+import { API_BASE } from './api-client'
+import type { CrossAgentWorkflowExecuteResponse } from '@/types/api-responses'
+
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || API_BASE
 
 export interface WorkflowInstanceSummary {
   instance_id: string
@@ -322,7 +325,7 @@ export async function executeCrossAgentWorkflow(
   workflowId: string,
   userId: string,
   userContext: Record<string, string> = {},
-): Promise<any> {
+): Promise<CrossAgentWorkflowExecuteResponse | null> {
   try {
     const res = await fetch(
       apiUrl(agentName, `/cross-agent/${solutionId}/${workflowId}/execute`),
@@ -333,7 +336,7 @@ export async function executeCrossAgentWorkflow(
       },
     )
     if (!res.ok) return null
-    return await res.json()
+    return (await res.json()) as CrossAgentWorkflowExecuteResponse
   } catch {
     return null
   }

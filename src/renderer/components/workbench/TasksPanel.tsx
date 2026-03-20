@@ -1,48 +1,23 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Plus, Trash2, CheckCircle2, Circle, Clock, AlertCircle, Filter } from 'lucide-react'
 import type { SolutionConfig } from '@/lib/solution-router'
-
-interface TaskItem {
-  id: string
-  title: string
-  status: TaskStatus
-  priority: Priority
-  dueDate?: string
-  note?: string
-  createdAt: string
-  completedAt?: string
-  source?: string
-}
-
-type TaskStatus = 'todo' | 'doing' | 'done'
-type Priority = 'high' | 'medium' | 'low'
+import {
+  fetchTasks, createTask as createTaskApi, updateTask as updateTaskApi,
+  deleteTask as deleteTaskApi, type TaskItem, type TaskStatus, type Priority,
+} from '@/lib/task-service'
 
 const STATUS_META: Record<TaskStatus, { label: string; icon: typeof Circle; cls: string }> = {
-  todo: { label: '待办', icon: Circle, cls: 'text-muted-foreground' },
-  doing: { label: '进行中', icon: Clock, cls: 'text-blue-500' },
-  done:  { label: '已完成', icon: CheckCircle2, cls: 'text-green-500' },
+  todo:        { label: '待办', icon: Circle, cls: 'text-muted-foreground' },
+  doing:       { label: '进行中', icon: Clock, cls: 'text-blue-500' },
+  done:        { label: '已完成', icon: CheckCircle2, cls: 'text-green-500' },
+  pending:     { label: '待处理', icon: Circle, cls: 'text-muted-foreground' },
+  in_progress: { label: '进行中', icon: Clock, cls: 'text-blue-500' },
 }
 
 const PRIORITY_META: Record<Priority, { label: string; cls: string; dot: string }> = {
   high:   { label: '紧急', cls: 'text-red-500', dot: 'bg-red-500' },
   medium: { label: '普通', cls: 'text-amber-500', dot: 'bg-amber-500' },
   low:    { label: '低', cls: 'text-muted-foreground', dot: 'bg-muted-foreground/50' },
-}
-
-function storageKey(solutionId: string) {
-  return `mbe_tasks_${solutionId}`
-}
-
-function loadTasks(solutionId: string): TaskItem[] {
-  try {
-    return JSON.parse(localStorage.getItem(storageKey(solutionId)) || '[]')
-  } catch {
-    return []
-  }
-}
-
-function saveTasks(solutionId: string, tasks: TaskItem[]) {
-  localStorage.setItem(storageKey(solutionId), JSON.stringify(tasks))
 }
 
 interface Props {
@@ -54,48 +29,38 @@ export default function TasksPanel({ solution }: Props) {
   const [filterStatus, setFilterStatus] = useState<TaskStatus | 'all'>('all')
   const [showAdd, setShowAdd] = useState(false)
   const [showCompleted, setShowCompleted] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    setTasks(loadTasks(solution.id))
+    setLoading(true)
+    fetchTasks(solution.id).then(setTasks).finally(() => setLoading(false))
   }, [solution.id])
 
-  const persist = useCallback((next: TaskItem[]) => {
-    setTasks(next)
-    saveTasks(solution.id, next)
-  }, [solution.id])
-
-  const addTask = useCallback((title: string, priority: Priority, dueDate?: string, note?: string) => {
-    const task: TaskItem = {
-      id: `task_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      title,
-      status: 'todo',
-      priority,
-      dueDate,
-      note,
-      createdAt: new Date().toISOString(),
-      source: 'manual',
-    }
-    persist([task, ...tasks])
+  const addTask = useCallback(async (title: string, priority: Priority, dueDate?: string, note?: string) => {
+    const task = await createTaskApi(solution.id, title, priority, dueDate, note)
+    setTasks(prev => [task, ...prev])
     setShowAdd(false)
-  }, [tasks, persist])
+  }, [solution.id])
 
-  const cycleStatus = useCallback((id: string) => {
+  const cycleStatus = useCallback(async (id: string) => {
     const order: TaskStatus[] = ['todo', 'doing', 'done']
-    persist(tasks.map(t => {
+    setTasks(prev => prev.map(t => {
       if (t.id !== id) return t
       const nextIdx = (order.indexOf(t.status) + 1) % order.length
       const nextStatus = order[nextIdx]
+      updateTaskApi(id, { status: nextStatus })
       return {
         ...t,
         status: nextStatus,
         completedAt: nextStatus === 'done' ? new Date().toISOString() : undefined,
       }
     }))
-  }, [tasks, persist])
+  }, [])
 
-  const deleteTask = useCallback((id: string) => {
-    persist(tasks.filter(t => t.id !== id))
-  }, [tasks, persist])
+  const handleDelete = useCallback(async (id: string) => {
+    await deleteTaskApi(solution.id, id)
+    setTasks(prev => prev.filter(t => t.id !== id))
+  }, [solution.id])
 
   const activeTasks = tasks.filter(t => t.status !== 'done')
   const completedTasks = tasks.filter(t => t.status === 'done')
@@ -115,14 +80,12 @@ export default function TasksPanel({ solution }: Props) {
   return (
     <div className="flex-1 overflow-y-auto p-6">
       <div className="max-w-3xl mx-auto space-y-6">
-        {/* 统计概览 */}
         <div className="grid grid-cols-3 gap-3">
           <StatBadge icon={<Circle className="w-4 h-4" />} label="待办" count={counts.todo} cls="text-muted-foreground" />
           <StatBadge icon={<Clock className="w-4 h-4" />} label="进行中" count={counts.doing} cls="text-blue-500" />
           <StatBadge icon={<CheckCircle2 className="w-4 h-4" />} label="已完成" count={counts.done} cls="text-green-500" />
         </div>
 
-        {/* 筛选 + 新建 */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 bg-secondary/30 rounded-lg p-1">
             <Filter className="w-3.5 h-3.5 text-muted-foreground ml-2" />
@@ -147,18 +110,18 @@ export default function TasksPanel({ solution }: Props) {
           </button>
         </div>
 
-        {/* 新建任务表单 */}
         {showAdd && <AddTaskForm onAdd={addTask} onCancel={() => setShowAdd(false)} />}
 
-        {/* 活跃任务列表 */}
-        {filtered.length > 0 ? (
+        {loading && tasks.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground text-sm">加载中...</div>
+        ) : filtered.length > 0 ? (
           <div className="space-y-2">
             {filtered.map(task => (
               <TaskRow
                 key={task.id}
                 task={task}
                 onCycleStatus={() => cycleStatus(task.id)}
-                onDelete={() => deleteTask(task.id)}
+                onDelete={() => handleDelete(task.id)}
               />
             ))}
           </div>
@@ -166,7 +129,6 @@ export default function TasksPanel({ solution }: Props) {
           <EmptyTasks hasAny={tasks.length > 0} onAdd={() => setShowAdd(true)} />
         )}
 
-        {/* 已完成（折叠） */}
         {completedTasks.length > 0 && (
           <div>
             <button
@@ -183,7 +145,7 @@ export default function TasksPanel({ solution }: Props) {
                     key={task.id}
                     task={task}
                     onCycleStatus={() => cycleStatus(task.id)}
-                    onDelete={() => deleteTask(task.id)}
+                    onDelete={() => handleDelete(task.id)}
                     dimmed
                   />
                 ))}
@@ -220,7 +182,7 @@ function TaskRow({ task, onCycleStatus, onDelete, dimmed }: {
     <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${
       dimmed ? 'border-border/20 bg-card/20 opacity-60' : 'border-border/40 bg-card/50 hover:border-primary/20'
     }`}>
-      <button onClick={onCycleStatus} className={`shrink-0 ${meta.cls} hover:scale-110 transition-transform`} title={`切换到下一状态`}>
+      <button onClick={onCycleStatus} className={`shrink-0 ${meta.cls} hover:scale-110 transition-transform`} title="切换到下一状态">
         <StatusIcon className="w-5 h-5" />
       </button>
       <div className="flex-1 min-w-0">
@@ -279,9 +241,9 @@ function AddTaskForm({ onAdd, onCancel }: { onAdd: (title: string, priority: Pri
               onChange={e => setPriority(e.target.value as Priority)}
               className="w-full px-3 py-2 rounded-lg bg-secondary/30 border border-border/50 text-sm outline-none focus:border-primary/50"
             >
-              <option value="high">🔴 紧急</option>
-              <option value="medium">🟡 普通</option>
-              <option value="low">⚪ 低优先级</option>
+              <option value="high">紧急</option>
+              <option value="medium">普通</option>
+              <option value="low">低优先级</option>
             </select>
           </div>
           <div>

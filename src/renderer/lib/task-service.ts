@@ -1,201 +1,175 @@
 /**
- * 任务管理服务 — CRUD + 时效计算 + 统计
+ * Task Service — 用户任务 CRUD（后端持久化 + localStorage 降级）
  */
+import { API_BASE, authFetch } from '@/lib/api-client'
+import type { AccountTasksListResponse, AccountTaskApiRow } from '@/types/api-responses'
 
-export interface Task {
+export type TaskStatus = 'todo' | 'doing' | 'done' | 'pending' | 'in_progress'
+export type Priority = 'high' | 'medium' | 'low'
+export type TaskPriority = Priority
+
+export interface TaskItem {
   id: string
-  solution_id: string
-  type: string
   title: string
-  priority: 'high' | 'medium' | 'low'
-  status: 'pending' | 'in_progress' | 'done'
-  due_date: string | null
-  related_conversation_id: string | null
-  related_calc_id: string | null
-  metadata_json: string | null
-  created_at: string
-  updated_at: string
-}
-
-export type TaskPriority = Task['priority']
-export type TaskStatus = Task['status']
-
-export interface CreateTaskInput {
-  solutionId: string
-  type: string
-  title: string
-  priority?: TaskPriority
+  status: TaskStatus
+  priority: Priority
+  type?: string
   dueDate?: string
-  relatedConversationId?: string
+  note?: string
+  createdAt: string
+  completedAt?: string
+  source?: string
+  solutionId?: string
 }
 
-export interface TaskStats {
-  total: number
-  pending: number
-  inProgress: number
-  done: number
-  overdue: number
-  dueToday: number
+export type Task = TaskItem
+
+export const PRIORITY_META: Record<Priority, { label: string; icon: string; color: string }> = {
+  high: { label: '高', icon: '🔴', color: 'text-red-400' },
+  medium: { label: '中', icon: '🟡', color: 'text-amber-400' },
+  low: { label: '低', icon: '🟢', color: 'text-green-400' },
 }
 
-const PRIORITY_ORDER: Record<TaskPriority, number> = { high: 0, medium: 1, low: 2 }
-const STATUS_ORDER: Record<TaskStatus, number> = { in_progress: 0, pending: 1, done: 2 }
-
-function api() {
-  return (window as any).electronAPI?.db?.tasks
+export function getDueStatus(task: TaskItem): 'overdue' | 'today' | 'upcoming' | 'none' {
+  if (!task.dueDate) return 'none'
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+  const due = new Date(task.dueDate)
+  due.setHours(0, 0, 0, 0)
+  const diff = due.getTime() - now.getTime()
+  if (diff < 0) return 'overdue'
+  if (diff === 0) return 'today'
+  if (diff <= 3 * 86400000) return 'upcoming'
+  return 'none'
 }
 
-export async function listTasks(solutionId: string): Promise<Task[]> {
-  const db = api()
-  if (!db) return []
+export function getDaysRemaining(task: TaskItem): number | null {
+  if (!task.dueDate) return null
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+  const due = new Date(task.dueDate)
+  due.setHours(0, 0, 0, 0)
+  return Math.ceil((due.getTime() - now.getTime()) / 86400000)
+}
+
+const LS_PREFIX = 'mbe_tasks_'
+
+function lsKey(solutionId: string) {
+  return `${LS_PREFIX}${solutionId}`
+}
+
+function readLS(solutionId: string): TaskItem[] {
   try {
-    const rows = await db.list(solutionId)
-    return (rows || []).map(normalizeTask)
+    return JSON.parse(localStorage.getItem(lsKey(solutionId)) || '[]')
   } catch {
     return []
   }
 }
 
-export async function createTask(input: CreateTaskInput): Promise<Task | null> {
-  const db = api()
-  if (!db) return null
-  const id = `task_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+function writeLS(solutionId: string, tasks: TaskItem[]) {
+  localStorage.setItem(lsKey(solutionId), JSON.stringify(tasks))
+}
+
+export async function fetchTasks(solutionId: string): Promise<TaskItem[]> {
   try {
-    await db.create({
-      id,
-      solutionId: input.solutionId,
-      type: input.type,
-      title: input.title,
-      priority: input.priority || 'medium',
-      dueDate: input.dueDate || undefined,
-      relatedConversationId: input.relatedConversationId || undefined,
+    const params = new URLSearchParams({ solution_id: solutionId, limit: '300' })
+    const resp = await authFetch(`${API_BASE}/api/v1/account/tasks?${params}`)
+    if (!resp.ok) throw new Error(`${resp.status}`)
+    const data = (await resp.json()) as AccountTasksListResponse
+    const tasks: TaskItem[] = (data.tasks || []).map((t: AccountTaskApiRow) => ({
+      id: t.id,
+      title: t.title,
+      status: t.status as TaskStatus,
+      priority: t.priority as Priority,
+      dueDate: t.dueDate || undefined,
+      note: t.note || undefined,
+      createdAt: t.createdAt,
+      completedAt: t.completedAt || undefined,
+      source: t.source,
+      solutionId: t.solutionId,
+    }))
+    writeLS(solutionId, tasks)
+    return tasks
+  } catch {
+    return readLS(solutionId)
+  }
+}
+
+export async function createTask(
+  solutionId: string,
+  title: string,
+  priority: Priority,
+  dueDate?: string,
+  note?: string,
+): Promise<TaskItem> {
+  const fallback: TaskItem = {
+    id: `task_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    title, status: 'todo', priority,
+    dueDate, note,
+    createdAt: new Date().toISOString(),
+    source: 'manual',
+    solutionId,
+  }
+
+  try {
+    const resp = await authFetch(`${API_BASE}/api/v1/account/tasks`, {
+      method: 'POST',
+      body: JSON.stringify({
+        title, priority,
+        due_date: dueDate || null,
+        note: note || '',
+        solution_id: solutionId,
+      }),
     })
+    if (!resp.ok) throw new Error(`${resp.status}`)
+    const t = (await resp.json()) as AccountTaskApiRow
     return {
-      id,
-      solution_id: input.solutionId,
-      type: input.type,
-      title: input.title,
-      priority: input.priority || 'medium',
-      status: 'pending',
-      due_date: input.dueDate || null,
-      related_conversation_id: input.relatedConversationId || null,
-      related_calc_id: null,
-      metadata_json: null,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      id: t.id,
+      title: t.title,
+      status: t.status as TaskStatus,
+      priority: t.priority as Priority,
+      dueDate: t.dueDate || undefined,
+      note: t.note || undefined,
+      createdAt: t.createdAt,
+      completedAt: t.completedAt || undefined,
+      source: t.source,
+      solutionId: t.solutionId,
     }
   } catch {
-    return null
+    const tasks = readLS(solutionId)
+    writeLS(solutionId, [fallback, ...tasks])
+    return fallback
   }
 }
 
-export async function updateTask(id: string, updates: Partial<Pick<Task, 'status' | 'title' | 'priority'>>): Promise<void> {
-  const db = api()
-  if (!db) return
+export async function updateTask(
+  taskId: string,
+  updates: { title?: string; status?: string; priority?: string; due_date?: string; note?: string },
+): Promise<boolean> {
   try {
-    await db.update(id, updates)
+    const resp = await authFetch(`${API_BASE}/api/v1/account/tasks/${taskId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    })
+    return resp.ok
   } catch {
-    // 静默
+    return false
   }
 }
 
-export async function deleteTask(id: string): Promise<void> {
-  const db = api()
-  if (!db) return
+export async function deleteTask(solutionId: string, taskId: string): Promise<boolean> {
   try {
-    await db.delete(id)
-  } catch {
-    // 静默
-  }
-}
-
-/** 按看板列分组 */
-export function groupByStatus(tasks: Task[]): Record<TaskStatus, Task[]> {
-  const groups: Record<TaskStatus, Task[]> = { pending: [], in_progress: [], done: [] }
-  for (const t of tasks) {
-    const s = t.status as TaskStatus
-    if (groups[s]) groups[s].push(t)
-    else groups.pending.push(t)
-  }
-  for (const key of Object.keys(groups) as TaskStatus[]) {
-    groups[key].sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority])
-  }
-  return groups
-}
-
-/** 按优先级排序 */
-export function sortTasks(tasks: Task[]): Task[] {
-  return [...tasks].sort((a, b) => {
-    const sd = STATUS_ORDER[a.status] - STATUS_ORDER[b.status]
-    if (sd !== 0) return sd
-    return PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]
-  })
-}
-
-/** 时效状态 */
-export function getDueStatus(task: Task): 'overdue' | 'today' | 'upcoming' | 'none' {
-  if (!task.due_date) return 'none'
-  const now = new Date()
-  const due = new Date(task.due_date)
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate())
-
-  if (dueDay < today) return 'overdue'
-  if (dueDay.getTime() === today.getTime()) return 'today'
-  return 'upcoming'
-}
-
-/** 剩余天数 */
-export function getDaysRemaining(task: Task): number | null {
-  if (!task.due_date) return null
-  const now = new Date()
-  const due = new Date(task.due_date)
-  return Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-}
-
-/** 统计 */
-export function getStats(tasks: Task[]): TaskStats {
-  const stats: TaskStats = { total: 0, pending: 0, inProgress: 0, done: 0, overdue: 0, dueToday: 0 }
-  for (const t of tasks) {
-    stats.total++
-    if (t.status === 'pending') stats.pending++
-    else if (t.status === 'in_progress') stats.inProgress++
-    else if (t.status === 'done') stats.done++
-
-    if (t.status !== 'done') {
-      const ds = getDueStatus(t)
-      if (ds === 'overdue') stats.overdue++
-      if (ds === 'today') stats.dueToday++
+    const resp = await authFetch(`${API_BASE}/api/v1/account/tasks/${taskId}`, {
+      method: 'DELETE',
+    })
+    if (resp.ok) {
+      const tasks = readLS(solutionId)
+      writeLS(solutionId, tasks.filter(t => t.id !== taskId))
     }
+    return resp.ok
+  } catch {
+    const tasks = readLS(solutionId)
+    writeLS(solutionId, tasks.filter(t => t.id !== taskId))
+    return true
   }
-  return stats
-}
-
-function normalizeTask(row: any): Task {
-  return {
-    id: row.id,
-    solution_id: row.solution_id,
-    type: row.type || 'general',
-    title: row.title,
-    priority: row.priority || 'medium',
-    status: row.status || 'pending',
-    due_date: row.due_date || null,
-    related_conversation_id: row.related_conversation_id || null,
-    related_calc_id: row.related_calc_id || null,
-    metadata_json: row.metadata_json || null,
-    created_at: row.created_at || '',
-    updated_at: row.updated_at || '',
-  }
-}
-
-export const PRIORITY_META: Record<TaskPriority, { label: string; color: string; icon: string }> = {
-  high: { label: '紧急', color: '#ef4444', icon: '🔴' },
-  medium: { label: '普通', color: '#f59e0b', icon: '🟡' },
-  low: { label: '低', color: '#6b7280', icon: '⚪' },
-}
-
-export const STATUS_META: Record<TaskStatus, { label: string; icon: string }> = {
-  pending: { label: '待处理', icon: '⏳' },
-  in_progress: { label: '进行中', icon: '🔄' },
-  done: { label: '已完成', icon: '✅' },
 }

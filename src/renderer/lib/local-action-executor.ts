@@ -1,3 +1,9 @@
+import type {
+  ElectronAccessibilityBridge,
+  ElectronEcommerceCsBridge,
+  ElectronInferenceBridge,
+} from '@/types/api-responses'
+
 /**
  * LocalAction Executor — Agent 指令的前端执行引擎
  *
@@ -66,6 +72,9 @@ declare const window: Window & {
       reset: () => Promise<{ success: boolean }>
     }
     runLocalCalc: (script: string, args: Record<string, unknown>) => Promise<unknown>
+    inference?: ElectronInferenceBridge
+    ecommerceCs?: ElectronEcommerceCsBridge
+    accessibility?: ElectronAccessibilityBridge
   }
 }
 
@@ -413,7 +422,7 @@ async function executeSingle(
     }
 
     case 'offline_hint': {
-      const inferApi = (window as any).electronAPI?.inference
+      const inferApi = window.electronAPI?.inference
       if (inferApi?.answer) {
         const query = (action.params?.query as string) ?? ''
         const result = await inferApi.answer(query)
@@ -424,7 +433,7 @@ async function executeSingle(
 
     case 'show_copilot_card': {
       const replyText = (action.params?.text as string) ?? String(prevOutput ?? '')
-      const ecsApi = (window as any).electronAPI?.ecommerceCs
+      const ecsApi = window.electronAPI?.ecommerceCs
       if (ecsApi?.addReply) {
         const reply = await ecsApi.addReply({
           customerName: (action.params?.customer_name as string) ?? '客户',
@@ -441,7 +450,7 @@ async function executeSingle(
     }
 
     case 'accessibility_read': {
-      const accApi = (window as any).electronAPI?.accessibility
+      const accApi = window.electronAPI?.accessibility
       if (!accApi) throw new Error('Accessibility Bridge 不可用（非 Windows 桌面端）')
       const appKey = (action.target ?? action.params?.app) as string
       if (!appKey) throw new Error('accessibility_read 缺少目标应用')

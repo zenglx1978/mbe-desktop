@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useAppStore } from '@/stores/app-store'
-import type { ApprovalItem } from '@/lib/approval-service'
+import type { ApprovalItem, RiskLevel } from '@/lib/approval-service'
 import { RISK_META } from '@/lib/approval-service'
 import type { AuditStats, AuditFilters } from '@/lib/audit-service'
 import { loadAuditData, exportAuditCSV } from '@/lib/audit-service'
@@ -149,7 +149,7 @@ export default function AuditPanel() {
           value={filters.riskLevel || ''}
           options={RISK_OPTIONS.map(v => ({
             value: v,
-            label: v ? (RISK_META[v]?.label || v) + '风险' : '全部',
+            label: v ? (RISK_META[v as RiskLevel]?.label || v) + '风险' : '全部',
           }))}
           onChange={v => setFilters(f => ({ ...f, riskLevel: v || undefined, offset: 0 }))}
         />

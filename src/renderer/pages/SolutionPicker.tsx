@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { SOLUTION_REGISTRY, type SolutionConfig } from '@/lib/solution-router'
+import { SOLUTION_REGISTRY, type SolutionConfig, fetchSolutionStatuses, getEffectiveStatus } from '@/lib/solution-router'
 import { useAppStore } from '@/stores/app-store'
 import { useAuthStore } from '@/stores/auth-store'
 import { LogOut, Zap, Briefcase, Search, Users, Wrench, Workflow, Sparkles, Scan, ArrowRight, ChevronDown } from 'lucide-react'
 import { getSolutionIcon } from '@/lib/solution-icons'
 import { API_BASE, authHeaders } from '@/lib/api-client'
 import UpdateBanner from '@/components/UpdateBanner'
+import ParticleField from '@/components/ParticleField'
 
 interface IndustryGuess {
   industry: string
@@ -39,19 +40,29 @@ function findSolution(id: string): SolutionConfig | undefined {
   return SOLUTION_REGISTRY.find((s) => s.id === id)
 }
 
-function SolutionCard({ solution, index, onPick }: {
+const STATUS_BADGE: Record<string, { label: string; className: string }> = {
+  coming_soon: { label: '即将上线', className: 'bg-amber-500/15 text-amber-500 border-amber-500/20' },
+  draft: { label: '开发中', className: 'bg-slate-500/15 text-slate-400 border-slate-500/20' },
+}
+
+function SolutionCard({ solution, index, onPick, onLearnMore }: {
   solution: SolutionConfig
   index: number
   onPick: (id: string) => void
+  onLearnMore: (id: string) => void
 }) {
   const Icon = getSolutionIcon(solution.id)
   const color = solution.color
+  const status = getEffectiveStatus(solution.id)
+  const isClickable = status === 'available'
+  const badge = STATUS_BADGE[status]
 
   const handleMouseEnter = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    if (!isClickable) return
     const el = e.currentTarget
     el.style.borderColor = color + '50'
     el.style.boxShadow = `0 0 0 1px ${color}15, 0 20px 40px -8px ${color}12`
-  }, [color])
+  }, [color, isClickable])
 
   const handleMouseLeave = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     const el = e.currentTarget
@@ -61,29 +72,36 @@ function SolutionCard({ solution, index, onPick }: {
 
   return (
     <button
-      onClick={() => onPick(solution.id)}
-      aria-label={`选择${solution.name}`}
-      className="solution-card group relative flex flex-col p-5 rounded-xl bg-card border border-border/50 text-left hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background animate-fade-in-up"
+      onClick={() => isClickable && onPick(solution.id)}
+      aria-label={isClickable ? `选择${solution.name}` : `${solution.name}（${badge?.label || '不可用'}）`}
+      disabled={!isClickable}
+      className={`solution-card group relative flex flex-col p-5 rounded-xl bg-card border border-border/50 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background animate-fade-in-up ${isClickable ? 'hover:-translate-y-0.5 cursor-pointer' : 'opacity-60 cursor-default'}`}
       style={{ animationDelay: `${index * 50}ms` }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       {/* 顶部渐变高光 — hover 时显现，强化方案色彩身份 */}
-      <div
-        className="absolute top-0 left-5 right-5 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-        style={{ background: `linear-gradient(90deg, transparent, ${color}50, transparent)` }}
-      />
+      {isClickable && (
+        <div
+          className="absolute top-0 left-5 right-5 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+          style={{ background: `linear-gradient(90deg, transparent, ${color}50, transparent)` }}
+        />
+      )}
 
       <div className="flex items-start justify-between mb-3">
         {/* 方案独立色彩图标 — 每个方案有视觉身份 */}
         <div
-          className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-110"
+          className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-200 ${isClickable ? 'group-hover:scale-110' : ''}`}
           style={{ backgroundColor: color + '15', color }}
         >
           <Icon className="w-5 h-5" />
         </div>
-        {/* 效率标签 — 用方案色着色 */}
-        {solution.valueEquivalent && (
+        {/* 状态徽章 or 效率标签 */}
+        {badge ? (
+          <span className={`text-[11px] font-medium px-2.5 py-1 rounded-full border ${badge.className}`}>
+            {badge.label}
+          </span>
+        ) : solution.valueEquivalent ? (
           <span
             className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full"
             style={{ backgroundColor: color + '12', color }}
@@ -93,7 +111,7 @@ function SolutionCard({ solution, index, onPick }: {
             <Zap className="w-3 h-3 shrink-0" />
             {solution.valueEquivalent.humanHours}h→{solution.valueEquivalent.mbeMinutes}min
           </span>
-        )}
+        ) : null}
       </div>
 
       <span className="font-semibold text-foreground leading-tight">{solution.name}</span>
@@ -111,7 +129,7 @@ function SolutionCard({ solution, index, onPick }: {
         </span>
       )}
 
-      {/* 底部元数据 — 渐进披露：专家数 · 工具数 · 流程数 */}
+      {/* 底部元数据 — 渐进披露：专家数 · 工具数 · 流程数 · 了解更多 */}
       <div className="flex items-center gap-3 mt-3 text-[11px] text-muted-foreground/50 group-hover:text-muted-foreground/70 transition-colors">
         <span className="flex items-center gap-1">
           <Users className="w-3 h-3" />
@@ -127,6 +145,17 @@ function SolutionCard({ solution, index, onPick }: {
           <span className="flex items-center gap-1">
             <Workflow className="w-3 h-3" />
             {solution.workflows.length} 流程
+          </span>
+        )}
+        {isClickable && (
+          <span
+            role="link"
+            tabIndex={0}
+            className="ml-auto flex items-center gap-0.5 text-primary/60 hover:text-primary cursor-pointer transition-colors"
+            onClick={(e) => { e.stopPropagation(); onLearnMore(solution.id) }}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); onLearnMore(solution.id) } }}
+          >
+            了解更多 <ArrowRight className="w-3 h-3" />
           </span>
         )}
       </div>
@@ -158,7 +187,12 @@ export default function SolutionPicker() {
   const [intakeLoading, setIntakeLoading] = useState(false)
   const [intakeQuery, setIntakeQuery] = useState('')
   const [showAllSolutions, setShowAllSolutions] = useState(false)
+  const [statusSynced, setStatusSynced] = useState(false)
   const intakeInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    fetchSolutionStatuses().then(() => setStatusSynced(true))
+  }, [])
 
   useEffect(() => {
     const api = (window as any).electronAPI
@@ -212,36 +246,53 @@ export default function SolutionPicker() {
   const topRecommendation = industryGuesses[0]
 
   const filteredCategories = useMemo(() => {
-    if (!search.trim() || intakeResults.length > 0) return CATEGORIES
-    const q = search.toLowerCase()
-    return CATEGORIES.map((cat) => ({
+    const base = search.trim() && intakeResults.length === 0
+      ? CATEGORIES.map((cat) => {
+          const q = search.toLowerCase()
+          return {
+            ...cat,
+            ids: cat.ids.filter((id) => {
+              const s = findSolution(id)
+              return s && (
+                s.name.toLowerCase().includes(q) ||
+                s.tagline.toLowerCase().includes(q) ||
+                s.description.toLowerCase().includes(q)
+              )
+            }),
+          }
+        }).filter((cat) => cat.ids.length > 0)
+      : CATEGORIES
+
+    // 过滤掉已下架（disabled）的方案，保留 coming_soon/draft 但不可点击
+    return base.map((cat) => ({
       ...cat,
-      ids: cat.ids.filter((id) => {
-        const s = findSolution(id)
-        return s && (
-          s.name.toLowerCase().includes(q) ||
-          s.tagline.toLowerCase().includes(q) ||
-          s.description.toLowerCase().includes(q)
-        )
-      }),
+      ids: cat.ids.filter((id) => getEffectiveStatus(id) !== 'disabled'),
     })).filter((cat) => cat.ids.length > 0)
-  }, [search, intakeResults])
+  }, [search, intakeResults, statusSynced])
 
   const handlePick = useCallback((id: string) => {
     setSolution(id)
     navigate('/', { replace: true })
   }, [setSolution, navigate])
 
+  const handleLearnMore = useCallback((id: string) => {
+    navigate(`/solution/${id}`)
+  }, [navigate])
+
   const handleLogout = useCallback(() => {
     useAuthStore.getState().logout()
     navigate('/auth', { replace: true })
   }, [navigate])
 
+  const availableRegistry = useMemo(
+    () => SOLUTION_REGISTRY.filter(s => getEffectiveStatus(s.id) === 'available'),
+    [statusSynced],
+  )
   const totalExperts = useMemo(
-    () => SOLUTION_REGISTRY.reduce((sum, s) => sum + s.agents.length, 0), []
+    () => availableRegistry.reduce((sum, s) => sum + s.agents.length, 0), [availableRegistry]
   )
   const totalTools = useMemo(
-    () => SOLUTION_REGISTRY.reduce((sum, s) => sum + s.tools.length, 0), []
+    () => availableRegistry.reduce((sum, s) => sum + s.tools.length, 0), [availableRegistry]
   )
 
   let cardIndex = 0
@@ -250,11 +301,15 @@ export default function SolutionPicker() {
     <div className="min-h-screen bg-background">
       <UpdateBanner />
 
-      {/* ── Hero 区域 ── 渐变背景 + 标题 + 搜索 */}
+      {/* ── Hero 区域 ── 渐变背景 + 粒子 + 标题 + 搜索 */}
       <div className="relative overflow-hidden">
         {/* 顶部渐变光晕 — 视觉深度暗示 */}
         <div className="absolute inset-0 bg-gradient-to-b from-primary/[0.04] via-transparent to-transparent pointer-events-none" />
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-primary/[0.03] rounded-full blur-3xl pointer-events-none" />
+        {/* 粒子动效 — AI 专家在工作的感觉 */}
+        <div className="absolute inset-0 pointer-events-none">
+          <ParticleField accentColor="hsl(var(--primary))" nodeCount={6} particleDensity={35} className="absolute inset-0" />
+        </div>
 
         <div className="relative max-w-6xl mx-auto px-6 md:px-8 pt-8 pb-6">
           {/* 顶栏 — 品牌标识 + 用户信息 */}
@@ -337,7 +392,7 @@ export default function SolutionPicker() {
             <div className="flex items-center gap-5 text-xs text-muted-foreground/60 mt-1">
               <span className="flex items-center gap-1.5">
                 <Briefcase className="w-3.5 h-3.5" />
-                {SOLUTION_REGISTRY.length} 个方案
+                {availableRegistry.length} 个方案
               </span>
               <span className="flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5" />
@@ -491,12 +546,12 @@ export default function SolutionPicker() {
             className="inline-flex items-center gap-1.5 px-5 py-2.5 text-sm text-muted-foreground hover:text-foreground border border-border/40 rounded-xl hover:border-border transition-all"
           >
             <ChevronDown className="w-4 h-4" />
-            {intakeResults.length > 0 ? `不满意？浏览全部 ${SOLUTION_REGISTRY.length} 个方案` : `或者，浏览全部 ${SOLUTION_REGISTRY.length} 个行业方案`}
+            {intakeResults.length > 0 ? `不满意？浏览全部 ${SOLUTION_REGISTRY.length} 个方案` : `或者，浏览全部行业方案`}
           </button>
         </div>
       )}
       <div className={`max-w-6xl mx-auto px-6 md:px-8 pb-12 ${!showAllSolutions ? 'hidden' : ''}`}>
-        {SOLUTION_REGISTRY.length === 0 ? (
+        {filteredCategories.length === 0 && !search.trim() ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <Briefcase className="w-12 h-12 text-muted-foreground/20 mb-4" />
             <p className="text-muted-foreground font-medium">暂无可用方案</p>
@@ -534,6 +589,7 @@ export default function SolutionPicker() {
                           solution={s}
                           index={idx}
                           onPick={handlePick}
+                          onLearnMore={handleLearnMore}
                         />
                       )
                     })}

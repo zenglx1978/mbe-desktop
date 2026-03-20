@@ -45,6 +45,53 @@
   .animation-delay-500 { animation-delay: 300ms; }
 }
 
+/* ── WorkflowOS Agent 追踪线 ── */
+
+@keyframes agent-trace {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes node-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4); }
+  50% { box-shadow: 0 0 0 6px hsl(var(--primary) / 0); }
+}
+
+/* 已完成段：实线渐变 */
+.wf-track-done {
+  background: linear-gradient(90deg,
+    hsl(152 60% 45%) 0%,
+    hsl(152 60% 50%) 100%
+  );
+}
+
+/* 进行中段：流动光带 */
+.wf-track-active {
+  background: linear-gradient(90deg,
+    hsl(var(--primary) / 0.15) 0%,
+    hsl(var(--primary)) 50%,
+    hsl(var(--primary) / 0.15) 100%
+  );
+  background-size: 200% 100%;
+  animation: agent-trace 2s ease-in-out infinite;
+}
+
+/* 待执行段：虚线 */
+.wf-track-pending {
+  background: repeating-linear-gradient(
+    90deg,
+    hsl(220 10% 30%) 0px,
+    hsl(220 10% 30%) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+}
+
+/* 当前运行节点脉冲 */
+.wf-node-active {
+  animation: node-pulse 1.5s ease-in-out infinite;
+}
+
 /* 滚动条 */
 ::-webkit-scrollbar {
   width: 6px;
@@ -64,6 +111,58 @@
 /* 选区颜色 — 跟随方案主色调 */
 ::selection {
   background: hsl(var(--primary) / 0.3);
+}
+
+/* ── 置信度视觉梯度纹理（Dithering 启发） ── */
+
+/* 高置信度 0.9-1.0：实色左边框 */
+.confidence-high {
+  border-left: 3px solid hsl(152 60% 45%);
+  background: hsl(152 40% 15% / 0.15);
+}
+
+/* 中高置信度 0.7-0.9：细点纹理 */
+.confidence-medium {
+  border-left: 3px solid hsl(38 70% 50%);
+  background:
+    radial-gradient(circle, hsl(38 60% 50% / 0.08) 1px, transparent 1px);
+  background-size: 6px 6px;
+  background-color: hsl(38 40% 20% / 0.1);
+}
+
+/* 中低置信度 0.5-0.7：斜线纹理（dithering 感） */
+.confidence-low {
+  border-left: 3px solid hsl(25 80% 50%);
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 3px,
+      hsl(25 60% 50% / 0.06) 3px,
+      hsl(25 60% 50% / 0.06) 4px
+    );
+  background-color: hsl(25 40% 20% / 0.08);
+}
+
+/* 极低置信度 < 0.5：虚线边框 + 淡色 */
+.confidence-very-low {
+  border-left: 3px dashed hsl(0 60% 55%);
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 4px,
+      hsl(0 50% 50% / 0.04) 4px,
+      hsl(0 50% 50% / 0.04) 5px
+    ),
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 4px,
+      hsl(0 50% 50% / 0.03) 4px,
+      hsl(0 50% 50% / 0.03) 5px
+    );
+  background-color: hsl(0 30% 20% / 0.06);
 }
 
 /* ── 方案选择卡片 ── */

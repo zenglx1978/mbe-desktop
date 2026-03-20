@@ -7,6 +7,7 @@
 import type { SolutionConfig } from '@/lib/solution-router'
 import type { ApprovalItem } from '@/lib/approval-service'
 import { authHeaders } from '@/lib/api-client'
+import type { AuditExportJsonResponse } from '@/types/api-responses'
 
 export interface AuditFilters {
   status?: string
@@ -146,7 +147,7 @@ export async function exportAuditCSV(
         const url = `${a.baseUrl}/governance/approvals/audit/export?${params}`
         const resp = await fetch(url, { headers: authHeaders(), signal: AbortSignal.timeout(15000) })
         if (!resp.ok) return ''
-        const data = await resp.json()
+        const data = (await resp.json()) as AuditExportJsonResponse
         return data.csv || ''
       } catch {
         return ''

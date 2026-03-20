@@ -6,6 +6,24 @@
 
 import type { WorkflowConfig, ScenarioConfig, WorkflowStep } from './solution-router'
 import { authHeaders, API_BASE } from '@/lib/api-client'
+import { useAppStore } from '@/stores/app-store'
+import type {
+  ConsultResponse,
+  ScenarioAskBody,
+  SuccessDataEnvelope,
+  WorkflowStreamEvent,
+} from '@/types/api-responses'
+
+/** 获取当前计费归因字段（solution_role / sub_account_id） */
+function getBillingFields(): Record<string, string> {
+  const b = useAppStore.getState().getBillingContext()
+  if (!b) return {}
+  const fields: Record<string, string> = {}
+  if (b.solutionId) fields.solution_id = b.solutionId
+  if (b.solutionRole) fields.solution_role = b.solutionRole
+  if (b.subAccountId) fields.sub_account_id = b.subAccountId
+  return fields
+}
 
 export type StepStatus = 'pending' | 'running' | 'done' | 'error'
 
@@ -67,7 +85,7 @@ async function trySSE(
     const resp = await fetch(url, {
       method: 'POST',
       headers: authHeaders(),
-      body: JSON.stringify({ query, params }),
+      body: JSON.stringify({ query, params, ...getBillingFields() }),
     })
 
     if (!resp.ok || !resp.body) return null
@@ -97,7 +115,7 @@ async function trySSE(
         if (!dataStr) continue
 
         try {
-          const evt = JSON.parse(dataStr)
+          const evt = JSON.parse(dataStr) as WorkflowStreamEvent
           evt.type = eventType || evt.type
           processEvent(evt, workflow.steps, stepResults, onProgress)
         } catch {
@@ -152,13 +170,14 @@ async function executeStandard(
           solutionId, step, enrichedQuery, params,
         )
         sr.status = 'done'
-        sr.answer = data.answer || data.text || data.content || JSON.stringify(data)
+        sr.answer =
+          data.answer || data.text || data.content || JSON.stringify(data)
         sr.expert = `${step.agent}.${step.expert}`
         sr.durationMs = Date.now() - stepStart
         onProgress?.(step.id, 'done', sr.answer)
-      } catch (err: any) {
+      } catch (err: unknown) {
         sr.status = 'error'
-        sr.error = err.message || '请求失败'
+        sr.error = err instanceof Error ? err.message : '请求失败'
         sr.durationMs = Date.now() - stepStart
         onProgress?.(step.id, 'error', sr.error)
       }
@@ -177,14 +196,14 @@ async function executeStandard(
       mergedAnswer: mergedAnswer || undefined,
       totalDurationMs: Date.now() - startTime,
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     return {
       success: false,
       workflowId: workflow.id,
       mode: workflow.mode,
       steps: stepResults,
       totalDurationMs: Date.now() - startTime,
-      error: err.message,
+      error: err instanceof Error ? err.message : '请求失败',
     }
   }
 }
@@ -210,7 +229,7 @@ export async function executeScenario(
           signal: AbortSignal.timeout(60000),
         }
         if (method === 'POST') {
-          opts.body = JSON.stringify({ query: userInput || scenario.prompt })
+          opts.body = JSON.stringify({ query: userInput || scenario.prompt, ...getBillingFields() })
         }
         const directResp = await fetch(url, opts)
         if (directResp.ok) {
@@ -227,7 +246,7 @@ export async function executeScenario(
       ? `${scenario.prompt}\n\n${userInput}`
       : scenario.prompt
 
-    const body: Record<string, any> = { query }
+    const body: ScenarioAskBody = { query, ...getBillingFields() }
     if (scenario.expert) body.expert_hint = scenario.expert
     if (scenario.workflowId) body.workflow_hint = scenario.workflowId
 
@@ -239,7 +258,7 @@ export async function executeScenario(
     })
 
     if (resp.ok) {
-      const data = await resp.json()
+      const data = (await resp.json()) as ConsultResponse
       if (data.answer || data.text || data.content) {
         return {
           success: true,
@@ -255,11 +274,11 @@ export async function executeScenario(
       const directResp = await fetch(`${API_BASE}/api/${agentId}/consult`, {
         method: 'POST',
         headers: authHeaders(),
-        body: JSON.stringify({ request: query, query, question: query }),
+        body: JSON.stringify({ request: query, query, question: query, ...getBillingFields() }),
         signal: AbortSignal.timeout(60000),
       })
       if (directResp.ok) {
-        const data = await directResp.json()
+        const data = (await directResp.json()) as ConsultResponse
         return {
           success: true,
           answer: data.answer || data.text || data.content || JSON.stringify(data),
@@ -269,35 +288,41 @@ export async function executeScenario(
     }
 
     return { success: false, error: `API ${resp.status}`, durationMs: Date.now() - start }
-  } catch (err: any) {
-    return { success: false, error: err.message, durationMs: Date.now() - start }
+  } catch (err: unknown) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : '请求失败',
+      durationMs: Date.now() - start,
+    }
   }
 }
 
 /**
  * 从各种 API 响应格式中提取可读答案
  */
-function extractAnswer(data: any): string | null {
+function extractAnswer(data: unknown): string | null {
   if (typeof data === 'string') return data
-  if (data.answer) return data.answer
-  if (data.text) return data.text
-  if (data.content) return data.content
+  if (!data || typeof data !== 'object') return null
+  const o = data as ConsultResponse & SuccessDataEnvelope
+  if (o.answer) return o.answer
+  if (o.text) return o.text
+  if (o.content) return o.content
 
   // 四柱系统 / 宏观报告格式：{ success: true, data: { ... } }
-  if (data.success && data.data) {
-    const d = data.data
+  if (o.success && o.data && typeof o.data === 'object') {
+    const d = o.data as Record<string, unknown>
     // macro-report 格式
-    if (d.report || d.summary || d.analysis) {
-      return d.report || d.summary || d.analysis
-    }
+    const report = d.report ?? d.summary ?? d.analysis
+    if (typeof report === 'string' && report) return report
+
     // macro pillar 格式：格式化 JSON 为可读文本
     if (d.signal || d.scores || d.indicators) {
       const parts: string[] = []
-      if (d.signal) parts.push(`## 宏观信号: ${d.signal}`)
-      if (d.scores) parts.push(`## 评分\n${JSON.stringify(d.scores, null, 2)}`)
-      if (d.risk_on_off) parts.push(`## Risk-On/Off: ${d.risk_on_off}`)
-      if (d.recommendation) parts.push(`## 建议\n${d.recommendation}`)
-      if (d.indicators) parts.push(`## 指标\n${JSON.stringify(d.indicators, null, 2)}`)
+      if (typeof d.signal === 'string') parts.push(`## 宏观信号: ${d.signal}`)
+      if (d.scores != null) parts.push(`## 评分\n${JSON.stringify(d.scores, null, 2)}`)
+      if (typeof d.risk_on_off === 'string') parts.push(`## Risk-On/Off: ${d.risk_on_off}`)
+      if (typeof d.recommendation === 'string') parts.push(`## 建议\n${d.recommendation}`)
+      if (d.indicators != null) parts.push(`## 指标\n${JSON.stringify(d.indicators, null, 2)}`)
       if (parts.length > 0) return parts.join('\n\n')
     }
     // 通用 data 对象
@@ -315,7 +340,7 @@ async function callStepWithFallback(
   step: WorkflowStep,
   query: string,
   params: Record<string, string>,
-): Promise<any> {
+): Promise<ConsultResponse> {
   // 1. 先尝试 Solution Runtime API
   try {
     const url = `${API_BASE}/api/v1/solutions/${solutionId}/ask`
@@ -326,12 +351,13 @@ async function callStepWithFallback(
         query,
         expert_hint: `${step.agent}.${step.expert}`,
         params,
+        ...getBillingFields(),
       }),
       signal: AbortSignal.timeout(60000),
     })
 
     if (resp.ok) {
-      const data = await resp.json()
+      const data = (await resp.json()) as ConsultResponse
       if (data.answer || data.text || data.content) return data
     }
 
@@ -340,14 +366,15 @@ async function callStepWithFallback(
       return await callAgentDirect(step, query)
     }
     throw new Error(`API ${resp.status}`)
-  } catch (err: any) {
+  } catch (err: unknown) {
     // 网络错误也走降级
-    if (err.message?.includes('API ')) throw err
+    const msg = err instanceof Error ? err.message : ''
+    if (msg.includes('API ')) throw err
     return await callAgentDirect(step, query)
   }
 }
 
-async function callAgentDirect(step: WorkflowStep, query: string): Promise<any> {
+async function callAgentDirect(step: WorkflowStep, query: string): Promise<ConsultResponse> {
   const candidates = [
     `${API_BASE}/api/${step.agent}/consult`,
     `${API_BASE}/api/${step.agent}/chat`,
@@ -358,17 +385,17 @@ async function callAgentDirect(step: WorkflowStep, query: string): Promise<any> 
       const resp = await fetch(url, {
         method: 'POST',
         headers: authHeaders(),
-        body: JSON.stringify({ request: query, query, question: query }),
+        body: JSON.stringify({ request: query, query, question: query, ...getBillingFields() }),
         signal: AbortSignal.timeout(60000),
       })
-      if (resp.ok) return await resp.json()
+      if (resp.ok) return (await resp.json()) as ConsultResponse
     } catch { /* try next */ }
   }
   throw new Error('所有端点均不可用')
 }
 
 function processEvent(
-  evt: any,
+  evt: WorkflowStreamEvent,
   steps: WorkflowStep[],
   stepResults: StepResult[],
   onProgress?: StepProgressCallback,
