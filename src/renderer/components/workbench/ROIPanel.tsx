@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { TrendingUp, DollarSign, Users, RefreshCw, BarChart3, ArrowUpRight, ArrowDownRight } from 'lucide-react'
-import { authFetch, API_BASE } from '@/lib/api-client'
+import { authFetch, API_BASE, isElectron } from '@/lib/api-client'
 
 interface RoleROI {
   role: string
@@ -26,6 +26,7 @@ export default function ROIPanel() {
   const [loading, setLoading] = useState(false)
 
   const fetchROI = useCallback(async () => {
+    if (!isElectron()) return
     setLoading(true)
     try {
       const resp = await authFetch(`${API_BASE}/api/v1/admin/entrepreneur-roi/dashboard`)

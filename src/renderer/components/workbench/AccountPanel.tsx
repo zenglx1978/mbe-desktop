@@ -3,7 +3,7 @@
  */
 import { useState, useEffect, useCallback } from 'react'
 import { FileSignature, CreditCard, Receipt, RefreshCw, ExternalLink, Clock, CheckCircle, AlertCircle, XCircle } from 'lucide-react'
-import { API_BASE, authHeaders } from '@/lib/api-client'
+import { API_BASE, authHeaders, isElectron } from '@/lib/api-client'
 
 type SubTab = 'contracts' | 'subscription' | 'invoices'
 
@@ -67,6 +67,7 @@ export default function AccountPanel() {
   const [loading, setLoading] = useState(false)
 
   const fetchContracts = useCallback(async () => {
+    if (!isElectron()) return
     setLoading(true)
     try {
       const res = await fetch(`${API_BASE}/api/v1/account/contracts`, { headers: authHeaders() })
@@ -79,6 +80,7 @@ export default function AccountPanel() {
   }, [])
 
   const fetchSubscription = useCallback(async () => {
+    if (!isElectron()) return
     setLoading(true)
     try {
       const res = await fetch(`${API_BASE}/api/v1/account/subscription`, { headers: authHeaders() })
@@ -91,6 +93,7 @@ export default function AccountPanel() {
   }, [])
 
   const fetchInvoices = useCallback(async () => {
+    if (!isElectron()) return
     setLoading(true)
     try {
       const res = await fetch(`${API_BASE}/api/v1/account/invoices`, { headers: authHeaders() })

@@ -2,7 +2,7 @@
  * 通知 Store — 轮询后端通知 API + 维护未读计数
  */
 import { create } from 'zustand'
-import { API_BASE, authHeaders } from '@/lib/api-client'
+import { API_BASE, authHeaders, isElectron } from '@/lib/api-client'
 import { useAuthStore } from '@/stores/auth-store'
 
 export interface NotificationItem {
@@ -40,7 +40,7 @@ export const useNotificationStore = create<NotificationState>(set => ({
 
   fetchNotifications: async () => {
     const auth = useAuthStore.getState()
-    if (!auth.token) return
+    if (!auth.token || !isElectron()) return
 
     set({ loading: true })
     try {

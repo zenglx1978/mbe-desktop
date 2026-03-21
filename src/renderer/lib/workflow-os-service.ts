@@ -4,7 +4,7 @@
  * 更富更懒：不只是聊天，AI 直接替你干活、交付成果。
  */
 
-import { API_BASE } from './api-client'
+import { API_BASE, isElectron } from './api-client'
 import type { CrossAgentWorkflowExecuteResponse } from '@/types/api-responses'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || API_BASE
@@ -116,13 +116,25 @@ function isAbortError(e: unknown): boolean {
   return false
 }
 
+const _unavailable = new Response(null, { status: 503 })
+
+/**
+ * Web 模式下 WorkflowOS API 不可用 — 直接返回 503 假响应，
+ * 避免浏览器控制台出现大量 404 网络错误。
+ * Electron 模式下正常发请求。
+ */
+function wfFetch(input: string, init?: RequestInit): Promise<Response> {
+  if (!isElectron()) return Promise.resolve(_unavailable)
+  return fetch(input, init)
+}
+
 export async function fetchDashboard(
   agentName: string,
   userId: string,
   signal?: AbortSignal,
 ): Promise<DashboardData | null> {
   try {
-    const res = await fetch(
+    const res = await wfFetch(
       apiUrl(agentName, `/dashboard?user_id=${encodeURIComponent(userId)}`),
       { signal },
     )
@@ -130,7 +142,6 @@ export async function fetchDashboard(
     return await res.json()
   } catch (e) {
     if (isAbortError(e)) throw e
-    // Expected: Workflow OS 接口不可达或响应非 JSON；按无数据处理
     return null
   }
 }
@@ -144,7 +155,7 @@ export async function fetchInstances(
     if (params.user_id) qs.set('user_id', params.user_id)
     if (params.status) qs.set('status', params.status)
     if (params.limit) qs.set('limit', String(params.limit))
-    const res = await fetch(apiUrl(agentName, `/instances?${qs}`))
+    const res = await wfFetch(apiUrl(agentName, `/instances?${qs}`))
     if (!res.ok) return []
     const data = await res.json()
     return data.instances || []
@@ -164,7 +175,7 @@ export async function fetchDeliverables(
     if (params.instance_id) qs.set('instance_id', params.instance_id)
     if (params.type) qs.set('type', params.type)
     if (params.limit) qs.set('limit', String(params.limit))
-    const res = await fetch(apiUrl(agentName, `/deliverables?${qs}`))
+    const res = await wfFetch(apiUrl(agentName, `/deliverables?${qs}`))
     if (!res.ok) return []
     const data = await res.json()
     return data.deliverables || []
@@ -187,7 +198,7 @@ export async function createInstance(
   },
 ): Promise<Record<string, unknown> | null> {
   try {
-    const res = await fetch(apiUrl(agentName, '/instances'), {
+    const res = await wfFetch(apiUrl(agentName, '/instances'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -214,7 +225,7 @@ export async function startFromChat(
   },
 ): Promise<WorkflowInstanceDetail | null> {
   try {
-    const res = await fetch(apiUrl(agentName, '/instances'), {
+    const res = await wfFetch(apiUrl(agentName, '/instances'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -226,7 +237,7 @@ export async function startFromChat(
     const instance = await res.json()
 
     // 自动启动
-    const startRes = await fetch(
+    const startRes = await wfFetch(
       apiUrl(agentName, `/instances/${instance.instance_id}/start`),
       { method: 'POST' },
     )
@@ -247,7 +258,7 @@ export async function fetchInstance(
   signal?: AbortSignal,
 ): Promise<WorkflowInstanceDetail | null> {
   try {
-    const res = await fetch(apiUrl(agentName, `/instances/${instanceId}`), { signal })
+    const res = await wfFetch(apiUrl(agentName, `/instances/${instanceId}`), { signal })
     if (!res.ok) return null
     return await res.json()
   } catch (e) {
@@ -312,7 +323,7 @@ export async function fetchTemplates(
   agentName: string,
 ): Promise<WorkflowTemplateDef[]> {
   try {
-    const res = await fetch(apiUrl(agentName, '/templates'))
+    const res = await wfFetch(apiUrl(agentName, '/templates'))
     if (!res.ok) return []
     const data = await res.json()
     return data.templates || []
@@ -328,7 +339,7 @@ export async function fetchCrossAgentWorkflows(
 ): Promise<CrossAgentWorkflowDef[]> {
   try {
     const qs = solutionId ? `?solution_id=${solutionId}` : ''
-    const res = await fetch(apiUrl(agentName, `/cross-agent/workflows${qs}`))
+    const res = await wfFetch(apiUrl(agentName, `/cross-agent/workflows${qs}`))
     if (!res.ok) return []
     const data = await res.json()
     return data.workflows || []
@@ -346,7 +357,7 @@ export async function executeCrossAgentWorkflow(
   userContext: Record<string, string> = {},
 ): Promise<CrossAgentWorkflowExecuteResponse | null> {
   try {
-    const res = await fetch(
+    const res = await wfFetch(
       apiUrl(agentName, `/cross-agent/${solutionId}/${workflowId}/execute`),
       {
         method: 'POST',
@@ -375,7 +386,7 @@ export interface ROISummary {
 export async function fetchROI(agentName: string, userId: string = ''): Promise<ROISummary | null> {
   try {
     const qs = userId ? `?user_id=${userId}` : ''
-    const res = await fetch(apiUrl(agentName, `/roi${qs}`))
+    const res = await wfFetch(apiUrl(agentName, `/roi${qs}`))
     if (!res.ok) return null
     return await res.json()
   } catch {
@@ -404,7 +415,7 @@ export async function fetchPendingApprovals(
   agentName: string,
 ): Promise<PendingApproval[]> {
   try {
-    const res = await fetch(apiUrl(agentName, '/approvals/pending'))
+    const res = await wfFetch(apiUrl(agentName, '/approvals/pending'))
     if (!res.ok) return []
     const data = await res.json()
     return data.pending || []
@@ -423,7 +434,7 @@ export async function approveStep(
   note: string = '',
 ): Promise<boolean> {
   try {
-    const res = await fetch(
+    const res = await wfFetch(
       apiUrl(agentName, `/instances/${instanceId}/steps/${stepId}/approve`),
       {
         method: 'POST',
@@ -442,7 +453,7 @@ export async function fetchSchedules(
   agentName: string,
 ): Promise<ScheduleEntry[]> {
   try {
-    const res = await fetch(apiUrl(agentName, '/schedules'))
+    const res = await wfFetch(apiUrl(agentName, '/schedules'))
     if (!res.ok) return []
     const data = await res.json()
     return data.schedules || []
@@ -467,7 +478,7 @@ export interface BillingUsage {
 
 export async function fetchBillingUsage(agentName: string, orgId: string): Promise<BillingUsage | null> {
   try {
-    const res = await fetch(apiUrl(agentName, `/billing/usage?org_id=${orgId}`))
+    const res = await wfFetch(apiUrl(agentName, `/billing/usage?org_id=${orgId}`))
     if (!res.ok) return null
     return await res.json()
   } catch {
@@ -494,7 +505,7 @@ export interface DesignerCanvasDef {
 
 export async function createCanvas(agentName: string, name: string): Promise<DesignerCanvasDef | null> {
   try {
-    const res = await fetch(apiUrl(agentName, '/designer/canvas'), {
+    const res = await wfFetch(apiUrl(agentName, '/designer/canvas'), {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name }),
     })
@@ -508,7 +519,7 @@ export async function createCanvas(agentName: string, name: string): Promise<Des
 
 export async function fetchCanvas(agentName: string, canvasId: string): Promise<DesignerCanvasDef | null> {
   try {
-    const res = await fetch(apiUrl(agentName, `/designer/canvas/${canvasId}`))
+    const res = await wfFetch(apiUrl(agentName, `/designer/canvas/${canvasId}`))
     if (!res.ok) return null
     return await res.json()
   } catch {
@@ -519,7 +530,7 @@ export async function fetchCanvas(agentName: string, canvasId: string): Promise<
 
 export async function listCanvases(agentName: string): Promise<Array<{ canvas_id: string; name: string; nodes: number }>> {
   try {
-    const res = await fetch(apiUrl(agentName, '/designer/canvases'))
+    const res = await wfFetch(apiUrl(agentName, '/designer/canvases'))
     if (!res.ok) return []
     return await res.json()
   } catch {
@@ -530,7 +541,7 @@ export async function listCanvases(agentName: string): Promise<Array<{ canvas_id
 
 export async function validateCanvas(agentName: string, canvasId: string): Promise<{ valid: boolean; errors: string[]; warnings: string[] } | null> {
   try {
-    const res = await fetch(apiUrl(agentName, `/designer/canvas/${canvasId}/validate`))
+    const res = await wfFetch(apiUrl(agentName, `/designer/canvas/${canvasId}/validate`))
     if (!res.ok) return null
     return await res.json()
   } catch {
@@ -541,7 +552,7 @@ export async function validateCanvas(agentName: string, canvasId: string): Promi
 
 export async function exportCanvas(agentName: string, canvasId: string): Promise<Record<string, unknown> | null> {
   try {
-    const res = await fetch(apiUrl(agentName, `/designer/canvas/${canvasId}/export`), { method: 'POST' })
+    const res = await wfFetch(apiUrl(agentName, `/designer/canvas/${canvasId}/export`), { method: 'POST' })
     if (!res.ok) return null
     return await res.json()
   } catch {
@@ -582,7 +593,7 @@ export interface ROIPredictionData {
 
 export async function fetchAnalyticsOverview(agentName: string, days = 30): Promise<AnalyticsOverview | null> {
   try {
-    const res = await fetch(apiUrl(agentName, `/analytics/overview?days=${days}`))
+    const res = await wfFetch(apiUrl(agentName, `/analytics/overview?days=${days}`))
     if (!res.ok) return null
     return await res.json()
   } catch {
@@ -593,7 +604,7 @@ export async function fetchAnalyticsOverview(agentName: string, days = 30): Prom
 
 export async function fetchRecommendations(agentName: string, limit = 5): Promise<AnalyticsRecommendation[]> {
   try {
-    const res = await fetch(apiUrl(agentName, `/analytics/recommendations?limit=${limit}`))
+    const res = await wfFetch(apiUrl(agentName, `/analytics/recommendations?limit=${limit}`))
     if (!res.ok) return []
     const data = await res.json()
     return data.recommendations || []
@@ -605,7 +616,7 @@ export async function fetchRecommendations(agentName: string, limit = 5): Promis
 
 export async function fetchROIPrediction(agentName: string): Promise<ROIPredictionData | null> {
   try {
-    const res = await fetch(apiUrl(agentName, '/analytics/roi-prediction'))
+    const res = await wfFetch(apiUrl(agentName, '/analytics/roi-prediction'))
     if (!res.ok) return null
     return await res.json()
   } catch {
@@ -646,7 +657,7 @@ export async function searchMarketplace(
     if (category) params.set('category', category)
     params.set('sort_by', sortBy)
     params.set('limit', String(limit))
-    const res = await fetch(apiUrl(agentName, `/marketplace/search?${params}`))
+    const res = await wfFetch(apiUrl(agentName, `/marketplace/search?${params}`))
     if (!res.ok) return null
     return await res.json()
   } catch {
@@ -659,7 +670,7 @@ export async function installFromMarketplace(
   agentName: string, listingId: string, orgId = 'default', userId = 'default_user',
 ): Promise<boolean> {
   try {
-    const res = await fetch(
+    const res = await wfFetch(
       apiUrl(agentName, `/marketplace/${listingId}/install?org_id=${orgId}&user_id=${userId}`),
       { method: 'POST' },
     )
@@ -686,7 +697,7 @@ export interface SLADashboardData {
 
 export async function fetchSLADashboard(agentName: string): Promise<SLADashboardData | null> {
   try {
-    const res = await fetch(apiUrl(agentName, '/sla/dashboard'))
+    const res = await wfFetch(apiUrl(agentName, '/sla/dashboard'))
     if (!res.ok) return null
     return await res.json()
   } catch {
@@ -716,7 +727,7 @@ export async function fetchNotifications(
   agentName: string, userId: string, limit = 20, signal?: AbortSignal,
 ): Promise<{ notifications: NotificationDef[]; unread: number }> {
   try {
-    const res = await fetch(apiUrl(agentName, `/notifications?user_id=${userId}&limit=${limit}`), {
+    const res = await wfFetch(apiUrl(agentName, `/notifications?user_id=${userId}&limit=${limit}`), {
       signal,
     })
     if (!res.ok) return { notifications: [], unread: 0 }
@@ -732,7 +743,7 @@ export async function fetchUnreadCount(
   agentName: string, userId: string, signal?: AbortSignal,
 ): Promise<number> {
   try {
-    const res = await fetch(apiUrl(agentName, `/notifications/unread-count?user_id=${userId}`), {
+    const res = await wfFetch(apiUrl(agentName, `/notifications/unread-count?user_id=${userId}`), {
       signal,
     })
     if (!res.ok) return 0
@@ -747,7 +758,7 @@ export async function fetchUnreadCount(
 
 export async function markNotificationRead(agentName: string, notificationId: string): Promise<boolean> {
   try {
-    const res = await fetch(apiUrl(agentName, `/notifications/${notificationId}/read`), { method: 'POST' })
+    const res = await wfFetch(apiUrl(agentName, `/notifications/${notificationId}/read`), { method: 'POST' })
     return res.ok
   } catch {
     // Expected: 请求失败或响应异常；按未执行处理
@@ -757,7 +768,7 @@ export async function markNotificationRead(agentName: string, notificationId: st
 
 export async function markAllRead(agentName: string, userId: string): Promise<void> {
   try {
-    await fetch(apiUrl(agentName, `/notifications/read-all?user_id=${userId}`), { method: 'POST' })
+    await wfFetch(apiUrl(agentName, `/notifications/read-all?user_id=${userId}`), { method: 'POST' })
   } catch {
     // Expected: 全部已读为尽力而为；失败不阻断 UI
   }
@@ -781,7 +792,7 @@ export async function fetchAuditLogs(
   agentName: string, orgId: string, limit = 20,
 ): Promise<AuditEntryDef[]> {
   try {
-    const res = await fetch(apiUrl(agentName, `/audit/logs?org_id=${orgId}&limit=${limit}`))
+    const res = await wfFetch(apiUrl(agentName, `/audit/logs?org_id=${orgId}&limit=${limit}`))
     if (!res.ok) return []
     const data = await res.json()
     return data.entries || []
@@ -805,7 +816,7 @@ export interface RoleMemberDef {
 
 export async function fetchMembers(agentName: string, orgId: string): Promise<RoleMemberDef[]> {
   try {
-    const res = await fetch(apiUrl(agentName, `/rbac/members?org_id=${orgId}`))
+    const res = await wfFetch(apiUrl(agentName, `/rbac/members?org_id=${orgId}`))
     if (!res.ok) return []
     const data = await res.json()
     return data.members || []
@@ -819,7 +830,7 @@ export async function assignRole(
   agentName: string, orgId: string, userId: string, role: string, assignedBy = 'admin',
 ): Promise<boolean> {
   try {
-    const res = await fetch(apiUrl(agentName, '/rbac/assign'), {
+    const res = await wfFetch(apiUrl(agentName, '/rbac/assign'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ org_id: orgId, user_id: userId, role, assigned_by: assignedBy }),
@@ -835,7 +846,7 @@ export async function assignRole(
 
 export async function rollbackTemplate(agentName: string, templateId: string): Promise<boolean> {
   try {
-    const res = await fetch(apiUrl(agentName, `/templates/${templateId}/rollback`), { method: 'POST' })
+    const res = await wfFetch(apiUrl(agentName, `/templates/${templateId}/rollback`), { method: 'POST' })
     return res.ok
   } catch {
     // Expected: 请求失败或响应异常；按未执行处理
@@ -845,7 +856,7 @@ export async function rollbackTemplate(agentName: string, templateId: string): P
 
 export async function promoteCanary(agentName: string, templateId: string): Promise<boolean> {
   try {
-    const res = await fetch(apiUrl(agentName, `/templates/${templateId}/promote`), { method: 'POST' })
+    const res = await wfFetch(apiUrl(agentName, `/templates/${templateId}/promote`), { method: 'POST' })
     return res.ok
   } catch {
     // Expected: 请求失败或响应异常；按未执行处理
@@ -880,7 +891,7 @@ export interface WebhookEventDef {
 
 export async function fetchWebhooks(agentName: string): Promise<WebhookDef[]> {
   try {
-    const res = await fetch(apiUrl(agentName, '/webhooks'))
+    const res = await wfFetch(apiUrl(agentName, '/webhooks'))
     if (!res.ok) return []
     return await res.json()
   } catch {
@@ -902,7 +913,7 @@ export async function registerWebhook(
   },
 ): Promise<(WebhookDef & { secret: string }) | null> {
   try {
-    const res = await fetch(apiUrl(agentName, '/webhooks'), {
+    const res = await wfFetch(apiUrl(agentName, '/webhooks'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -917,7 +928,7 @@ export async function registerWebhook(
 
 export async function deleteWebhook(agentName: string, hookId: string): Promise<boolean> {
   try {
-    const res = await fetch(apiUrl(agentName, `/webhooks/${hookId}`), { method: 'DELETE' })
+    const res = await wfFetch(apiUrl(agentName, `/webhooks/${hookId}`), { method: 'DELETE' })
     return res.ok
   } catch {
     // Expected: 请求失败或响应异常；按未执行处理
@@ -929,7 +940,7 @@ export async function fetchWebhookEvents(
   agentName: string, hookId: string, limit = 20,
 ): Promise<WebhookEventDef[]> {
   try {
-    const res = await fetch(apiUrl(agentName, `/webhooks/${hookId}/events?limit=${limit}`))
+    const res = await wfFetch(apiUrl(agentName, `/webhooks/${hookId}/events?limit=${limit}`))
     if (!res.ok) return []
     return await res.json()
   } catch {
@@ -950,7 +961,7 @@ export async function startFromTemplate(
   },
 ): Promise<WorkflowInstanceDetail | null> {
   try {
-    const res = await fetch(apiUrl(agentName, `/templates/${templateId}/start`), {
+    const res = await wfFetch(apiUrl(agentName, `/templates/${templateId}/start`), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -1014,7 +1025,7 @@ export interface SchedulerStatusDef {
 
 export async function fetchSchedulerStatus(agentName: string): Promise<SchedulerStatusDef | null> {
   try {
-    const res = await fetch(schedulerUrl(agentName, '/status'))
+    const res = await wfFetch(schedulerUrl(agentName, '/status'))
     if (!res.ok) return null
     return await res.json()
   } catch {
@@ -1025,7 +1036,7 @@ export async function fetchSchedulerStatus(agentName: string): Promise<Scheduler
 
 export async function fetchSchedulerJobs(agentName: string, includeRemoved = false): Promise<SchedulerJobDef[]> {
   try {
-    const res = await fetch(schedulerUrl(agentName, `/jobs?include_removed=${includeRemoved}`))
+    const res = await wfFetch(schedulerUrl(agentName, `/jobs?include_removed=${includeRemoved}`))
     if (!res.ok) return []
     const data = await res.json()
     return data.jobs || []
@@ -1037,7 +1048,7 @@ export async function fetchSchedulerJobs(agentName: string, includeRemoved = fal
 
 export async function fetchSchedulerJob(agentName: string, jobId: string): Promise<SchedulerJobDef | null> {
   try {
-    const res = await fetch(schedulerUrl(agentName, `/jobs/${jobId}`))
+    const res = await wfFetch(schedulerUrl(agentName, `/jobs/${jobId}`))
     if (!res.ok) return null
     return await res.json()
   } catch {
@@ -1048,7 +1059,7 @@ export async function fetchSchedulerJob(agentName: string, jobId: string): Promi
 
 export async function pauseSchedulerJob(agentName: string, jobId: string): Promise<SchedulerJobDef | null> {
   try {
-    const res = await fetch(schedulerUrl(agentName, `/jobs/${jobId}/pause`), { method: 'POST' })
+    const res = await wfFetch(schedulerUrl(agentName, `/jobs/${jobId}/pause`), { method: 'POST' })
     if (!res.ok) return null
     return await res.json()
   } catch {
@@ -1059,7 +1070,7 @@ export async function pauseSchedulerJob(agentName: string, jobId: string): Promi
 
 export async function resumeSchedulerJob(agentName: string, jobId: string): Promise<SchedulerJobDef | null> {
   try {
-    const res = await fetch(schedulerUrl(agentName, `/jobs/${jobId}/resume`), { method: 'POST' })
+    const res = await wfFetch(schedulerUrl(agentName, `/jobs/${jobId}/resume`), { method: 'POST' })
     if (!res.ok) return null
     return await res.json()
   } catch {
@@ -1070,7 +1081,7 @@ export async function resumeSchedulerJob(agentName: string, jobId: string): Prom
 
 export async function triggerSchedulerJob(agentName: string, jobId: string): Promise<SchedulerExecutionDef | null> {
   try {
-    const res = await fetch(schedulerUrl(agentName, `/jobs/${jobId}/trigger`), { method: 'POST' })
+    const res = await wfFetch(schedulerUrl(agentName, `/jobs/${jobId}/trigger`), { method: 'POST' })
     if (!res.ok) return null
     return await res.json()
   } catch {
@@ -1081,7 +1092,7 @@ export async function triggerSchedulerJob(agentName: string, jobId: string): Pro
 
 export async function removeSchedulerJob(agentName: string, jobId: string): Promise<boolean> {
   try {
-    const res = await fetch(schedulerUrl(agentName, `/jobs/${jobId}`), { method: 'DELETE' })
+    const res = await wfFetch(schedulerUrl(agentName, `/jobs/${jobId}`), { method: 'DELETE' })
     return res.ok
   } catch {
     // Expected: 请求失败或响应异常；按未执行处理
@@ -1096,7 +1107,7 @@ export async function fetchSchedulerExecutions(
     const qs = new URLSearchParams()
     if (jobId) qs.set('job_id', jobId)
     qs.set('limit', String(limit))
-    const res = await fetch(schedulerUrl(agentName, `/executions?${qs}`))
+    const res = await wfFetch(schedulerUrl(agentName, `/executions?${qs}`))
     if (!res.ok) return []
     const data = await res.json()
     return data.executions || []
@@ -1110,7 +1121,7 @@ export async function cleanupSchedulerExecutions(
   agentName: string, maxAgeDays = 90, maxRows = 10000,
 ): Promise<{ deleted: number }> {
   try {
-    const res = await fetch(
+    const res = await wfFetch(
       schedulerUrl(agentName, `/cleanup?max_age_days=${maxAgeDays}&max_rows=${maxRows}`),
       { method: 'POST' },
     )

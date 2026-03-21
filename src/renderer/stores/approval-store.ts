@@ -5,7 +5,7 @@
  * 支持 WS 实时推送 + HTTP 轮询降级。
  */
 import { create } from 'zustand'
-import { WS_BASE, authFetch } from '@/lib/api-client'
+import { WS_BASE, authFetch, isElectron } from '@/lib/api-client'
 import type { ApprovalItem } from '@/lib/approval-service'
 import { useAppStore } from '@/stores/app-store'
 
@@ -37,6 +37,7 @@ export const useApprovalStore = create<ApprovalState>((set, get) => ({
   select: (id: string) => set({ selectedId: id }),
 
   refresh: async () => {
+    if (!isElectron()) return
     set({ loading: true })
     try {
       const solution = useAppStore.getState().currentSolution?.()

@@ -11,6 +11,13 @@ import { useAuthStore } from '@/stores/auth-store'
 /** HTTP API 基地址：dev 走 Vite proxy，prod 直连 */
 export const API_BASE = import.meta.env.DEV ? '' : 'https://mbe.hi-maker.com'
 
+/** 检测当前是否运行在 Electron 桌面端（非浏览器 Web 模式） */
+export function isElectron(): boolean {
+  return typeof window !== 'undefined' &&
+    typeof window.electronAPI !== 'undefined' &&
+    window.electronAPI !== null
+}
+
 /** WebSocket 基地址：dev 走 Vite proxy，prod 直连 */
 export const WS_BASE = import.meta.env.DEV
   ? `ws://${typeof location !== 'undefined' ? location.host : 'localhost:5180'}`

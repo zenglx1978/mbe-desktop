@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useAppStore } from '@/stores/app-store'
-import { authFetch, API_BASE } from '@/lib/api-client'
+import { authFetch, API_BASE, isElectron } from '@/lib/api-client'
 import {
   Clock, TrendingUp, BarChart3, Download, Timer,
   Lightbulb, Zap, CheckCircle2, Sparkles,
@@ -105,7 +105,7 @@ export default function EfficiencyPanel() {
   }, [solutionId, period])
 
   const loadOptDashboard = useCallback(async () => {
-    if (!agentName) return
+    if (!agentName || !isElectron()) return
     setOptLoading(true)
     try {
       const res = await authFetch(`${API_BASE}/api/${agentName}/optimization/dashboard`)

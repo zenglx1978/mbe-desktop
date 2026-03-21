@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { API_BASE, authFetch } from '@/lib/api-client'
+import { API_BASE, authFetch, isElectron } from '@/lib/api-client'
 import { useAuthStore } from '@/stores/auth-store'
 import { useAppStore } from '@/stores/app-store'
 
@@ -46,7 +46,7 @@ export default function Settings() {
   const [restorePassword, setRestorePassword] = useState('')
 
   const loadSolutionUsers = useCallback(async () => {
-    if (!solutionId || !token) return
+    if (!solutionId || !token || !isElectron()) return
     setLoadingUsers(true)
     setUserError(null)
     try {

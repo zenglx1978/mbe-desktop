@@ -10,7 +10,7 @@
  */
 
 import { create } from 'zustand'
-import { API_BASE } from '@/lib/api-client'
+import { API_BASE, isElectron } from '@/lib/api-client'
 
 interface ExpertRanking {
   score: number
@@ -66,6 +66,7 @@ export const useCloudSyncStore = create<CloudSyncState>((set, get) => ({
   currentSnapshot: null,
 
   checkVersion: async (solutionId: string) => {
+    if (!isElectron()) return 0
     try {
       const resp = await fetch(
         `${API_BASE}/api/v1/config-snapshot/${solutionId}/version`,
