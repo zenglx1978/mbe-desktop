@@ -1,0 +1,33 @@
+name: Desktop CI
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+    branches: [master]
+
+jobs:
+  lint-typecheck-test:
+    name: Lint + Type Check + Unit Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install --ignore-scripts
+
+      - name: ESLint
+        run: npx eslint src/
+
+      - name: Type Check (main process)
+        run: npx tsc -p tsconfig.main.json --noEmit
+
+      - name: Type Check (renderer)
+        run: npx tsc --noEmit
+
+      - name: Unit Tests
+        run: npx vitest run
