@@ -39,7 +39,7 @@ export interface AggregatedAuditData {
 
 async function fetchAuditLog(
   baseUrl: string,
-  agentName: string,
+  _agentName: string,
   filters: AuditFilters,
 ): Promise<AuditResult | null> {
   try {
@@ -62,7 +62,7 @@ async function fetchAuditLog(
 
 async function fetchAuditStats(
   baseUrl: string,
-  agentName: string,
+  _agentName: string,
 ): Promise<AuditStats | null> {
   try {
     const url = `${baseUrl}/governance/approvals/audit/stats`

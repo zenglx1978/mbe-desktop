@@ -1,4 +1,4 @@
-import type { RunLocalCalcRawResult, WindowWithElectron } from '@/types/api-responses'
+import type { WindowWithElectron } from '@/types/api-responses'
 
 /**
  * 本地确定性计算服务（渲染进程端）
@@ -25,10 +25,15 @@ export async function runLocalCalc(scriptName: string, args: string[]): Promise<
     return { success: false, error: '非桌面端环境，本地计算不可用' }
   }
 
-  const result = (await api.runLocalCalc(scriptName, args)) as RunLocalCalcRawResult
-  if (result.success && result.result) {
+  const raw = (await api.runLocalCalc(scriptName, args)) as {
+    success: boolean
+    result?: string
+    error?: string
+  }
+  const result: CalcResult = { ...raw }
+  if (raw.success && raw.result) {
     try {
-      result.parsed = JSON.parse(result.result)
+      result.parsed = JSON.parse(raw.result)
     } catch {
       // Expected: 脚本输出非 JSON；保留原始 result 字符串
     }

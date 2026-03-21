@@ -21,6 +21,34 @@ interface MigrationResult {
   errors: string[]
 }
 
+/** BehaviorObserver（与 preload.ts observer 一致） */
+interface ElectronObserver {
+  enabled: () => Promise<boolean>
+  setEnabled: (enabled: boolean) => Promise<{ success: boolean; enabled: boolean }>
+  appSummary: (days?: number) => Promise<unknown[]>
+  sequences: (days?: number, limit?: number) => Promise<unknown[]>
+  mbeActions: (solutionId?: string, days?: number) => Promise<unknown[]>
+  recentApps: (count?: number) => Promise<string[]>
+  recordAction: (solutionId: string, expertId: string, label: string) => Promise<{ success: boolean }>
+}
+
+/** PatternRecognizer（与 preload.ts pattern 一致） */
+/** 与主进程 db:stats 返回结构对齐（Settings 仪表盘） */
+interface ElectronDbStats {
+  tables: Record<string, number>
+  dbSizeBytes: number
+}
+
+interface ElectronPattern {
+  list: (status?: string) => Promise<unknown[]>
+  analyze: () => Promise<{ patterns: unknown[]; newCount: number }>
+  accept: (patternId: string) => Promise<{ success: boolean }>
+  dismiss: (patternId: string) => Promise<{ success: boolean }>
+  automate: (patternId: string) => Promise<{ success: boolean }>
+  registerSolutionPatterns: (patterns: unknown[]) => Promise<{ success: boolean; totalRules: number }>
+  onNewDiscovery: (callback: (data: unknown) => void) => () => void
+}
+
 interface ElectronAPI {
   openFile: (options?: any) => Promise<string[]>
   saveFile: (options?: any) => Promise<string | null>
@@ -90,9 +118,20 @@ interface ElectronAPI {
       version: (solutionId: string) => Promise<number>
       history: (solutionId: string, limit?: number) => Promise<any[]>
     }
+    /** 库体量等统计（ipc db:stats） */
+    stats: () => Promise<ElectronDbStats | null | undefined>
+    /** 清除本地 LLM/检索等缓存条目数（ipc db:clearCache） */
+    clearCache: () => Promise<number>
     backup: {
-      create: () => Promise<{ path?: string } | null>
-      restore: () => Promise<{ ok?: boolean } | null>
+      create: () => Promise<{ ok?: boolean; path?: string; password?: string } | null | undefined>
+      restore: (password?: string) => Promise<{
+        ok?: boolean
+        needPassword?: boolean
+        filePath?: string
+        tables?: string[]
+        error?: string
+      } | null | undefined>
+      restoreWithPassword: (filePath: string, password: string) => Promise<{ ok?: boolean; error?: string } | null | undefined>
     }
   }
   runLocalCalc: (scriptPath: string, args: string[]) => Promise<{ success: boolean; result?: string; error?: string }>
@@ -168,6 +207,9 @@ interface ElectronAPI {
       taskName: string; solutionId: string; manualDurationMs: number | null; assistedDurationMs: number | null; timestamp: string
     }[]>
   }
+
+  observer: ElectronObserver
+  pattern: ElectronPattern
 
   migration: {
     detect: () => Promise<LegacyAgentInfo[]>

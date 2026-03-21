@@ -11,7 +11,6 @@
 
 import { create } from 'zustand'
 import { API_BASE } from '@/lib/api-client'
-const SYNC_INTERVAL_MS = 30 * 60 * 1000 // 30 分钟
 
 interface ExpertRanking {
   score: number
@@ -185,14 +184,15 @@ export const useCloudSyncStore = create<CloudSyncState>((set, get) => ({
 
 // ── 自动同步调度器 ──
 
-let syncTimer: ReturnType<typeof setInterval> | null = null
-
 export function startCloudSync(_solutionId: string): () => void {
   // config-snapshot 端点尚未部署，跳过避免 403/404 控制台噪音
   // TODO: 服务端部署 /api/v1/config-snapshot 后恢复以下逻辑
   return () => {}
 
   /*
+  const SYNC_INTERVAL_MS = 30 * 60 * 1000 // 30 分钟
+  let syncTimer: ReturnType<typeof setInterval> | null = null
+
   if (syncTimer) clearInterval(syncTimer)
 
   const doSync = async () => {

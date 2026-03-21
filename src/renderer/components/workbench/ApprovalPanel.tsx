@@ -12,7 +12,7 @@ const STATUS_META: Record<string, { label: string; cls: string }> = {
 }
 
 export default function ApprovalPanel() {
-  const { items, pendingCount, loading, lastRefreshed, wsConnected, refresh, select, selectedId, decide } = useApprovalStore()
+  const { items, pendingCount, loading, lastRefreshed, wsConnected, refresh, select, selectedId: _selectedId, decide } = useApprovalStore()
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [deciding, setDeciding] = useState<string | null>(null)
   const [note, setNote] = useState('')

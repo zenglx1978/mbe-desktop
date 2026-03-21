@@ -5,7 +5,7 @@
  * 支持 WS 实时推送 + HTTP 轮询降级。
  */
 import { create } from 'zustand'
-import { API_BASE, WS_BASE, authFetch, authHeaders } from '@/lib/api-client'
+import { WS_BASE, authFetch } from '@/lib/api-client'
 import type { ApprovalItem } from '@/lib/approval-service'
 import { useAppStore } from '@/stores/app-store'
 

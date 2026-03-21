@@ -9,7 +9,13 @@
  * 无需用户手动切换。路由结果体现在回复标注中。
  */
 
-import { useChatStore, type OrchestrationState, type OrchestrationExpert } from '@/stores/chat-store'
+import {
+  useChatStore,
+  type LocalActionInfo,
+  type OrchestrationExpert,
+  type OrchestrationState,
+  type SourceCitation,
+} from '@/stores/chat-store'
 import { useConversationStore } from '@/stores/conversation-store'
 import { useConnectivityStore } from '@/stores/connectivity-store'
 import { useAppStore, type BillingContext } from '@/stores/app-store'
@@ -481,13 +487,15 @@ async function streamViaHTTP(
         chatStore.appendToMessage(messageId, JSON.stringify(data, null, 2))
       }
       if (data.sources || data.source_citation) {
-        chatStore.updateMessage(messageId, { sources: data.sources ?? data.source_citation })
+        chatStore.updateMessage(messageId, {
+          sources: (data.sources ?? data.source_citation) as SourceCitation[],
+        })
       }
       if (data.confidence != null) {
         chatStore.updateMessage(messageId, { confidence: data.confidence })
       }
       if (data.local_actions?.length) {
-        chatStore.updateMessage(messageId, { localActions: data.local_actions })
+        chatStore.updateMessage(messageId, { localActions: data.local_actions as LocalActionInfo[] })
         if (isElectronAvailable()) {
           autoExecuteLocalActions(data.local_actions as LocalAction[], messageId)
         }

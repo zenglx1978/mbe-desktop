@@ -120,7 +120,7 @@ export default function ParticleField({
     s.sparks = []
   }, [nodeCount, particleDensity])
 
-  const draw = useCallback((ctx: CanvasRenderingContext2D, time: number) => {
+  const draw = useCallback((ctx: CanvasRenderingContext2D, _time: number) => {
     const s = stateRef.current
     const { w, h, nodes, particles, sparks, dpr } = s
 

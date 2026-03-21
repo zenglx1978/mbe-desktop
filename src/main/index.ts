@@ -17,6 +17,8 @@ import { setupDataPipelineIPC, setPipelineMainWindow } from './data-pipeline'
 import { setupSchedulerIPC, setSchedulerMainWindow, setSchedulerDb, initScheduler, destroyScheduler } from './scheduler'
 import { setupUserMemoryIPC, setMemoryMainWindow, setMemoryDb } from './user-memory'
 import { setupLocalInferenceIPC, setInferenceDb, setInferenceMainWindow, initLocalInference } from './local-inference'
+import { setupBehaviorObserverIPC, setBehaviorObserverMainWindow, setBehaviorObserverDb, startBehaviorObserver, stopBehaviorObserver } from './behavior-observer'
+import { setupPatternRecognizerIPC, setPatternRecognizerMainWindow, setPatternRecognizerDb, startPatternRecognizer, stopPatternRecognizer } from './pattern-recognizer'
 
 if (process.platform === 'win32') {
   app.disableHardwareAcceleration()
@@ -163,6 +165,19 @@ function createWindow(): void {
     }
   })
 
+  // CSP: 限制脚本/样式/连接来源
+  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    const csp = isDev
+      ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' ws://localhost:* http://localhost:* https://mbe.hi-maker.com wss://mbe.hi-maker.com; img-src 'self' data: https:; font-src 'self' data:;"
+      : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://mbe.hi-maker.com wss://mbe.hi-maker.com; img-src 'self' data: https:; font-src 'self' data:;"
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [csp],
+      },
+    })
+  })
+
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('http')) {
       shell.openExternal(url)
@@ -273,6 +288,8 @@ app.whenReady().then(async () => {
   setupSchedulerIPC()
   setupUserMemoryIPC()
   setupLocalInferenceIPC()
+  setupBehaviorObserverIPC()
+  setupPatternRecognizerIPC()
   setMigrationDb(getDb())
   setupMigrationIPC()
   createWindow()
@@ -290,6 +307,12 @@ app.whenReady().then(async () => {
   setInferenceDb(getDb())
   initLocalInference()
   initScheduler()
+  setBehaviorObserverMainWindow(mainWindow!)
+  setBehaviorObserverDb(getDb())
+  startBehaviorObserver()
+  setPatternRecognizerMainWindow(mainWindow!)
+  setPatternRecognizerDb(getDb())
+  startPatternRecognizer()
   initCopilotBridge()
   setupAutoUpdater()
 
@@ -324,11 +347,42 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', () => {
+  stopBehaviorObserver()
+  stopPatternRecognizer()
   destroyScheduler()
   destroyCopilotBridge()
   destroyAccessibilityBridge()
   closeDatabase()
 })
+
+// ==================== 文件路径安全校验 ====================
+
+function getAllowedReadDirs(): string[] {
+  return [
+    app.getPath('documents'),
+    app.getPath('downloads'),
+    app.getPath('desktop'),
+    app.getPath('temp'),
+    getDataDir(),
+  ]
+}
+
+function getAllowedWriteDirs(): string[] {
+  return [
+    path.join(app.getPath('documents'), 'MBE Desktop'),
+    app.getPath('downloads'),
+    app.getPath('desktop'),
+    app.getPath('temp'),
+  ]
+}
+
+function isPathWithinAllowed(filePath: string, allowedDirs: string[]): boolean {
+  const resolved = path.resolve(filePath)
+  return allowedDirs.some(dir => {
+    const resolvedDir = path.resolve(dir)
+    return resolved.startsWith(resolvedDir + path.sep) || resolved === resolvedDir
+  })
+}
 
 // ==================== IPC Handlers ====================
 
@@ -368,8 +422,12 @@ ipcMain.handle('dialog:saveFile', async (_, options?: {
 
 ipcMain.handle('fs:readFileBase64', async (_, filePath: string) => {
   try {
-    const buffer = fs.readFileSync(filePath)
-    return { success: true, data: buffer.toString('base64'), name: path.basename(filePath) }
+    const resolved = path.resolve(filePath)
+    if (!isPathWithinAllowed(resolved, getAllowedReadDirs())) {
+      return { success: false, error: `路径不在允许的读取目录中: ${path.basename(filePath)}` }
+    }
+    const buffer = fs.readFileSync(resolved)
+    return { success: true, data: buffer.toString('base64'), name: path.basename(resolved) }
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message }
   }
@@ -377,10 +435,14 @@ ipcMain.handle('fs:readFileBase64', async (_, filePath: string) => {
 
 ipcMain.handle('fs:writeFile', async (_, filePath: string, base64Data: string) => {
   try {
+    const resolved = path.resolve(filePath)
+    if (!isPathWithinAllowed(resolved, getAllowedWriteDirs())) {
+      return { success: false, error: `路径不在允许的写入目录中: ${path.basename(filePath)}` }
+    }
     const buffer = Buffer.from(base64Data, 'base64')
-    const dir = path.dirname(filePath)
+    const dir = path.dirname(resolved)
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
-    fs.writeFileSync(filePath, buffer)
+    fs.writeFileSync(resolved, buffer)
     return { success: true }
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message }
@@ -408,7 +470,11 @@ ipcMain.handle('export:printToPDF', async (_, html: string) => {
 
 ipcMain.handle('shell:openPath', async (_, filePath: string) => {
   try {
-    await shell.openPath(filePath)
+    const resolved = path.resolve(filePath)
+    if (!isPathWithinAllowed(resolved, getAllowedReadDirs())) {
+      return { success: false, error: `路径不在允许的目录中: ${path.basename(filePath)}` }
+    }
+    await shell.openPath(resolved)
     return { success: true }
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message }

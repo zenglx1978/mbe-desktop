@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useAppStore } from '@/stores/app-store'
 import type { SolutionConfig } from '@/lib/solution-router'
 import {
   fetchSchedulerStatus,

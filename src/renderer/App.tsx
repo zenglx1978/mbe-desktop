@@ -1,8 +1,10 @@
-import { Suspense, lazy, useEffect, useState } from 'react'
+import { Component, Suspense, lazy, useEffect, useState } from 'react'
+import type { ErrorInfo, ReactNode } from 'react'
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAppStore } from '@/stores/app-store'
 import { useAuthStore } from '@/stores/auth-store'
 
+const OfflineBanner = lazy(() => import('@/components/OfflineBanner'))
 const AuthPage = lazy(() => import('@/pages/AuthPage'))
 const SolutionPicker = lazy(() => import('@/pages/SolutionPicker'))
 const Workspace = lazy(() => import('@/pages/Workspace'))
@@ -27,6 +29,57 @@ function LoadingScreen() {
       </div>
     </div>
   )
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean
+  error: Error | null
+}
+
+class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryState> {
+  constructor(props: { children: ReactNode }) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('[ErrorBoundary]', error, info.componentStack)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex items-center justify-center h-screen bg-background">
+          <div className="text-center space-y-6 max-w-md px-6">
+            <div className="text-6xl">⚠</div>
+            <h1 className="text-2xl font-bold">应用出现异常</h1>
+            <p className="text-muted-foreground text-sm">
+              {this.state.error?.message || '未知错误'}
+            </p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => this.setState({ hasError: false, error: null })}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm hover:opacity-90 transition-opacity"
+              >
+                重试
+              </button>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg text-sm hover:opacity-90 transition-opacity"
+              >
+                刷新页面
+              </button>
+            </div>
+          </div>
+        </div>
+      )
+    }
+    return this.props.children
+  }
 }
 
 /** 需要登录才能访问的路由守卫 */
@@ -149,8 +202,19 @@ export default function App() {
   if (restoring) return <LoadingScreen />
 
   return (
-    <HashRouter>
-      <AppRoutes />
-    </HashRouter>
+    <ErrorBoundary>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-lg focus:text-sm"
+      >
+        跳过导航
+      </a>
+      <HashRouter>
+        <Suspense fallback={null}>
+          <OfflineBanner />
+        </Suspense>
+        <AppRoutes />
+      </HashRouter>
+    </ErrorBoundary>
   )
 }

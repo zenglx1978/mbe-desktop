@@ -23,7 +23,7 @@ interface ClientTaskBoardProps {
 }
 
 export default function ClientTaskBoard({
-  channelId, tasks, members, onCreate, onUpdate,
+  channelId: _channelId, tasks, members, onCreate, onUpdate,
 }: ClientTaskBoardProps) {
   const [showAdd, setShowAdd] = useState(false)
   const [newTitle, setNewTitle] = useState('')

@@ -202,7 +202,7 @@ function ContractList({ contracts, loading, fmt, fmtDate }: {
   )
 }
 
-function SubscriptionView({ sub, loading, fmt, fmtDate }: {
+function SubscriptionView({ sub, loading, fmt: _fmt, fmtDate }: {
   sub: Subscription | null; loading: boolean; fmt: (v: number) => string; fmtDate: (s: string) => string
 }) {
   if (loading && !sub) return <LoadingState />

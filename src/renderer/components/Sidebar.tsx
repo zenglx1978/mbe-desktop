@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '@/stores/app-store'
 import { useToolStore } from '@/stores/tool-store'
@@ -9,6 +10,8 @@ import type { WorkbenchTab } from '@/lib/solution-router'
 
 const api = (window as any).electronAPI
 
+const COLLAPSE_BREAKPOINT = 768
+
 export default function Sidebar() {
   const navigate = useNavigate()
   const { currentSolution, sidebarExpanded, toggleSidebar, solutionId } = useAppStore()
@@ -16,6 +19,18 @@ export default function Sidebar() {
   const { trackTabSwitch, getRecommendedTabOrder } = useAdaptiveUIStore()
   const user = useAuthStore((s) => s.user)
   const solution = currentSolution()
+
+  useEffect(() => {
+    const onResize = () => {
+      const store = useAppStore.getState()
+      if (window.innerWidth < COLLAPSE_BREAKPOINT && store.sidebarExpanded) {
+        store.toggleSidebar()
+      }
+    }
+    window.addEventListener('resize', onResize)
+    onResize()
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
   if (!solution) return null
 
@@ -44,6 +59,8 @@ export default function Sidebar() {
 
   return (
     <aside
+      role="navigation"
+      aria-label="主导航"
       className={`fixed left-0 top-0 h-full bg-[hsl(var(--background))] border-r border-border/50 flex flex-col transition-all duration-200 z-20 ${
         sidebarExpanded ? 'w-64' : 'w-16'
       }`}

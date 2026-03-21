@@ -454,7 +454,10 @@ async function executeSingle(
       if (!accApi) throw new Error('Accessibility Bridge 不可用（非 Windows 桌面端）')
       const appKey = (action.target ?? action.params?.app) as string
       if (!appKey) throw new Error('accessibility_read 缺少目标应用')
-      const chatResult = await accApi.readChat(appKey)
+      const chatResult = await accApi.readChat?.(appKey)
+      if (chatResult === undefined) {
+        throw new Error('accessibility_read：readChat 不可用')
+      }
       return chatResult
     }
 

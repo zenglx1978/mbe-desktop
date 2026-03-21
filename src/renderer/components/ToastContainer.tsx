@@ -31,7 +31,11 @@ export default function ToastContainer() {
   const { toasts, removeToast } = useToastStore()
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm">
+    <div
+      className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm"
+      aria-live="polite"
+      aria-relevant="additions removals"
+    >
       {toasts.map((t) => (
         <ToastItem key={t.id} toast={t} onClose={() => removeToast(t.id)} />
       ))}
@@ -39,7 +43,7 @@ export default function ToastContainer() {
   )
 }
 
-function ToastItem({ toast }: { toast: Toast; onClose: () => void }) {
+function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
   const bg =
     toast.type === 'success'
       ? 'bg-green-500/20 border-green-500/40'
@@ -49,10 +53,19 @@ function ToastItem({ toast }: { toast: Toast; onClose: () => void }) {
 
   return (
     <div
-      className={`px-4 py-3 rounded-lg border text-sm shadow-lg ${bg}`}
+      className={`px-4 py-3 rounded-lg border text-sm shadow-lg flex items-start gap-2 ${bg}`}
       role="alert"
     >
-      {toast.message}
+      <span className="flex-1">{toast.message}</span>
+      <button
+        onClick={onClose}
+        className="shrink-0 opacity-60 hover:opacity-100 transition-opacity"
+        aria-label="关闭通知"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
     </div>
   )
 }

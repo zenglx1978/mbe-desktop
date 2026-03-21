@@ -11,6 +11,16 @@ export function setupLocalCalcIPC(): void {
     result?: string
     error?: string
   }> => {
+    if (typeof scriptName !== 'string' || !scriptName) {
+      return { success: false, error: '无效的计算器名称' }
+    }
+    const available = getAvailableCalcs()
+    if (!available.includes(scriptName)) {
+      return { success: false, error: `计算器不在白名单中: ${scriptName}，可用: ${available.join(', ')}` }
+    }
+    if (!Array.isArray(args) || args.some(a => typeof a !== 'string')) {
+      return { success: false, error: '参数必须为字符串数组' }
+    }
     return runCalc(scriptName, args)
   })
 

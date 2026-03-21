@@ -6,8 +6,8 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useAppStore } from '@/stores/app-store'
 import { authFetch, API_BASE } from '@/lib/api-client'
 import {
-  Clock, TrendingUp, BarChart3, Download, Timer, ArrowRight,
-  Lightbulb, Zap, CheckCircle2, XCircle, Eye, Settings2, Sparkles,
+  Clock, TrendingUp, BarChart3, Download, Timer,
+  Lightbulb, Zap, CheckCircle2, Sparkles,
 } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
@@ -84,7 +84,7 @@ export default function EfficiencyPanel() {
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState(30)
   const [optDashboard, setOptDashboard] = useState<OptDashboard | null>(null)
-  const [optLoading, setOptLoading] = useState(false)
+  const [_optLoading, setOptLoading] = useState(false)
 
   const agentName = solution?.agents?.[0]?.id || ''
 
@@ -142,6 +142,15 @@ export default function EfficiencyPanel() {
       // Expected: 忽略建议 API 失败；不刷新仪表盘
     }
   }, [agentName, loadOptDashboard])
+
+  // 使用 MBE 时自动记录行为（BehaviorObserver 集成）
+  useEffect(() => {
+    if (!solutionId) return
+    const api = window.electronAPI
+    if (api?.observer?.recordAction) {
+      api.observer.recordAction(solutionId, agentName, 'efficiency_panel_viewed')
+    }
+  }, [solutionId, agentName])
 
   useEffect(() => { loadReport() }, [loadReport])
   useEffect(() => { loadOptDashboard() }, [loadOptDashboard])

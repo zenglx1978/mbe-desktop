@@ -32,7 +32,7 @@ export default function DataSourceSetup() {
   const [step, setStep] = useState(0)
   const [sources, setSources] = useState<DataSource[]>([])
   const [loading, setLoading] = useState(true)
-  const [detectedApps, setDetectedApps] = useState<Record<string, boolean>>({})
+  const [, setDetectedApps] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     loadDataSources()

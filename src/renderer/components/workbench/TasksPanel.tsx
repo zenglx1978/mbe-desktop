@@ -62,7 +62,7 @@ export default function TasksPanel({ solution }: Props) {
     setTasks(prev => prev.filter(t => t.id !== id))
   }, [solution.id])
 
-  const { activeTasks, completedTasks, filtered, counts } = useMemo(() => {
+  const { activeTasks: _activeTasks, completedTasks, filtered, counts } = useMemo(() => {
     const active = tasks.filter((t) => t.status !== 'done')
     const completed = tasks.filter((t) => t.status === 'done')
     const pOrder: Record<Priority, number> = { high: 0, medium: 1, low: 2 }

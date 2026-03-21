@@ -401,18 +401,22 @@ async function callStepWithFallback(
 
     // 401/404/500 → 降级到 Agent 直连
     if (resp.status === 401 || resp.status === 404 || resp.status >= 500) {
-      return await callAgentDirect(step, query)
+      return await callAgentDirect(step, query, signal)
     }
     throw new Error(`API ${resp.status}`)
   } catch (err: unknown) {
     // 网络错误也走降级
     const msg = err instanceof Error ? err.message : ''
     if (msg.includes('API ')) throw err
-    return await callAgentDirect(step, query)
+    return await callAgentDirect(step, query, signal)
   }
 }
 
-async function callAgentDirect(step: WorkflowStep, query: string): Promise<ConsultResponse> {
+async function callAgentDirect(
+  step: WorkflowStep,
+  query: string,
+  signal?: AbortSignal,
+): Promise<ConsultResponse> {
   const candidates = [
     `${API_BASE}/api/${step.agent}/consult`,
     `${API_BASE}/api/${step.agent}/chat`,

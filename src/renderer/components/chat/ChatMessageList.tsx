@@ -32,7 +32,7 @@ export function ChatMessageList({
           {messages.map((msg) => (
             <ChatMessageBubble key={msg.id} message={msg} />
           ))}
-          <div ref={messagesEndRef} />
+          <div ref={messagesEndRef as React.RefObject<HTMLDivElement>} />
         </div>
       )}
     </div>

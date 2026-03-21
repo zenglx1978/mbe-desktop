@@ -1,6 +1,10 @@
 import { useRef, useEffect, useCallback } from 'react'
 import { useVisibilityPolling } from '@/hooks/useVisibilityPolling'
-import { useClientChatStore, type ClientMsg } from '@/stores/client-chat-store'
+import {
+  useClientChatStore,
+  useClientChatMessagesStore,
+  type ClientMsg,
+} from '@/stores/client-chat-store'
 import { Search, X, Lock } from 'lucide-react'
 import { formatTime } from './shared'
 
@@ -15,7 +19,7 @@ export default function ClientMessageList() {
 
   useVisibilityPolling(
     useCallback(() => {
-      useClientChatStore.getState().fetchMessages()
+      useClientChatMessagesStore.getState().fetchMessages()
     }, []),
     3000,
     !!activeChannel,

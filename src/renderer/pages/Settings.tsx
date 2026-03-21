@@ -83,7 +83,7 @@ export default function Settings() {
     if (!api?.db?.stats) return
     try {
       const stats = await api.db.stats()
-      setDbStats(stats)
+      setDbStats(stats ?? null)
     } catch { /* ignore */ }
   }, [])
 
@@ -135,7 +135,7 @@ export default function Settings() {
     try {
       const result = await api.db.backup.restore()
       if (result?.needPassword) {
-        setPendingRestorePath(result.filePath)
+        setPendingRestorePath(result.filePath ?? null)
         setRestoreMsg('请输入备份时生成的密码：')
       } else if (result?.ok) {
         setRestoreMsg(`恢复成功！已恢复 ${result.tables?.length || 0} 张表。`)

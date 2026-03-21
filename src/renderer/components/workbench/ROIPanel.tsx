@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { TrendingUp, DollarSign, Users, RefreshCw, BarChart3, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import { authFetch, API_BASE } from '@/lib/api-client'
-import { useAppStore } from '@/stores/app-store'
 
 interface RoleROI {
   role: string
@@ -25,7 +24,6 @@ interface ROISummary {
 export default function ROIPanel() {
   const [data, setData] = useState<ROISummary | null>(null)
   const [loading, setLoading] = useState(false)
-  const solutionId = useAppStore(s => s.solutionId)
 
   const fetchROI = useCallback(async () => {
     setLoading(true)

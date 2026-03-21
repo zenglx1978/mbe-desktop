@@ -73,7 +73,7 @@ export interface DashboardWidget {
   filter?: string
 }
 
-export type WorkbenchTab = 'chat' | 'tools' | 'documents' | 'tasks' | 'dashboard' | 'workflows' | 'approvals' | 'costs' | 'scheduler' | 'designer' | 'efficiency' | 'clients' | 'roi' | 'account'
+export type WorkbenchTab = 'chat' | 'tools' | 'documents' | 'tasks' | 'dashboard' | 'workflows' | 'approvals' | 'costs' | 'scheduler' | 'designer' | 'efficiency' | 'automation' | 'clients' | 'roi' | 'account'
 
 /** 利润影响标注 — 米塞斯 P2：企业的目的是获取利润 */
 export interface ProfitImpact {

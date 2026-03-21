@@ -1,9 +1,9 @@
-import { useCallback, type RefObject } from 'react'
+import { useCallback, type Dispatch, type RefObject, type SetStateAction } from 'react'
 import { VoiceInput, ScreenshotInput } from '@/components/io'
 
 export interface ChatInputBarProps {
   input: string
-  setInput: (value: string) => void
+  setInput: Dispatch<SetStateAction<string>>
   textareaRef: RefObject<HTMLTextAreaElement | null>
   onKeyDown: (e: React.KeyboardEvent) => void
   onSend: () => void
@@ -30,7 +30,7 @@ export function ChatInputBar({
       <div className="max-w-3xl mx-auto">
         <div className="flex items-end gap-3 bg-secondary/30 rounded-xl border border-border/50 px-4 py-3 focus-within:border-primary/50 transition-colors">
           <textarea
-            ref={textareaRef}
+            ref={textareaRef as React.RefObject<HTMLTextAreaElement>}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={onKeyDown}

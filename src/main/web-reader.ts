@@ -53,6 +53,27 @@ export interface WebMonitorRule {
   label: string
 }
 
+// ────────────────────── CSS 选择器安全校验 ──────────────────────
+
+const SAFE_SELECTOR_RE = /^[a-zA-Z0-9\s\-_.,:#\[\]=~|^$*>"'+()@]+$/
+
+function isSafeCssSelector(selector: string): boolean {
+  if (!selector || selector.length > 500) return false
+  if (!SAFE_SELECTOR_RE.test(selector)) return false
+  // 禁止 JS 注入常见 payload
+  const lower = selector.toLowerCase()
+  if (lower.includes('javascript:') || lower.includes('expression(')) return false
+  if (lower.includes('\\') || lower.includes('`')) return false
+  return true
+}
+
+function sanitizeSelector(selector: string | undefined): string | undefined {
+  if (!selector) return undefined
+  if (!isSafeCssSelector(selector)) return undefined
+  // 转义单引号，防止模板字符串拼接逃逸
+  return selector.replace(/'/g, "\\'")
+}
+
 // ────────────────────── 核心：隐藏窗口读网页 ──────────────────────
 
 const READER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -60,6 +81,18 @@ const READER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 
 async function readWebPage(req: WebReadRequest): Promise<WebReadResult> {
   const timeout = req.timeout ?? 15000
   const start = Date.now()
+  const safeSelector = sanitizeSelector(req.selector)
+  const safeWaitFor = sanitizeSelector(req.waitFor)
+
+  // customScript 从外部 IPC 调用时已被剥离，此处作为最终防线
+  if (req.customScript) {
+    return {
+      success: false,
+      url: req.url,
+      error: '安全限制: customScript 已被禁用，请使用 selector 提取内容',
+      loadTimeMs: 0,
+    }
+  }
 
   let win: BrowserWindow | null = null
 
@@ -96,12 +129,12 @@ async function readWebPage(req: WebReadRequest): Promise<WebReadResult> {
     ])
 
     // 等待动态内容
-    if (req.waitFor) {
+    if (safeWaitFor) {
       await win.webContents.executeJavaScript(`
         new Promise((resolve, reject) => {
-          const timeout = setTimeout(() => reject(new Error('等待元素超时: ${req.waitFor}')), ${timeout})
+          const timeout = setTimeout(() => reject(new Error('等待元素超时')), ${timeout})
           const check = () => {
-            if (document.querySelector('${req.waitFor}')) {
+            if (document.querySelector('${safeWaitFor}')) {
               clearTimeout(timeout)
               resolve(true)
             } else {
@@ -123,9 +156,9 @@ async function readWebPage(req: WebReadRequest): Promise<WebReadResult> {
 
     // 提取正文
     const text: string = await win.webContents.executeJavaScript(
-      req.selector
+      safeSelector
         ? `(() => {
-            const els = document.querySelectorAll('${req.selector}')
+            const els = document.querySelectorAll('${safeSelector}')
             return Array.from(els).map(el => el.innerText).join('\\n\\n')
           })()`
         : `(() => {
@@ -141,7 +174,7 @@ async function readWebPage(req: WebReadRequest): Promise<WebReadResult> {
     if (req.extractLinks) {
       links = await win.webContents.executeJavaScript(`
         (() => {
-          const root = ${req.selector ? `document.querySelector('${req.selector}')` : 'document.body'}
+          const root = ${safeSelector ? `document.querySelector('${safeSelector}')` : 'document.body'}
           if (!root) return []
           const anchors = root.querySelectorAll('a[href]')
           return Array.from(anchors).map(a => ({
@@ -157,7 +190,7 @@ async function readWebPage(req: WebReadRequest): Promise<WebReadResult> {
     if (req.extractTables) {
       tables = await win.webContents.executeJavaScript(`
         (() => {
-          const root = ${req.selector ? `document.querySelector('${req.selector}')` : 'document.body'}
+          const root = ${safeSelector ? `document.querySelector('${safeSelector}')` : 'document.body'}
           if (!root) return []
           const result = []
           root.querySelectorAll('table').forEach(table => {
@@ -183,12 +216,6 @@ async function readWebPage(req: WebReadRequest): Promise<WebReadResult> {
       `)
     }
 
-    // 自定义脚本
-    let customResult: unknown
-    if (req.customScript) {
-      customResult = await win.webContents.executeJavaScript(req.customScript)
-    }
-
     return {
       success: true,
       url: req.url,
@@ -196,7 +223,6 @@ async function readWebPage(req: WebReadRequest): Promise<WebReadResult> {
       text,
       links,
       tables,
-      customResult,
       loadTimeMs: Date.now() - start,
     }
   } catch (err: unknown) {
@@ -385,13 +411,16 @@ export const PRESET_SOURCES: Record<string, WebReadRequest[]> = {
 
 export function setupWebReaderIPC(): void {
   // 读取单个网页
-  ipcMain.handle('webReader:read', async (_, req: WebReadRequest): Promise<WebReadResult> => {
-    return readWebPage(req)
+  ipcMain.handle('webReader:read', async (_event, req: WebReadRequest): Promise<WebReadResult> => {
+    // 安全: 剥离 customScript，禁止渲染进程注入任意 JS
+    const { customScript: _, ...safeReq } = req
+    return readWebPage(safeReq)
   })
 
   // 批量读取
   ipcMain.handle('webReader:readBatch', async (_, requests: WebReadRequest[]): Promise<WebReadResult[]> => {
-    return readMultiplePages(requests)
+    const safeRequests = requests.map(({ customScript: _, ...r }) => r)
+    return readMultiplePages(safeRequests)
   })
 
   // 读取预置数据源
@@ -416,8 +445,12 @@ export function setupWebReaderIPC(): void {
     return checkForChanges(rule)
   })
 
-  // 在指定 URL 上执行 JS 提取数据（高级用法）
-  ipcMain.handle('webReader:extract', async (_, url: string, script: string): Promise<WebReadResult> => {
-    return readWebPage({ url, customScript: script })
+  // 在指定 URL 上执行 JS 提取数据 — 已禁用（安全风险：任意 JS 执行）
+  ipcMain.handle('webReader:extract', async (): Promise<WebReadResult> => {
+    return {
+      success: false,
+      url: '',
+      error: '安全限制: webReader:extract 已禁用，请使用 webReader:read 配合 selector',
+    }
   })
 }

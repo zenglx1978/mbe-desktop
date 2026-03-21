@@ -121,8 +121,12 @@ export default function ExportToolbar({ content, title = '对话导出', classNa
         type="button"
         className={btn}
         onClick={share}
-        title={typeof navigator !== 'undefined' && navigator.share ? '系统分享' : '分享（浏览器不支持）'}
-        disabled={typeof navigator !== 'undefined' ? !navigator.share : true}
+        title={
+          typeof navigator !== 'undefined' && typeof navigator.share === 'function'
+            ? '系统分享'
+            : '分享（浏览器不支持）'
+        }
+        disabled={typeof navigator === 'undefined' || typeof navigator.share !== 'function'}
         aria-label="分享"
       >
         <Share2 className="h-4 w-4" />

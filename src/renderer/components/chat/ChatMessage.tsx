@@ -40,9 +40,11 @@ export function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
             <span className="inline-block w-1.5 h-4 bg-current animate-pulse ml-0.5 -mb-0.5 rounded-sm" />
           )}
         </div>
-        {!isUser && message.orchestration && message.orchestration.experts.length > 0 && (
-          <OrchestrationPanel orchestration={message.orchestration} />
-        )}
+        {!isUser &&
+          message.orchestration &&
+          (message.orchestration.experts?.length ?? 0) > 0 && (
+            <OrchestrationPanel orchestration={message.orchestration} />
+          )}
         {!isUser && message.confidence != null && (
           <ConfidenceBadge confidence={message.confidence} />
         )}

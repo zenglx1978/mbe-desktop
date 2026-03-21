@@ -30,7 +30,7 @@ interface ClientDigestPanelProps {
 }
 
 export default function ClientDigestPanel({
-  channelId, digests, loading, onGenerate, onPublish,
+  channelId: _channelId, digests, loading, onGenerate, onPublish,
 }: ClientDigestPanelProps) {
   const [showGen, setShowGen] = useState(false)
   const [previewId, setPreviewId] = useState<string | null>(null)

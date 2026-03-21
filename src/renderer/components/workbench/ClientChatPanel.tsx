@@ -13,6 +13,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useVisibilityPolling } from '@/hooks/useVisibilityPolling'
 import {
   useClientChatStore,
+  useClientSessionStore,
   type ClientInvite, type AIDraft,
 } from '@/stores/client-chat-store'
 import {
@@ -45,7 +46,7 @@ export default function ClientChatPanel() {
 
   useEffect(() => {
     fetchInvites()
-    useClientChatStore.getState().fetchUnread()
+    useClientSessionStore.getState().fetchUnread()
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission()
     }
@@ -53,7 +54,7 @@ export default function ClientChatPanel() {
 
   useVisibilityPolling(
     useCallback(() => {
-      useClientChatStore.getState().fetchUnread()
+      useClientSessionStore.getState().fetchUnread()
     }, []),
     5000,
     true,

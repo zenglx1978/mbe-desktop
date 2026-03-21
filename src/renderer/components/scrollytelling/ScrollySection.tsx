@@ -37,7 +37,7 @@ export default function ScrollySection({
 
   return (
     <section
-      ref={sectionRef}
+      ref={sectionRef as React.RefObject<HTMLElement>}
       id={id}
       className={`relative ${bgClass}`}
       style={{ minHeight: `${scrollHeight * 100}vh` }}

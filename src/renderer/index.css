@@ -189,3 +189,13 @@
 [data-solution="smb-operations"] ::-webkit-scrollbar-thumb {
   background: hsl(263 10% 28%);
 }
+
+/* ── 工具类 ── */
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

@@ -5,7 +5,7 @@
  */
 import {
   School, ClipboardList, Plane, PenLine, Coins, Stamp,
-  FolderOpen, FileEdit, Lightbulb, BookOpen, Target,
+  FolderOpen, Lightbulb, BookOpen, Target,
   ShoppingCart, Receipt, Link2, Search, Landmark,
   FileText, Briefcase, Calculator, Stethoscope,
   Clock, RefreshCw, CheckCircle2, XCircle,

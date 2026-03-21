@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { useAppStore } from '@/stores/app-store'
 import type { SolutionConfig } from '@/lib/solution-router'
 import {
   createCanvas,
@@ -9,8 +8,6 @@ import {
   exportCanvas,
   fetchTemplates,
   type DesignerCanvasDef,
-  type DesignerNodeDef,
-  type DesignerEdgeDef,
   type WorkflowTemplateDef,
 } from '@/lib/workflow-os-service'
 

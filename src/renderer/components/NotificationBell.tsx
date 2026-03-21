@@ -2,7 +2,7 @@
  * 通知铃铛 + 下拉面板 — 放在 Header 右侧
  */
 import { useEffect, useRef } from 'react'
-import { Bell, Check, CheckCheck, Mail, MessageSquare, Database, X } from 'lucide-react'
+import { Bell, CheckCheck, Mail, MessageSquare, Database, X } from 'lucide-react'
 import { useNotificationStore, startNotificationPolling } from '@/stores/notification-store'
 
 const CHANNEL_ICON: Record<string, typeof Mail> = {

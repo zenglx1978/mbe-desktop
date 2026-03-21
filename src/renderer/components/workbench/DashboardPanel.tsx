@@ -207,7 +207,7 @@ export default function DashboardPanel({ solution }: Props) {
     setStartingCross(null)
     if (result) {
       await loadDashboard()
-      setSelectedInstanceId(result.instance_id)
+      setSelectedInstanceId(result.instance_id ?? null)
     }
   }
 
@@ -220,7 +220,7 @@ export default function DashboardPanel({ solution }: Props) {
     setStartingTemplate(null)
     if (result) {
       await loadDashboard()
-      setSelectedInstanceId(result.instance_id)
+      setSelectedInstanceId(result.instance_id ?? null)
     }
   }
 

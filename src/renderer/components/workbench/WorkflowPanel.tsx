@@ -13,6 +13,7 @@ import {
   executeWorkflow, executeScenario,
   type StepStatus, type WorkflowResult,
 } from '@/lib/workflow-service'
+import { isAbortError } from '@/lib/chat-service'
 import {
   getWorkflowIcon, STATUS_ICONS, ORCHESTRATION_META, PROFIT_DIM_META,
   DELIVERABLE_ICON, SUCCESS_ICON, EXPECTED_ICON,
@@ -147,7 +148,7 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
       if (activeWf) {
         setView('running')
         setStepStatuses(Object.fromEntries(activeWf.steps.map(s => [s.id, 'pending' as StepStatus])))
-        const res = await executeWorkflow(solution.id, activeWf, query, {}, onProgress, { signal })
+        const res = await executeWorkflow(solution.id, activeWf, query, {}, onProgress)
         if (signal.aborted) return
         setResult(res)
         setView('done')

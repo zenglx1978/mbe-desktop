@@ -23,6 +23,7 @@ export default function ChatPanel() {
   if (!solution) return null
 
   async function handleSend(text?: string) {
+    if (!solution) return
     const toSend = (text ?? input.trim()) || ''
     if (!toSend || isLoading) return
     setInput('')

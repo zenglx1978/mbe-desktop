@@ -63,6 +63,37 @@ const SECURITY_DESCRIPTIONS: Record<SecurityLevel, string> = {
   3: '发送消息/修改外部数据（需二次确认）',
 }
 
+// ────────────────────── 命令白名单（渲染进程可调用的外部命令） ──────────────────────
+
+const ALLOWED_COMMANDS: Set<string> = new Set([
+  // Python 计算脚本
+  'python', 'python3', 'py',
+  // 系统工具
+  'where', 'which', 'cmd', 'open',
+  // Office / 文档
+  'libreoffice', 'soffice',
+  'libreoffice-cli', 'gimp-cli', 'blender-cli', 'inkscape-cli', 'mbe-calc',
+  // 投资终端 CLI
+  'EmStock', 'hexin', 'tdxw',
+])
+
+function isCommandAllowed(command: string): boolean {
+  const base = path.basename(command).replace(/\.exe$/i, '').toLowerCase()
+  for (const allowed of ALLOWED_COMMANDS) {
+    if (base === allowed.toLowerCase()) return true
+  }
+  return false
+}
+
+function validateArgs(args: string[]): boolean {
+  for (const arg of args) {
+    if (typeof arg !== 'string') return false
+    // 禁止 shell 元字符注入（管道、重定向、命令串联）
+    if (/[|><;&`$]/.test(arg) && !arg.startsWith('-')) return false
+  }
+  return true
+}
+
 // ────────────────────── 路径工具 ──────────────────────
 
 function getExportsDir(): string {
@@ -267,6 +298,14 @@ function execCommand(
 }
 
 async function handleCliExec(request: CliExecRequest): Promise<CliExecResult> {
+  if (!isCommandAllowed(request.command)) {
+    return { success: false, error: `命令不在白名单中: ${request.command}` }
+  }
+
+  if (!validateArgs(request.args)) {
+    return { success: false, error: '参数包含不允许的字符' }
+  }
+
   const confirmed = await requestUserConfirm(
     request.securityLevel,
     `执行命令: ${request.command} ${request.args.join(' ')}`,

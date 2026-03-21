@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import {
   X, Pin, PinOff, Copy, Camera,
-  Send, Loader2, Monitor, Minimize2,
+  Send, Loader2,
   Clipboard, Sparkles,
 } from 'lucide-react'
 
@@ -43,7 +43,6 @@ export default function CopilotPanel() {
   const [screenshot, setScreenshot] = useState<string | null>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
-  const dragRef = useRef<{ x: number; y: number } | null>(null)
 
   useEffect(() => {
     // 监听来自主进程的分析请求
@@ -89,7 +88,7 @@ export default function CopilotPanel() {
     const ctx = activeApp?.success
       ? `[当前应用: ${CATEGORY_LABELS[activeApp.category || 'other']} - ${activeApp.title}]\n`
       : ''
-    const fullPrompt = ctx + text
+    void (ctx + text)
 
     try {
       // TODO: 接入实际的 AI 后端，当前先用模拟回复
@@ -137,26 +136,6 @@ export default function CopilotPanel() {
     const next = !pinned
     setPinned(next)
     api?.copilot?.pin(next)
-  }
-
-  // 拖拽标题栏移动窗口
-  const handleDragStart = (e: React.MouseEvent) => {
-    dragRef.current = { x: e.screenX, y: e.screenY }
-    const onMove = (ev: MouseEvent) => {
-      if (!dragRef.current) return
-      const dx = ev.screenX - dragRef.current.x
-      const dy = ev.screenY - dragRef.current.y
-      dragRef.current = { x: ev.screenX, y: ev.screenY }
-      // 通知主进程相对移动不精确，直接用 screen position
-      // 这里用绝对坐标
-    }
-    const onUp = () => {
-      dragRef.current = null
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
-    }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
   }
 
   return (

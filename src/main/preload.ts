@@ -310,6 +310,34 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('miner:efficiencyHistory', solutionId, days),
   },
 
+  // ── BehaviorObserver（行为观察 — 应用切换追踪） ──
+  observer: {
+    enabled: () => ipcRenderer.invoke('observer:enabled'),
+    setEnabled: (enabled: boolean) => ipcRenderer.invoke('observer:setEnabled', enabled),
+    appSummary: (days?: number) => ipcRenderer.invoke('observer:appSummary', days),
+    sequences: (days?: number, limit?: number) => ipcRenderer.invoke('observer:sequences', days, limit),
+    mbeActions: (solutionId?: string, days?: number) => ipcRenderer.invoke('observer:mbeActions', solutionId, days),
+    recentApps: (count?: number) => ipcRenderer.invoke('observer:recentApps', count),
+    recordAction: (solutionId: string, expertId: string, label: string) =>
+      ipcRenderer.invoke('observer:recordAction', solutionId, expertId, label),
+  },
+
+  // ── PatternRecognizer（模式识别 — 自动化建议） ──
+  pattern: {
+    list: (status?: string) => ipcRenderer.invoke('pattern:list', status),
+    analyze: () => ipcRenderer.invoke('pattern:analyze'),
+    accept: (patternId: string) => ipcRenderer.invoke('pattern:accept', patternId),
+    dismiss: (patternId: string) => ipcRenderer.invoke('pattern:dismiss', patternId),
+    automate: (patternId: string) => ipcRenderer.invoke('pattern:automate', patternId),
+    registerSolutionPatterns: (patterns: unknown[]) =>
+      ipcRenderer.invoke('pattern:registerSolutionPatterns', patterns),
+    onNewDiscovery: (callback: (data: unknown) => void) => {
+      const handler = (_e: unknown, data: unknown) => callback(data)
+      ipcRenderer.on('pattern:newDiscovery', handler)
+      return () => ipcRenderer.removeListener('pattern:newDiscovery', handler)
+    },
+  },
+
   // ── AI 副驾驶（全局快捷键 + 剪贴板 + 悬浮窗 + 截图 + 窗口检测） ──
   copilot: {
     show: (text?: string) => ipcRenderer.invoke('copilot:show', text),
