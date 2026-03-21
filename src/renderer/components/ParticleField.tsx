@@ -68,6 +68,25 @@ function quadBezier(
 
 function randomBetween(a: number, b: number) { return a + Math.random() * (b - a) }
 
+/**
+ * 将可能包含 CSS 变量的颜色值解析为 Canvas 可用的 RGBA 值。
+ * Canvas 2D API 不支持 `var(--xxx)` 语法，必须先通过 DOM 解析。
+ */
+function resolveColor(raw: string): { r: number; g: number; b: number } {
+  const el = document.createElement('div')
+  el.style.color = raw
+  document.body.appendChild(el)
+  const computed = getComputedStyle(el).color
+  document.body.removeChild(el)
+  const m = computed.match(/(\d+)/g)
+  if (m && m.length >= 3) return { r: +m[0], g: +m[1], b: +m[2] }
+  return { r: 100, g: 160, b: 220 }
+}
+
+function rgbaStr(c: { r: number; g: number; b: number }, alpha: number): string {
+  return `rgba(${c.r}, ${c.g}, ${c.b}, ${alpha})`
+}
+
 // ── 组件 ──
 
 export default function ParticleField({
@@ -78,6 +97,7 @@ export default function ParticleField({
 }: ParticleFieldProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animRef = useRef<number>(0)
+  const colorRef = useRef<{ r: number; g: number; b: number }>({ r: 100, g: 160, b: 220 })
   const stateRef = useRef<{
     nodes: Node[]
     particles: Particle[]
@@ -120,7 +140,13 @@ export default function ParticleField({
     s.sparks = []
   }, [nodeCount, particleDensity])
 
+  // accentColor 变化时解析为 Canvas 可用的 RGB
+  useEffect(() => {
+    colorRef.current = resolveColor(accentColor)
+  }, [accentColor])
+
   const draw = useCallback((ctx: CanvasRenderingContext2D, _time: number) => {
+    const c = colorRef.current
     const s = stateRef.current
     const { w, h, nodes, particles, sparks, dpr } = s
 
@@ -143,8 +169,7 @@ export default function ParticleField({
         const cx = (a.x + b.x) / 2 + (a.y - b.y) * 0.15
         const cy = (a.y + b.y) / 2 + (b.x - a.x) * 0.15
         ctx.quadraticCurveTo(cx, cy, b.x, b.y)
-        ctx.strokeStyle = accentColor.replace(')', ` / ${alpha})`)
-                           .replace('hsl(', 'hsl(')
+        ctx.strokeStyle = rgbaStr(c, alpha)
         ctx.lineWidth = 0.5
         ctx.stroke()
       }
@@ -158,8 +183,8 @@ export default function ParticleField({
 
       // 光晕
       const gradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, r * 4)
-      gradient.addColorStop(0, accentColor.replace(')', ' / 0.12)'))
-      gradient.addColorStop(1, accentColor.replace(')', ' / 0)'))
+      gradient.addColorStop(0, rgbaStr(c, 0.12))
+      gradient.addColorStop(1, rgbaStr(c, 0))
       ctx.beginPath()
       ctx.arc(node.x, node.y, r * 4, 0, Math.PI * 2)
       ctx.fillStyle = gradient
@@ -168,7 +193,7 @@ export default function ParticleField({
       // 实心点
       ctx.beginPath()
       ctx.arc(node.x, node.y, r, 0, Math.PI * 2)
-      ctx.fillStyle = accentColor.replace(')', ' / 0.25)')
+      ctx.fillStyle = rgbaStr(c, 0.25)
       ctx.fill()
     }
 
@@ -207,7 +232,7 @@ export default function ParticleField({
       const fadeAlpha = Math.sin(p.t * Math.PI) * p.opacity
       ctx.beginPath()
       ctx.arc(px, py, p.size, 0, Math.PI * 2)
-      ctx.fillStyle = accentColor.replace(')', ` / ${fadeAlpha})`)
+      ctx.fillStyle = rgbaStr(c, fadeAlpha)
       ctx.fill()
     }
 
@@ -222,14 +247,14 @@ export default function ParticleField({
       const sa = spark.life * 0.6
       ctx.beginPath()
       ctx.arc(spark.x, spark.y, spark.size * spark.life, 0, Math.PI * 2)
-      ctx.fillStyle = accentColor.replace(')', ` / ${sa})`)
+      ctx.fillStyle = rgbaStr(c, sa)
       ctx.fill()
     }
 
     ctx.restore()
 
     animRef.current = requestAnimationFrame((t) => draw(ctx, t))
-  }, [accentColor])
+  }, [])
 
   useEffect(() => {
     const canvas = canvasRef.current

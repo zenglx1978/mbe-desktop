@@ -224,11 +224,20 @@ export default function SolutionPicker() {
       })
       if (res.ok) {
         const data = await res.json()
-        setIntakeResults(data.recommendations || [])
-        setShowAllSolutions(false)
+        const recs = data.recommendations || []
+        setIntakeResults(recs)
+        if (recs.length > 0) {
+          setShowAllSolutions(false)
+        } else {
+          setShowAllSolutions(true)
+        }
+      } else {
+        setIntakeResults([])
+        setShowAllSolutions(true)
       }
     } catch {
       setIntakeResults([])
+      setShowAllSolutions(true)
     } finally {
       setIntakeLoading(false)
     }
@@ -246,29 +255,15 @@ export default function SolutionPicker() {
   const topRecommendation = industryGuesses[0]
 
   const filteredCategories = useMemo(() => {
-    const base = search.trim() && intakeResults.length === 0
-      ? CATEGORIES.map((cat) => {
-          const q = search.toLowerCase()
-          return {
-            ...cat,
-            ids: cat.ids.filter((id) => {
-              const s = findSolution(id)
-              return s && (
-                s.name.toLowerCase().includes(q) ||
-                s.tagline.toLowerCase().includes(q) ||
-                s.description.toLowerCase().includes(q)
-              )
-            }),
-          }
-        }).filter((cat) => cat.ids.length > 0)
-      : CATEGORIES
+    // Intake API 成功时不需要本地过滤（结果单独展示）
+    // Intake API 失败时展示全部方案，不做本地过滤（中文子串匹配不可靠）
+    const base = CATEGORIES
 
-    // 过滤掉已下架（disabled）的方案，保留 coming_soon/draft 但不可点击
     return base.map((cat) => ({
       ...cat,
       ids: cat.ids.filter((id) => getEffectiveStatus(id) !== 'disabled'),
     })).filter((cat) => cat.ids.length > 0)
-  }, [search, intakeResults, statusSynced])
+  }, [statusSynced])
 
   const handlePick = useCallback((id: string) => {
     setSolution(id)

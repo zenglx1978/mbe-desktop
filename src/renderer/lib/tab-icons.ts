@@ -7,7 +7,7 @@ import {
   MessageSquare, BarChart3, Wrench, FileText, CheckSquare,
   ShieldCheck, Coins, Landmark, LayoutDashboard,
   Calendar, Palette, Settings, LogOut, PanelLeftClose, PanelLeft,
-  TrendingUp, Users, Wallet, Sparkles,
+  TrendingUp, Users, Wallet, Sparkles, Target,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -31,6 +31,7 @@ export const TAB_ICON_MAP: Record<string, TabMeta> = {
   automation: { icon: Sparkles,        label: '自动化' },
   clients:    { icon: Users,           label: '客户沟通' },
   roi:        { icon: BarChart3,       label: 'ROI 分析' },
+  scout:      { icon: Target,         label: '标的评估' },
   account:    { icon: Wallet,         label: '账户' },
 }
 

@@ -28,6 +28,7 @@ import DesignerPanel from '@/components/workbench/DesignerPanel'
 import EfficiencyPanel from '@/components/workbench/EfficiencyPanel'
 import ClientChatPanel from '@/components/workbench/ClientChatPanel'
 import ROIPanel from '@/components/workbench/ROIPanel'
+import ScoutPanel from '@/components/workbench/ScoutPanel'
 import AccountPanel from '@/components/workbench/AccountPanel'
 import AutomationPanel from '@/components/workbench/AutomationPanel'
 import NotificationBell from '@/components/NotificationBell'
@@ -118,6 +119,7 @@ export default function Workspace() {
     if (!tabs.includes('automation')) tabs.push('automation' as (typeof tabs)[number])
     if (!tabs.includes('clients')) tabs.push('clients' as (typeof tabs)[number])
     if (!tabs.includes('roi')) tabs.push('roi' as (typeof tabs)[number])
+    if (!tabs.includes('scout')) tabs.push('scout' as (typeof tabs)[number])
     if (!tabs.includes('account')) tabs.push('account' as (typeof tabs)[number])
     return tabs
   }, [solution])
@@ -229,6 +231,8 @@ function ActivePanel({ tab }: { tab: string }) {
       return <ClientChatPanel />
     case 'roi':
       return <ROIPanel />
+    case 'scout':
+      return <ScoutPanel />
     case 'account':
       return <AccountPanel />
     default:
