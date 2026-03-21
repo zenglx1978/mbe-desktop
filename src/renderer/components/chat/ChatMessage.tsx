@@ -1,6 +1,7 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { ArrowUpRight } from 'lucide-react'
 import { useAppStore } from '@/stores/app-store'
 import { useChatStore, type ChatMessage, type WorkflowSuggestion } from '@/stores/chat-store'
 import { startFromChat } from '@/lib/workflow-os-service'
@@ -11,6 +12,38 @@ import ConfidenceBadge, { getConfidenceCssClass } from '@/components/ConfidenceB
 import { ChatLocalActionCards } from './ChatLocalActionCards'
 import { ExportToolbar } from '@/components/io'
 
+const UPGRADE_PATTERN = /\n*💡\s*当前为.+版[，,]回答内容有限。升级.+[。.]/
+const QUOTA_PATTERN = /您今日的免费咨询次数已用完.+升级套餐可获得.+[。.]/
+
+function extractUpgradeHint(content: string): { body: string; hint: string | null } {
+  for (const pat of [UPGRADE_PATTERN, QUOTA_PATTERN]) {
+    const m = content.match(pat)
+    if (m) {
+      return { body: content.slice(0, m.index!).trimEnd(), hint: m[0].replace(/^\n+/, '') }
+    }
+  }
+  return { body: content, hint: null }
+}
+
+function UpgradeBanner({ hint }: { hint: string }) {
+  const handleClick = () => {
+    window.open('https://mbe.hi-maker.com/pricing', '_blank')
+  }
+  return (
+    <div className="mt-3 flex items-center gap-3 rounded-lg border border-amber-500/25 bg-amber-500/5 px-4 py-3">
+      <div className="flex-1 text-xs text-amber-700 dark:text-amber-400">{hint}</div>
+      <button
+        type="button"
+        onClick={handleClick}
+        className="shrink-0 flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+      >
+        升级套餐
+        <ArrowUpRight className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  )
+}
+
 export interface ChatMessageBubbleProps {
   message: ChatMessage
 }
@@ -18,6 +51,11 @@ export interface ChatMessageBubbleProps {
 export function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
   const isUser = message.role === 'user'
   const confidenceClass = !isUser ? getConfidenceCssClass(message.confidence) : ''
+
+  const { body, hint } = useMemo(
+    () => (isUser || message.streaming ? { body: message.content, hint: null } : extractUpgradeHint(message.content)),
+    [isUser, message.content, message.streaming],
+  )
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
@@ -33,13 +71,14 @@ export function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
             <div className="whitespace-pre-wrap">{message.content}</div>
           ) : (
             <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown>
             </div>
           )}
           {message.streaming && (
             <span className="inline-block w-1.5 h-4 bg-current animate-pulse ml-0.5 -mb-0.5 rounded-sm" />
           )}
         </div>
+        {hint && <UpgradeBanner hint={hint} />}
         {!isUser &&
           message.orchestration &&
           (message.orchestration.experts?.length ?? 0) > 0 && (
