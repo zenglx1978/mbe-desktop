@@ -57,25 +57,22 @@ function SolutionCard({ solution, index, onPick, onLearnMore }: {
   const isClickable = status === 'available'
   const badge = STATUS_BADGE[status]
 
-  const handleMouseEnter = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleMouseEnter = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!isClickable) return
     const el = e.currentTarget
     el.style.borderColor = color + '50'
     el.style.boxShadow = `0 0 0 1px ${color}15, 0 20px 40px -8px ${color}12`
   }, [color, isClickable])
 
-  const handleMouseLeave = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleMouseLeave = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const el = e.currentTarget
     el.style.borderColor = ''
     el.style.boxShadow = ''
   }, [])
 
   return (
-    <button
-      onClick={() => isClickable && onPick(solution.id)}
-      aria-label={isClickable ? `选择${solution.name}` : `${solution.name}（${badge?.label || '不可用'}）`}
-      disabled={!isClickable}
-      className={`solution-card group relative flex flex-col p-5 rounded-xl bg-card border border-border/50 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background animate-fade-in-up ${isClickable ? 'hover:-translate-y-0.5 cursor-pointer' : 'opacity-60 cursor-default'}`}
+    <div
+      className={`solution-card group relative flex flex-col p-5 rounded-xl bg-card border border-border/50 text-left animate-fade-in-up ${isClickable ? 'hover:-translate-y-0.5' : 'opacity-60'}`}
       style={{ animationDelay: `${index * 50}ms` }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -89,14 +86,12 @@ function SolutionCard({ solution, index, onPick, onLearnMore }: {
       )}
 
       <div className="flex items-start justify-between mb-3">
-        {/* 方案独立色彩图标 — 每个方案有视觉身份 */}
         <div
           className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-200 ${isClickable ? 'group-hover:scale-110' : ''}`}
           style={{ backgroundColor: color + '15', color }}
         >
           <Icon className="w-5 h-5" />
         </div>
-        {/* 状态徽章 or 效率标签 */}
         {badge ? (
           <span className={`text-[11px] font-medium px-2.5 py-1 rounded-full border ${badge.className}`}>
             {badge.label}
@@ -119,7 +114,6 @@ function SolutionCard({ solution, index, onPick, onLearnMore }: {
         {solution.tagline}
       </span>
 
-      {/* 利润指标 — 方案色彩强调 */}
       {solution.profitMetrics.length > 0 && (
         <span
           className="text-xs mt-3 pt-3 border-t border-border/30 leading-relaxed line-clamp-1"
@@ -129,7 +123,6 @@ function SolutionCard({ solution, index, onPick, onLearnMore }: {
         </span>
       )}
 
-      {/* 底部元数据 — 渐进披露：专家数 · 工具数 · 流程数 · 了解更多 */}
       <div className="flex items-center gap-3 mt-3 text-[11px] text-muted-foreground/50 group-hover:text-muted-foreground/70 transition-colors">
         <span className="flex items-center gap-1">
           <Users className="w-3 h-3" />
@@ -147,19 +140,26 @@ function SolutionCard({ solution, index, onPick, onLearnMore }: {
             {solution.workflows.length} 流程
           </span>
         )}
-        {isClickable && (
-          <span
-            role="link"
-            tabIndex={0}
-            className="ml-auto flex items-center gap-0.5 text-primary/60 hover:text-primary cursor-pointer transition-colors"
-            onClick={(e) => { e.stopPropagation(); onLearnMore(solution.id) }}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); onLearnMore(solution.id) } }}
+      </div>
+
+      {/* 操作按钮 — 两个独立交互元素，不嵌套 */}
+      {isClickable && (
+        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/20">
+          <button
+            onClick={() => onPick(solution.id)}
+            className="flex-1 py-1.5 text-xs font-medium rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            选用方案
+          </button>
+          <button
+            onClick={() => onLearnMore(solution.id)}
+            className="flex items-center gap-0.5 px-2.5 py-1.5 text-xs text-muted-foreground hover:text-primary rounded-lg hover:bg-muted/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             了解更多 <ArrowRight className="w-3 h-3" />
-          </span>
-        )}
-      </div>
-    </button>
+          </button>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -188,6 +188,7 @@ export default function SolutionPicker() {
   const [intakeQuery, setIntakeQuery] = useState('')
   const [showAllSolutions, setShowAllSolutions] = useState(false)
   const [statusSynced, setStatusSynced] = useState(false)
+  const [intakeError, setIntakeError] = useState('')
   const intakeInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -216,6 +217,7 @@ export default function SolutionPicker() {
     if (!query.trim()) return
     setIntakeLoading(true)
     setIntakeQuery(query)
+    setIntakeError('')
     try {
       const res = await fetch(`${API_BASE}/api/v1/solutions/intake`, {
         method: 'POST',
@@ -233,10 +235,12 @@ export default function SolutionPicker() {
         }
       } else {
         setIntakeResults([])
+        setIntakeError('匹配服务暂时不可用，请从下方浏览全部方案')
         setShowAllSolutions(true)
       }
     } catch {
       setIntakeResults([])
+      setIntakeError('网络连接失败，请从下方浏览全部方案')
       setShowAllSolutions(true)
     } finally {
       setIntakeLoading(false)
@@ -354,6 +358,7 @@ export default function SolutionPicker() {
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleIntakeSubmit()}
                 placeholder="例如：我是律师事务所 / 我需要记账报税 / 我做电商..."
+                aria-label="描述你的行业，AI 为你匹配方案"
                 className="w-full pl-11 pr-24 py-3.5 text-sm bg-card border border-border/40 rounded-xl text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition-all"
               />
               <button
@@ -450,6 +455,16 @@ export default function SolutionPicker() {
               </div>
             </div>
           ) : null}
+        </div>
+      )}
+
+      {/* ── Intake 错误提示 ── */}
+      {intakeError && (
+        <div className="max-w-6xl mx-auto px-6 md:px-8 mb-4" role="alert">
+          <div className="flex items-center gap-2 px-4 py-3 rounded-lg border border-amber-500/20 bg-amber-500/5 text-sm text-amber-400">
+            <span aria-hidden="true">⚠</span>
+            {intakeError}
+          </div>
         </div>
       )}
 

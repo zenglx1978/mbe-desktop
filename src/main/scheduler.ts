@@ -12,6 +12,7 @@ import chokidar from 'chokidar'
 import path from 'path'
 import fs from 'fs'
 import { randomUUID } from 'crypto'
+import { isReadPathAllowed, isSafeUrl } from './safe-path'
 
 type CronScheduledTask = ReturnType<typeof cron.schedule>
 type ChokidarFSWatcher = ReturnType<typeof chokidar.watch>
@@ -181,16 +182,26 @@ function getNotificationIcon(): string {
 function handleNotificationClick(onClick: NonNullable<NotifyRequest['onClick']>): void {
   switch (onClick.type) {
     case 'open_url':
-      shell.openExternal(onClick.target)
+      if (isSafeUrl(onClick.target)) {
+        shell.openExternal(onClick.target)
+      }
       break
     case 'open_file':
-      shell.openPath(onClick.target)
+      if (isReadPathAllowed(onClick.target)) {
+        shell.openPath(path.resolve(onClick.target))
+      }
       break
     case 'navigate':
       if (mainWindow) {
         if (mainWindow.isMinimized()) mainWindow.restore()
         mainWindow.focus()
-        emitToRenderer('scheduler:navigate', { route: onClick.target })
+        const ALLOWED_ROUTES = ['/', '/settings', '/pick', '/migrate', '/data-source-setup', '/copilot', '/kb-graph', '/deepmind']
+        const ALLOWED_PREFIXES = ['/solution/', '/analytics/']
+        const safeRoute = String(onClick.target).replace(/[^a-zA-Z0-9/\-_]/g, '')
+        const routeAllowed = ALLOWED_ROUTES.includes(safeRoute)
+          || ALLOWED_PREFIXES.some(p => safeRoute.startsWith(p))
+        if (!routeAllowed) break
+        emitToRenderer('scheduler:navigate', { route: safeRoute })
       }
       break
     case 'focus_app':
@@ -264,11 +275,13 @@ async function executeJobAction(job: ScheduledJob, triggerData?: unknown): Promi
 
       case 'open_app': {
         const target = (action.params.target as string) ?? ''
-        if (target) {
-          await shell.openPath(target)
+        if (target && isReadPathAllowed(target)) {
+          await shell.openPath(path.resolve(target))
+          result.success = true
+          result.output = { opened: target }
+        } else {
+          result.error = target ? '路径不在允许的目录中' : '缺少目标路径'
         }
-        result.success = true
-        result.output = { opened: target }
         break
       }
 
@@ -329,6 +342,11 @@ function startCronJob(job: ScheduledJob): CronScheduledTask | null {
 function startFileWatcher(job: ScheduledJob): ChokidarFSWatcher | null {
   if (!job.watchPath) {
     console.error('[Scheduler] watch 类型任务缺少 watchPath')
+    return null
+  }
+
+  if (!isReadPathAllowed(job.watchPath)) {
+    console.error(`[Scheduler] watchPath 不在允许的目录中: ${job.watchPath}`)
     return null
   }
 

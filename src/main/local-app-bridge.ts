@@ -9,6 +9,7 @@ import fs from 'fs'
 import { generatePptx } from './docgen/pptx-engine'
 import { generateXlsx } from './docgen/xlsx-engine'
 import { generateDocx } from './docgen/docx-engine'
+import { isReadPathAllowed, isWritePathAllowed, ipcRateLimit } from './safe-path'
 
 // ────────────────────── 类型定义 ──────────────────────
 
@@ -68,8 +69,8 @@ const SECURITY_DESCRIPTIONS: Record<SecurityLevel, string> = {
 const ALLOWED_COMMANDS: Set<string> = new Set([
   // Python 计算脚本
   'python', 'python3', 'py',
-  // 系统工具
-  'where', 'which', 'cmd', 'open',
+  // 系统工具（where/which 仅用于应用检测，cmd/open 已移除：可执行任意命令）
+  'where', 'which',
   // Office / 文档
   'libreoffice', 'soffice',
   'libreoffice-cli', 'gimp-cli', 'blender-cli', 'inkscape-cli', 'mbe-calc',
@@ -88,8 +89,8 @@ function isCommandAllowed(command: string): boolean {
 function validateArgs(args: string[]): boolean {
   for (const arg of args) {
     if (typeof arg !== 'string') return false
-    // 禁止 shell 元字符注入（管道、重定向、命令串联）
-    if (/[|><;&`$]/.test(arg) && !arg.startsWith('-')) return false
+    if (/[|><;&`$]/.test(arg)) return false
+    if (arg.length > 4096) return false
   }
   return true
 }
@@ -166,6 +167,9 @@ async function requestUserConfirm(
 async function handleDocGen(request: DocGenRequest): Promise<DocGenResult> {
   try {
     const outputDir = request.outputDir || getExportsDir()
+    if (!isWritePathAllowed(outputDir)) {
+      return { success: false, error: '输出目录不在允许的写入目录中' }
+    }
     const fileName = request.fileName || generateFileName(request.format, request.template)
     const filePath = path.join(outputDir, fileName)
 
@@ -209,13 +213,16 @@ async function handleAppLaunch(request: AppLaunchRequest): Promise<{ success: bo
 
   switch (action) {
     case 'open_file': {
+      if (!isReadPathAllowed(target)) {
+        return { success: false, error: '文件路径不在允许的目录中' }
+      }
       const confirmed = await requestUserConfirm(1, `打开文件: ${path.basename(target)}`, target)
       if (!confirmed) return { success: false, error: '用户取消' }
 
-      if (withApp) {
+      if (withApp && isCommandAllowed(withApp)) {
         return execCommand(withApp, [target, ...(args || [])], 1)
       }
-      await shell.openPath(target)
+      await shell.openPath(path.resolve(target))
       return { success: true }
     }
 
@@ -223,11 +230,8 @@ async function handleAppLaunch(request: AppLaunchRequest): Promise<{ success: bo
       const confirmed = await requestUserConfirm(2, `启动应用: ${target}`)
       if (!confirmed) return { success: false, error: '用户取消' }
 
-      if (process.platform === 'win32') {
-        return execCommand('cmd', ['/c', 'start', '', target, ...(args || [])], 2)
-      } else {
-        return execCommand('open', ['-a', target, ...(args || [])], 2)
-      }
+      await shell.openPath(target)
+      return { success: true }
     }
 
     case 'open_url': {
@@ -239,6 +243,9 @@ async function handleAppLaunch(request: AppLaunchRequest): Promise<{ success: bo
     }
 
     case 'mailto': {
+      if (!/^(mailto:)?[^@\s]+@[^@\s]+\.[^@\s]+/.test(target)) {
+        return { success: false, error: '无效的邮件地址' }
+      }
       const mailtoUrl = target.startsWith('mailto:') ? target : `mailto:${target}`
       await shell.openExternal(mailtoUrl)
       return { success: true }
@@ -401,8 +408,11 @@ export function setupLocalAppBridgeIPC(): void {
     return handleAppLaunch(request)
   })
 
-  // Layer 3: CLI 执行
+  // Layer 3: CLI 执行（限速 10 次/分钟）
   ipcMain.handle('localApp:exec', async (_, request: CliExecRequest): Promise<CliExecResult> => {
+    if (!ipcRateLimit('localApp:exec', 10)) {
+      return { success: false, error: '调用频率超限，请稍后重试' }
+    }
     return handleCliExec(request)
   })
 

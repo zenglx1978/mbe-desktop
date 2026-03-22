@@ -107,7 +107,7 @@ export default function Workspace() {
           api.pattern.registerSolutionPatterns(data.patterns)
         }
       })
-      .catch(() => {})
+      .catch(() => { /* 非关键后台任务，静默降级 */ })
   }, [solution?.id])
 
   const allTabs = useMemo(() => {

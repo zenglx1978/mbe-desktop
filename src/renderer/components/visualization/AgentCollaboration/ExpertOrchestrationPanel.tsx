@@ -136,28 +136,52 @@ export function ExpertOrchestrationPanel({
 
   useEffect(() => setInfo(initialInfo), [initialInfo])
 
-  // WebSocket 实时更新
+  // WebSocket 实时更新（带自动重连）
   useEffect(() => {
     if (!wsUrl) return
-    const ws = new WebSocket(wsUrl)
-    wsRef.current = ws
 
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        if (data.type === 'orchestration_update' && data.payload) {
-          setInfo(prev => ({
-            ...prev,
-            ...data.payload,
-            experts: data.payload.experts || prev.experts,
-          }))
+    let retries = 0
+    const MAX_RETRIES = 3
+    let timer: ReturnType<typeof setTimeout> | null = null
+    let disposed = false
+
+    function connect() {
+      if (disposed) return
+      const ws = new WebSocket(wsUrl!)
+      wsRef.current = ws
+
+      ws.onopen = () => { retries = 0 }
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          if (data.type === 'orchestration_update' && data.payload) {
+            setInfo(prev => ({
+              ...prev,
+              ...data.payload,
+              experts: data.payload.experts || prev.experts,
+            }))
+          }
+        } catch {}
+      }
+
+      ws.onerror = () => ws.close()
+
+      ws.onclose = () => {
+        wsRef.current = null
+        if (!disposed && retries < MAX_RETRIES) {
+          const delay = Math.min(1000 * Math.pow(2, retries), 8000)
+          retries++
+          timer = setTimeout(connect, delay)
         }
-      } catch {}
+      }
     }
 
-    ws.onerror = () => ws.close()
+    connect()
     return () => {
-      ws.close()
+      disposed = true
+      if (timer) clearTimeout(timer)
+      wsRef.current?.close()
       wsRef.current = null
     }
   }, [wsUrl])
@@ -168,16 +192,25 @@ export function ExpertOrchestrationPanel({
   const allDone = info.experts.every(e => e.status === 'done' || e.status === 'error')
   const workingCount = info.experts.filter(e => e.status === 'working').length
 
+  const statusSummary = allDone
+    ? `AI 专家协作完成，共 ${info.experts.length} 位专家${info.total_elapsed_ms ? `，总耗时 ${formatMs(info.total_elapsed_ms)}` : ''}`
+    : `AI 专家协作中，${workingCount} 位分析中`
+
   return (
-    <div className={`rounded-xl border px-5 py-4 mb-3 transition-all duration-500 ${className} ${
-      allDone
-        ? 'border-emerald-200 dark:border-emerald-800/40 bg-emerald-50/30 dark:bg-emerald-900/5'
-        : 'border-blue-200 dark:border-blue-800/40 bg-blue-50/30 dark:bg-blue-900/5'
-    }`}>
+    <div
+      className={`rounded-xl border px-5 py-4 mb-3 transition-all duration-500 ${className} ${
+        allDone
+          ? 'border-emerald-200 dark:border-emerald-800/40 bg-emerald-50/30 dark:bg-emerald-900/5'
+          : 'border-blue-200 dark:border-blue-800/40 bg-blue-50/30 dark:bg-blue-900/5'
+      }`}
+      role="status"
+      aria-live="polite"
+      aria-label={statusSummary}
+    >
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <span className="text-base">{mode.icon}</span>
+          <span className="text-base" aria-hidden="true">{mode.icon}</span>
           <div>
             <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
               AI 专家{allDone ? '协作完成' : '协作中'}
@@ -188,7 +221,7 @@ export function ExpertOrchestrationPanel({
         <div className="flex items-center gap-3 text-[10px] text-gray-400">
           {workingCount > 0 && (
             <span className="flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+              <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" aria-hidden="true" />
               {workingCount} 位分析中
             </span>
           )}

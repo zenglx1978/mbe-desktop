@@ -8,6 +8,7 @@
 import path from 'path'
 import fs from 'fs'
 import { app, ipcMain } from 'electron'
+import { isReadPathAllowed } from './safe-path'
 
 // ────────────────────── sql.js 状态 ──────────────────────
 
@@ -315,7 +316,7 @@ export async function initDatabase(): Promise<void> {
 
 export function setupDatabaseIPC(): void {
   ipcMain.handle('db:conversations:list', (_, solutionId: string) => {
-    if (!db) return []
+    if (!db || typeof solutionId !== 'string') return []
     return db.prepare(
       'SELECT * FROM conversations WHERE solution_id = ? ORDER BY updated_at DESC LIMIT 50'
     ).all(solutionId)
@@ -324,21 +325,21 @@ export function setupDatabaseIPC(): void {
   ipcMain.handle('db:conversations:create', (_, data: {
     id: string; solutionId: string; agentRole?: string; title?: string
   }) => {
-    if (!db) return
+    if (!db || typeof data?.id !== 'string' || typeof data?.solutionId !== 'string') return
     db.prepare(
       'INSERT INTO conversations (id, solution_id, agent_role, title) VALUES (?, ?, ?, ?)'
     ).run(data.id, data.solutionId, data.agentRole || null, data.title || '新对话')
   })
 
   ipcMain.handle('db:conversations:updateTitle', (_, id: string, title: string) => {
-    if (!db) return
+    if (!db || typeof id !== 'string' || typeof title !== 'string') return
     db.prepare(
       "UPDATE conversations SET title = ?, updated_at = datetime('now') WHERE id = ?"
     ).run(title, id)
   })
 
   ipcMain.handle('db:conversations:delete', (_, id: string) => {
-    if (!db) return
+    if (!db || typeof id !== 'string' || !id) return
     db.prepare('DELETE FROM conversations WHERE id = ?').run(id)
   })
 
@@ -352,7 +353,9 @@ export function setupDatabaseIPC(): void {
   ipcMain.handle('db:messages:add', (_, data: {
     id: string; conversationId: string; role: string; content: string; agentRole?: string; sources?: string
   }) => {
-    if (!db) return
+    if (!db || typeof data?.id !== 'string' || typeof data?.conversationId !== 'string') return
+    const VALID_ROLES = new Set(['user', 'assistant', 'system'])
+    if (!VALID_ROLES.has(data.role)) return
     db.prepare(
       'INSERT INTO messages (id, conversation_id, role, content, agent_role, sources) VALUES (?, ?, ?, ?, ?, ?)'
     ).run(data.id, data.conversationId, data.role, data.content, data.agentRole || null, data.sources || null)
@@ -362,7 +365,7 @@ export function setupDatabaseIPC(): void {
   })
 
   ipcMain.handle('db:messages:clear', (_, conversationId: string) => {
-    if (!db) return
+    if (!db || typeof conversationId !== 'string' || !conversationId) return
     db.prepare('DELETE FROM messages WHERE conversation_id = ?').run(conversationId)
   })
 
@@ -405,17 +408,29 @@ export function setupDatabaseIPC(): void {
 
   ipcMain.handle('db:tasks:update', (_, id: string, updates: { status?: string; title?: string; priority?: string }) => {
     if (!db) return
+    if (typeof id !== 'string' || !id) return
+
+    const VALID_STATUS = new Set(['pending', 'in_progress', 'done'])
+    const VALID_PRIORITY = new Set(['high', 'medium', 'low'])
+
     const fields: string[] = ["updated_at = datetime('now')"]
     const values: any[] = []
-    if (updates.status) { fields.push('status = ?'); values.push(updates.status) }
-    if (updates.title) { fields.push('title = ?'); values.push(updates.title) }
-    if (updates.priority) { fields.push('priority = ?'); values.push(updates.priority) }
+    if (updates.status && VALID_STATUS.has(updates.status)) {
+      fields.push('status = ?'); values.push(updates.status)
+    }
+    if (updates.title && typeof updates.title === 'string') {
+      fields.push('title = ?'); values.push(updates.title.slice(0, 500))
+    }
+    if (updates.priority && VALID_PRIORITY.has(updates.priority)) {
+      fields.push('priority = ?'); values.push(updates.priority)
+    }
+    if (values.length === 0) return
     values.push(id)
     db.prepare(`UPDATE tasks SET ${fields.join(', ')} WHERE id = ?`).run(...values)
   })
 
   ipcMain.handle('db:tasks:delete', (_, id: string) => {
-    if (!db) return
+    if (!db || typeof id !== 'string' || !id) return
     db.prepare('DELETE FROM tasks WHERE id = ?').run(id)
   })
 
@@ -716,6 +731,8 @@ function registerDataManagementHandlers() {
 
   ipcMain.handle('db:backup:restoreWithPassword', async (_, filePath: string, password: string) => {
     if (!db) throw new Error('数据库未初始化')
+    if (typeof filePath !== 'string' || typeof password !== 'string') throw new Error('参数类型错误')
+    if (!isReadPathAllowed(filePath)) throw new Error('路径不在允许的目录中')
     const crypto = require('crypto')
 
     const raw = fs.readFileSync(filePath)

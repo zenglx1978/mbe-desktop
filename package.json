@@ -26,6 +26,7 @@
     "test:e2e:report": "npx playwright show-report"
   },
   "dependencies": {
+    "@tanstack/react-virtual": "^3.13.23",
     "@types/katex": "^0.16.8",
     "chokidar": "^3.6.0",
     "docx": "^9.6.1",
@@ -48,7 +49,6 @@
     "@typescript-eslint/parser": "^8.57.1",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.17",
-    "axios": "^1.7.9",
     "clsx": "^2.1.0",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",

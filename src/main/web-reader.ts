@@ -4,6 +4,7 @@
 // 核心场景：法条更新跟踪、财税政策监控、行业标准查阅
 
 import { BrowserWindow, session, ipcMain } from 'electron'
+import { isSafeUrl, ipcRateLimit } from './safe-path'
 
 // ────────────────────── 类型 ──────────────────────
 
@@ -58,7 +59,7 @@ export interface WebMonitorRule {
 const SAFE_SELECTOR_RE = /^[a-zA-Z0-9\s\-_.,:#\[\]=~|^$*>"'+()@]+$/
 
 function isSafeCssSelector(selector: string): boolean {
-  if (!selector || selector.length > 500) return false
+  if (!selector || selector.length > 300) return false
   if (!SAFE_SELECTOR_RE.test(selector)) return false
   // 禁止 JS 注入常见 payload
   const lower = selector.toLowerCase()
@@ -84,7 +85,15 @@ async function readWebPage(req: WebReadRequest): Promise<WebReadResult> {
   const safeSelector = sanitizeSelector(req.selector)
   const safeWaitFor = sanitizeSelector(req.waitFor)
 
-  // customScript 从外部 IPC 调用时已被剥离，此处作为最终防线
+  if (!isSafeUrl(req.url)) {
+    return {
+      success: false,
+      url: req.url,
+      error: '安全限制: 仅允许 http/https 协议，禁止 file:// / javascript: 等',
+      loadTimeMs: 0,
+    }
+  }
+
   if (req.customScript) {
     return {
       success: false,
@@ -410,9 +419,11 @@ export const PRESET_SOURCES: Record<string, WebReadRequest[]> = {
 // ────────────────────── IPC 注册 ──────────────────────
 
 export function setupWebReaderIPC(): void {
-  // 读取单个网页
+  // 读取单个网页（限速 20 次/分钟）
   ipcMain.handle('webReader:read', async (_event, req: WebReadRequest): Promise<WebReadResult> => {
-    // 安全: 剥离 customScript，禁止渲染进程注入任意 JS
+    if (!ipcRateLimit('webReader:read', 20)) {
+      return { success: false, url: req?.url ?? '', error: '调用频率超限，请稍后重试' }
+    }
     const { customScript: _, ...safeReq } = req
     return readWebPage(safeReq)
   })

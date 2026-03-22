@@ -40,6 +40,7 @@ export default function Settings() {
   const [isAdmin, setIsAdmin] = useState(false)
 
   const [dbStats, setDbStats] = useState<DbStats | null>(null)
+  const [loadingDbStats, setLoadingDbStats] = useState(true)
   const [backupMsg, setBackupMsg] = useState<string | null>(null)
   const [restoreMsg, setRestoreMsg] = useState<string | null>(null)
   const [pendingRestorePath, setPendingRestorePath] = useState<string | null>(null)
@@ -80,11 +81,16 @@ export default function Settings() {
 
   const loadDbStats = useCallback(async () => {
     const api = window.electronAPI
-    if (!api?.db?.stats) return
+    if (!api?.db?.stats) {
+      setLoadingDbStats(false)
+      return
+    }
     try {
       const stats = await api.db.stats()
       setDbStats(stats ?? null)
-    } catch { /* ignore */ }
+    } catch { /* ignore */ } finally {
+      setLoadingDbStats(false)
+    }
   }, [])
 
   useEffect(() => {
@@ -195,12 +201,13 @@ export default function Settings() {
   }, [dbStats])
 
   return (
-    <div className="min-h-screen bg-background p-8">
+    <main className="min-h-screen bg-background p-8">
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center gap-4 mb-8">
           <button
             type="button"
             onClick={goBack}
+            aria-label="返回上一页"
             className="text-muted-foreground hover:text-foreground text-sm"
           >
             ← 返回
@@ -253,7 +260,7 @@ export default function Settings() {
             )}
 
             {userError && (
-              <p className="text-destructive text-sm py-2">{userError}</p>
+              <p className="text-destructive text-sm py-2" role="alert">{userError}</p>
             )}
 
             {!loadingUsers && !isAdmin && !userError && (
@@ -299,7 +306,16 @@ export default function Settings() {
         <section className="rounded-lg border border-border bg-card p-4 mb-4">
           <h2 className="text-sm font-medium text-foreground mb-3">数据管理</h2>
 
-          {dbStats && (
+          {loadingDbStats ? (
+            <div className="mb-4 space-y-2 animate-pulse">
+              <div className="h-3 w-32 bg-muted/40 rounded" />
+              <div className="flex gap-2">
+                <div className="h-5 w-20 bg-muted/30 rounded" />
+                <div className="h-5 w-16 bg-muted/30 rounded" />
+                <div className="h-5 w-24 bg-muted/30 rounded" />
+              </div>
+            </div>
+          ) : dbStats ? (
             <div className="mb-4 space-y-1">
               <p className="text-muted-foreground text-xs">
                 数据库大小：
@@ -318,7 +334,7 @@ export default function Settings() {
                 ))}
               </div>
             </div>
-          )}
+          ) : null}
 
           <div className="flex flex-wrap gap-2 mb-3">
             <button
@@ -355,11 +371,14 @@ export default function Settings() {
               <p className="text-xs text-muted-foreground mb-1">{restoreMsg}</p>
               {pendingRestorePath && (
                 <div className="flex gap-2 items-center">
+                  <label htmlFor="restore-pwd" className="sr-only">备份密码</label>
                   <input
+                    id="restore-pwd"
                     type="password"
                     value={restorePassword}
                     onChange={(e) => setRestorePassword(e.target.value)}
                     placeholder="输入备份密码"
+                    aria-describedby="restore-hint"
                     className="text-xs px-2 py-1 rounded border border-border bg-background text-foreground w-48"
                   />
                   <button
@@ -415,6 +434,6 @@ export default function Settings() {
           </div>
         </section>
       </div>
-    </div>
+    </main>
   )
 }

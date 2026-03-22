@@ -2,6 +2,7 @@ import { app, BrowserWindow, shell, ipcMain, dialog, safeStorage } from 'electro
 import path from 'path'
 import fs from 'fs'
 import { autoUpdater } from 'electron-updater'
+import { isReadPathAllowed, isWritePathAllowed, isSafeUrl } from './safe-path'
 import { initDatabase, setupDatabaseIPC, closeDatabase, getDb, checkAutoBackup } from './database'
 import { setupLocalCalcIPC } from './local-calc'
 import { setupMigrationIPC, setMigrationDb } from './migration'
@@ -75,6 +76,8 @@ function readSession(): Record<string, unknown> {
   }
 }
 
+const SESSION_MAX_BYTES = 2 * 1024 * 1024 // 2MB
+
 function writeSession(data: Record<string, unknown>): void {
   ensureDataDir()
   const toSave = { ...data }
@@ -87,7 +90,11 @@ function writeSession(data: Record<string, unknown>): void {
       }
     }
   }
-  fs.writeFileSync(getSessionPath(), JSON.stringify(toSave, null, 2), 'utf-8')
+  const json = JSON.stringify(toSave, null, 2)
+  if (Buffer.byteLength(json, 'utf-8') > SESSION_MAX_BYTES) {
+    throw new Error('session 数据超出 2MB 限制')
+  }
+  fs.writeFileSync(getSessionPath(), json, 'utf-8')
 }
 
 // ==================== 单实例锁 ====================
@@ -104,6 +111,10 @@ const devServerUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5180'
 
 let pendingAuthUrl: string | null = null
 
+const SAFE_TOKEN_RE = /^[A-Za-z0-9\-_./+=]{10,4096}$/
+const SAFE_EMAIL_RE = /^[^<>"';&|`$]{1,256}$/
+const SAFE_REF_RE = /^[A-Za-z0-9\-_]{1,64}$/
+
 function handleDeepLink(url: string) {
   if (!url.startsWith(`${PROTOCOL}://`)) return
   try {
@@ -114,7 +125,13 @@ function handleDeepLink(url: string) {
       const name = parsed.searchParams.get('name') || ''
       const refreshToken = parsed.searchParams.get('refresh_token') || ''
       const ref = parsed.searchParams.get('ref') || ''
-      if (ref && mainWindow) {
+
+      if (token && !SAFE_TOKEN_RE.test(token)) return
+      if (refreshToken && !SAFE_TOKEN_RE.test(refreshToken)) return
+      if (email && !SAFE_EMAIL_RE.test(email)) return
+      if (name && !SAFE_EMAIL_RE.test(name)) return
+
+      if (ref && SAFE_REF_RE.test(ref) && mainWindow) {
         mainWindow.webContents.send('referral:set', { code: ref })
       }
       if (token && mainWindow) {
@@ -146,8 +163,8 @@ function createWindow(): void {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false,
-      webSecurity: !isDev,
+      sandbox: true,
+      webSecurity: true,
     },
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     frame: process.platform !== 'darwin',
@@ -166,10 +183,12 @@ function createWindow(): void {
   })
 
   // CSP: 限制脚本/样式/连接来源
+  // connect-src 通过环境变量 MBE_API_ORIGIN 可配置，默认 mbe.hi-maker.com
+  const apiOrigin = process.env.MBE_API_ORIGIN || 'mbe.hi-maker.com'
   mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
     const csp = isDev
-      ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' ws://localhost:* http://localhost:* https://mbe.hi-maker.com wss://mbe.hi-maker.com; img-src 'self' data: https:; font-src 'self' data:;"
-      : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://mbe.hi-maker.com wss://mbe.hi-maker.com; img-src 'self' data: https:; font-src 'self' data:;"
+      ? `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' ws://localhost:* http://localhost:* https://${apiOrigin} wss://${apiOrigin}; img-src 'self' data: https:; font-src 'self' data:; object-src 'none'; base-uri 'self';`
+      : `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://${apiOrigin} wss://${apiOrigin}; img-src 'self' data: https:; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self';`
     callback({
       responseHeaders: {
         ...details.responseHeaders,
@@ -227,10 +246,20 @@ function setupAutoUpdater() {
     const downloadedFile: string = info.downloadedFile || ''
 
     if (downloadedFile.endsWith('.msi')) {
+      const resolved = path.resolve(downloadedFile)
+      const tempDir = path.resolve(app.getPath('temp'))
+      const userDataDir = path.resolve(app.getPath('userData'))
+      const inSafeDir = resolved.startsWith(tempDir + path.sep) || resolved.startsWith(userDataDir + path.sep)
+
+      if (!inSafeDir || /[;&|`$]/.test(resolved)) {
+        console.error('[AutoUpdater] 安全校验失败，跳过 MSI 安装:', resolved)
+        return
+      }
+
       sendUpdateStatus('installing', { version: info.version })
       setTimeout(() => {
         const { spawn } = require('child_process')
-        const proc = spawn('msiexec', ['/passive', '/norestart', '/i', downloadedFile], {
+        const proc = spawn('msiexec', ['/passive', '/norestart', '/i', resolved], {
           detached: true,
           stdio: 'ignore',
         })
@@ -355,35 +384,6 @@ app.on('before-quit', () => {
   closeDatabase()
 })
 
-// ==================== 文件路径安全校验 ====================
-
-function getAllowedReadDirs(): string[] {
-  return [
-    app.getPath('documents'),
-    app.getPath('downloads'),
-    app.getPath('desktop'),
-    app.getPath('temp'),
-    getDataDir(),
-  ]
-}
-
-function getAllowedWriteDirs(): string[] {
-  return [
-    path.join(app.getPath('documents'), 'MBE Desktop'),
-    app.getPath('downloads'),
-    app.getPath('desktop'),
-    app.getPath('temp'),
-  ]
-}
-
-function isPathWithinAllowed(filePath: string, allowedDirs: string[]): boolean {
-  const resolved = path.resolve(filePath)
-  return allowedDirs.some(dir => {
-    const resolvedDir = path.resolve(dir)
-    return resolved.startsWith(resolvedDir + path.sep) || resolved === resolvedDir
-  })
-}
-
 // ==================== IPC Handlers ====================
 
 ipcMain.handle('dialog:openFile', async (_, options?: {
@@ -423,7 +423,7 @@ ipcMain.handle('dialog:saveFile', async (_, options?: {
 ipcMain.handle('fs:readFileBase64', async (_, filePath: string) => {
   try {
     const resolved = path.resolve(filePath)
-    if (!isPathWithinAllowed(resolved, getAllowedReadDirs())) {
+    if (!isReadPathAllowed(resolved)) {
       return { success: false, error: `路径不在允许的读取目录中: ${path.basename(filePath)}` }
     }
     const buffer = fs.readFileSync(resolved)
@@ -436,7 +436,7 @@ ipcMain.handle('fs:readFileBase64', async (_, filePath: string) => {
 ipcMain.handle('fs:writeFile', async (_, filePath: string, base64Data: string) => {
   try {
     const resolved = path.resolve(filePath)
-    if (!isPathWithinAllowed(resolved, getAllowedWriteDirs())) {
+    if (!isWritePathAllowed(resolved)) {
       return { success: false, error: `路径不在允许的写入目录中: ${path.basename(filePath)}` }
     }
     const buffer = Buffer.from(base64Data, 'base64')
@@ -452,8 +452,20 @@ ipcMain.handle('fs:writeFile', async (_, filePath: string, base64Data: string) =
 ipcMain.handle('export:printToPDF', async (_, html: string) => {
   let pdfWin: BrowserWindow | null = null
   try {
-    pdfWin = new BrowserWindow({ show: false, width: 800, height: 600, webPreferences: { offscreen: true } })
-    await pdfWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
+    pdfWin = new BrowserWindow({
+      show: false, width: 800, height: 600,
+      webPreferences: {
+        offscreen: true,
+        javascript: false,
+        nodeIntegration: false,
+        contextIsolation: true,
+        sandbox: true,
+      },
+    })
+    const sanitized = html
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/\son\w+\s*=/gi, ' data-removed=')
+    await pdfWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(sanitized)}`)
     await new Promise(r => setTimeout(r, 300))
     const pdfBuffer = await pdfWin.webContents.printToPDF({
       pageSize: 'A4',
@@ -471,7 +483,7 @@ ipcMain.handle('export:printToPDF', async (_, html: string) => {
 ipcMain.handle('shell:openPath', async (_, filePath: string) => {
   try {
     const resolved = path.resolve(filePath)
-    if (!isPathWithinAllowed(resolved, getAllowedReadDirs())) {
+    if (!isReadPathAllowed(resolved)) {
       return { success: false, error: `路径不在允许的目录中: ${path.basename(filePath)}` }
     }
     await shell.openPath(resolved)
@@ -482,7 +494,7 @@ ipcMain.handle('shell:openPath', async (_, filePath: string) => {
 })
 
 ipcMain.handle('shell:openExternal', async (_, url: string) => {
-  if (!url.startsWith('http://') && !url.startsWith('https://')) return
+  if (typeof url !== 'string' || !isSafeUrl(url)) return
   await shell.openExternal(url)
 })
 
@@ -515,6 +527,9 @@ ipcMain.on('window:close', () => mainWindow?.close())
 ipcMain.handle('session:read', () => readSession())
 
 ipcMain.handle('session:write', (_, data: Record<string, unknown>) => {
+  if (!data || typeof data !== 'object') return
+  const forbidden = Object.keys(data).some(k => k.startsWith('_enc_'))
+  if (forbidden) return
   const current = readSession()
   const merged = { ...current, ...data }
   writeSession(merged)
@@ -527,6 +542,8 @@ ipcMain.handle('session:get', (_, key: string) => {
 })
 
 ipcMain.handle('session:set', (_, key: string, value: unknown) => {
+  if (typeof key !== 'string' || !key || key.length > 128) return
+  if (key.startsWith('_enc_')) return
   const session = readSession()
   session[key] = value
   writeSession(session)

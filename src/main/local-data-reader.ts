@@ -6,6 +6,7 @@
 import { ipcMain, dialog, BrowserWindow } from 'electron'
 import * as fs from 'fs'
 import * as path from 'path'
+import { isReadPathAllowed } from './safe-path'
 
 // ────────────────────── 类型 ──────────────────────
 
@@ -252,6 +253,10 @@ async function readLocalFile(req: LocalReadRequest): Promise<LocalReadResult> {
     filePath = result.filePaths[0]
   }
 
+  if (!isReadPathAllowed(filePath)) {
+    return { success: false, filePath: '', fileName: path.basename(filePath), fileType: '', error: '路径不在允许的读取目录中' }
+  }
+
   if (!fs.existsSync(filePath)) {
     return { success: false, filePath, fileName: path.basename(filePath), fileType: '', error: '文件不存在' }
   }
@@ -331,6 +336,7 @@ async function readDirectory(
   fileTypes?: string[],
   maxFiles = 50,
 ): Promise<LocalReadResult[]> {
+  if (!isReadPathAllowed(dirPath)) return []
   if (!fs.existsSync(dirPath)) return []
 
   const extensions = fileTypes
@@ -417,8 +423,11 @@ export function setupLocalDataReaderIPC(): void {
     }
   })
 
-  // 目录监控
+  // 目录监控（只允许监控用户目录）
   ipcMain.handle('localReader:watchDir', async (_, req: WatchDirectoryRequest) => {
+    if (!isReadPathAllowed(req.dirPath)) {
+      return { watching: false, dirPath: req.dirPath, error: '路径不在允许的目录中' }
+    }
     startWatchDirectory(req, (newFiles) => {
       // 通过 IPC 通知 renderer 有新文件
       const wins = BrowserWindow.getAllWindows()

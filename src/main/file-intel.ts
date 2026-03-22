@@ -12,6 +12,7 @@
 import { ipcMain, dialog, BrowserWindow } from 'electron'
 import * as fs from 'fs'
 import * as path from 'path'
+import { isReadPathAllowed, isWritePathAllowed } from './safe-path'
 
 // ────────────────────── 类型 ──────────────────────
 
@@ -180,6 +181,14 @@ async function scanDirectory(req: ScanDirRequest): Promise<ScanDirResult> {
   const maxDepth = req.maxDepth ?? 3
   const recursive = req.recursive ?? false
 
+  if (!isReadPathAllowed(dirPath)) {
+    return {
+      success: false, dirPath, files: [], totalFiles: 0,
+      totalSize: 0, totalSizeHuman: '0 B', typeSummary: {},
+      error: '路径不在允许的读取目录中', scanTimeMs: Date.now() - start,
+    }
+  }
+
   if (!fs.existsSync(dirPath)) {
     return {
       success: false, dirPath, files: [], totalFiles: 0,
@@ -269,6 +278,14 @@ async function selectDirectory(title?: string): Promise<string | null> {
 async function parseFile(req: ParseFileRequest): Promise<ParsedFile> {
   const start = Date.now()
   const { filePath, maxChars = 500000 } = req
+
+  if (!isReadPathAllowed(filePath)) {
+    return {
+      success: false, filePath: '', fileName: path.basename(filePath),
+      fileType: 'unknown', text: '', meta: { sizeBytes: 0, lastModified: '', wordCount: 0, charCount: 0 },
+      error: '路径不在允许的读取目录中', parseTimeMs: Date.now() - start,
+    }
+  }
 
   if (!fs.existsSync(filePath)) {
     return {
@@ -792,6 +809,9 @@ async function executePipeline(req: PipelineRequest): Promise<PipelineResult> {
           const outputPath = (step.params.outputPath as string) ?? req.outputPath
           const format = (step.params.format as string) ?? req.outputFormat ?? 'json'
 
+          if (outputPath && !isWritePathAllowed(outputPath)) {
+            throw new Error('输出路径不在允许的写入目录中')
+          }
           if (format === 'json' && outputPath) {
             fs.writeFileSync(outputPath, JSON.stringify(currentData, null, 2), 'utf-8')
           }

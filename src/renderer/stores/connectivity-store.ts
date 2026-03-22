@@ -73,12 +73,11 @@ async function checkLocalCalcStatus() {
   const store = useConnectivityStore.getState()
   try {
     const api = (window as any).electronAPI
-    if (!api?.runLocalCalc) return
+    if (!api?.calc) return
 
-    const { ipcRenderer } = window.require('electron')
     const [pythonOk, scripts] = await Promise.all([
-      ipcRenderer.invoke('calc:pythonAvailable') as Promise<boolean>,
-      ipcRenderer.invoke('calc:available') as Promise<string[]>,
+      api.calc.pythonAvailable() as Promise<boolean>,
+      api.calc.available() as Promise<string[]>,
     ])
     store.setPythonStatus(pythonOk, scripts)
   } catch {
@@ -86,16 +85,25 @@ async function checkLocalCalcStatus() {
   }
 }
 
-/** 初始化连通性监测 */
-export function initConnectivityMonitor() {
+/** 初始化连通性监测，返回清理函数 */
+export function initConnectivityMonitor(): () => void {
   const store = useConnectivityStore.getState()
 
   store.checkConnectivity()
   checkLocalCalcStatus()
 
-  window.addEventListener('online', () => store.checkConnectivity())
-  window.addEventListener('offline', () => store.checkConnectivity())
+  const onOnline = () => store.checkConnectivity()
+  const onOffline = () => store.checkConnectivity()
+  window.addEventListener('online', onOnline)
+  window.addEventListener('offline', onOffline)
 
-  setInterval(() => store.checkConnectivity(), CHECK_INTERVAL)
-  setInterval(() => checkLocalCalcStatus(), CHECK_INTERVAL * 2)
+  const t1 = setInterval(() => store.checkConnectivity(), CHECK_INTERVAL)
+  const t2 = setInterval(() => checkLocalCalcStatus(), CHECK_INTERVAL * 2)
+
+  return () => {
+    window.removeEventListener('online', onOnline)
+    window.removeEventListener('offline', onOffline)
+    clearInterval(t1)
+    clearInterval(t2)
+  }
 }

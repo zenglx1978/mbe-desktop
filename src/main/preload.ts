@@ -147,7 +147,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
       timeout?: number
       extractLinks?: boolean
       extractTables?: boolean
-      customScript?: string
       useMainSession?: boolean
     }) => ipcRenderer.invoke('webReader:read', req),
 
@@ -174,7 +173,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       label: string
     }) => ipcRenderer.invoke('webReader:checkChanges', rule),
 
-    extract: (url: string, script: string) => ipcRenderer.invoke('webReader:extract', url, script),
+    // extract 已禁用（安全风险），使用 webReader:read 配合 selector 替代
   },
 
   // ── 本地文件阅读器（导入 Excel/CSV/PDF/Word 到知识库） ──

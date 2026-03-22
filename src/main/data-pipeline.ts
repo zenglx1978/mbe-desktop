@@ -15,6 +15,7 @@ import { ipcMain, BrowserWindow, shell } from 'electron'
 import * as fs from 'fs'
 import * as path from 'path'
 import { net } from 'electron'
+import { isReadPathAllowed, isWritePathAllowed } from './safe-path'
 import { generateXlsx } from './docgen/xlsx-engine'
 import { generateDocx } from './docgen/docx-engine'
 import { generatePptx } from './docgen/pptx-engine'
@@ -306,6 +307,13 @@ async function stepRead(params: Record<string, unknown>): Promise<ParsedFileData
   const results: ParsedFileData[] = []
 
   for (const filePath of files) {
+    if (!isReadPathAllowed(filePath)) {
+      results.push({
+        success: false, filePath, fileName: path.basename(filePath),
+        fileType: 'unknown', text: '', meta: { error: '路径不在允许的目录中' },
+      } as ParsedFileData)
+      continue
+    }
     if (!fs.existsSync(filePath)) {
       results.push({
         success: false, filePath, fileName: path.basename(filePath),
@@ -328,7 +336,10 @@ async function stepReadDir(params: Record<string, unknown>): Promise<ParsedFileD
   const maxFiles = (params.maxFiles as number) ?? 50
   const maxChars = (params.maxChars as number) ?? 100000
 
-  if (!dirPath || !fs.existsSync(dirPath)) {
+  if (!dirPath || !isReadPathAllowed(dirPath)) {
+    throw new Error(`目录不在允许的目录中: ${dirPath}`)
+  }
+  if (!fs.existsSync(dirPath)) {
     throw new Error(`目录不存在: ${dirPath}`)
   }
 
@@ -535,15 +546,8 @@ function stepTransform(
     }
 
     case 'custom': {
-      // 自定义 JS 表达式（安全受限）
-      const expr = params.expression as string
-      if (!expr) return currentData
-      try {
-        const fn = new Function('data', `return ${expr}`)
-        return fn(currentData)
-      } catch {
-        return currentData
-      }
+      // 安全限制: 自定义 JS 表达式已禁用（new Function 存在代码注入风险）
+      return currentData
     }
 
     default:
@@ -563,6 +567,9 @@ async function stepGenerate(
   const outputDir = (params.outputDir as string) ?? getExportsDir()
   const theme = (params.theme as string) ?? 'mbe'
   const fileName = (params.fileName as string) ?? generateFileName(format, title.slice(0, 10))
+  if (!isWritePathAllowed(outputDir)) {
+    throw new Error(`输出目录不在允许的目录中: ${outputDir}`)
+  }
   const filePath = path.join(outputDir, fileName)
 
   let buffer: Buffer
@@ -614,7 +621,7 @@ async function stepGenerate(
 
 async function stepOpen(outputFiles: string[]): Promise<void> {
   for (const f of outputFiles) {
-    if (fs.existsSync(f)) {
+    if (isReadPathAllowed(f) && fs.existsSync(f)) {
       await shell.openPath(f)
     }
   }
