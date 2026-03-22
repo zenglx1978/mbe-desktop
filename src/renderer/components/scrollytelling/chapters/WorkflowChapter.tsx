@@ -5,6 +5,7 @@
  */
 
 import { subProgress, easeOut } from '@/hooks/useScrollytelling'
+import { TrendingUp } from 'lucide-react'
 
 interface ScenarioDef {
   label: string
@@ -83,8 +84,8 @@ export default function WorkflowChapter({ progress, scenarios }: Props) {
                     {scenario.expectedOutcome}
                   </p>
                   {scenario.profitImpact && (
-                    <p className="text-[9px] text-emerald-500/70 text-center mt-1">
-                      💰 {scenario.profitImpact.amount}
+                    <p className="text-[9px] text-emerald-500/70 text-center mt-1 flex items-center justify-center gap-0.5">
+                      <TrendingUp className="w-3 h-3" /> {scenario.profitImpact.amount}
                     </p>
                   )}
                 </div>

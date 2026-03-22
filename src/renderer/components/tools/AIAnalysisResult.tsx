@@ -3,7 +3,8 @@
  * 适用于合同审查、文档分析等 AI 返回的结构化结果。
  */
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
+import { Info, AlertTriangle, XCircle, CheckCircle2, FileText, Lightbulb, Copy, Download } from 'lucide-react'
 
 export interface AnalysisItem {
   label: string
@@ -34,8 +35,11 @@ const LEVEL_STYLE: Record<string, string> = {
   success: 'text-green-400 bg-green-500/10 border-green-500/20',
 }
 
-const LEVEL_ICON: Record<string, string> = {
-  info: 'ℹ️', warn: '⚠️', error: '🚫', success: '✅',
+const LEVEL_ICON: Record<string, ReactNode> = {
+  info: <Info className="w-4 h-4" />,
+  warn: <AlertTriangle className="w-4 h-4" />,
+  error: <XCircle className="w-4 h-4" />,
+  success: <CheckCircle2 className="w-4 h-4" />,
 }
 
 export default function AIAnalysisResult({ result, title, color }: Props) {
@@ -46,7 +50,7 @@ export default function AIAnalysisResult({ result, title, color }: Props) {
       {/* 摘要 */}
       <div className="px-4 py-3 rounded-xl border border-border/50 bg-card">
         <div className="flex items-start gap-3">
-          <span className="text-xl shrink-0">📋</span>
+          <FileText className="w-5 h-5 shrink-0 text-muted-foreground" />
           <div className="flex-1 min-w-0">
             {title && <h4 className="text-sm font-semibold mb-1">{title}</h4>}
             <p className="text-sm whitespace-pre-wrap">{result.summary}</p>
@@ -89,7 +93,7 @@ export default function AIAnalysisResult({ result, title, color }: Props) {
       {/* 建议 */}
       {result.suggestions && result.suggestions.length > 0 && (
         <div className="px-4 py-3 rounded-xl border border-border/50 bg-secondary/20">
-          <h4 className="text-sm font-semibold mb-2">💡 建议</h4>
+          <h4 className="text-sm font-semibold mb-2 flex items-center gap-1.5"><Lightbulb className="w-4 h-4" /> 建议</h4>
           <ul className="space-y-1.5">
             {result.suggestions.map((s, i) => (
               <li key={i} className="text-sm flex items-start gap-2">
@@ -145,7 +149,7 @@ export default function AIAnalysisResult({ result, title, color }: Props) {
           }}
           className="px-3 py-1.5 rounded-lg text-xs border border-border/50 hover:bg-secondary/30 transition-colors"
         >
-          📋 复制结果
+          <Copy className="w-3.5 h-3.5 inline-block mr-1" />复制结果
         </button>
         <button
           className="px-3 py-1.5 rounded-lg text-xs text-white hover:opacity-90 transition-colors"
@@ -163,7 +167,7 @@ export default function AIAnalysisResult({ result, title, color }: Props) {
             URL.revokeObjectURL(url)
           }}
         >
-          💾 导出 JSON
+          <Download className="w-3.5 h-3.5 inline-block mr-1" />导出 JSON
         </button>
       </div>
     </div>

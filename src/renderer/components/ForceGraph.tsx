@@ -247,15 +247,13 @@ export default function ForceGraph({
       if (isHovered || isSelected) alpha = 1
       else if (isNeighbor) alpha = 0.9
 
-      // 光晕（agent 和 selected）
+      // 强调环（agent 和 selected，用低透明度描边替代发光效果）
       if ((n.type === 'agent' || isSelected) && !isDimmed) {
-        const glow = ctx.createRadialGradient(n.x, n.y, r, n.x, n.y, r * 2.5)
-        glow.addColorStop(0, colorWithAlpha(color, 0.15))
-        glow.addColorStop(1, colorWithAlpha(color, 0))
         ctx.beginPath()
-        ctx.arc(n.x, n.y, r * 2.5, 0, Math.PI * 2)
-        ctx.fillStyle = glow
-        ctx.fill()
+        ctx.arc(n.x, n.y, r + 3, 0, Math.PI * 2)
+        ctx.strokeStyle = colorWithAlpha(color, 0.25)
+        ctx.lineWidth = 2
+        ctx.stroke()
       }
 
       // 节点形状
