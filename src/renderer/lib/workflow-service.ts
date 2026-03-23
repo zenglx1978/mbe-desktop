@@ -5,7 +5,7 @@
  */
 
 import type { WorkflowConfig, ScenarioConfig, WorkflowStep } from './solution-router'
-import { authHeaders, API_BASE } from '@/lib/api-client'
+import { authHeaders, API_BASE, isAbortError } from '@/lib/api-client'
 import { useAppStore } from '@/stores/app-store'
 import type {
   ConsultResponse,
@@ -13,12 +13,6 @@ import type {
   SuccessDataEnvelope,
   WorkflowStreamEvent,
 } from '@/types/api-responses'
-
-function isAbortError(err: unknown): boolean {
-  if (err instanceof DOMException && err.name === 'AbortError') return true
-  if (err instanceof Error && err.name === 'AbortError') return true
-  return false
-}
 
 /** 合并用户取消与超时，任一方触发即中止 */
 function withTimeoutAndUser(userSignal: AbortSignal | undefined, ms: number): AbortSignal {
@@ -428,7 +422,7 @@ async function callAgentDirect(
         method: 'POST',
         headers: authHeaders(),
         body: JSON.stringify({ request: query, query, question: query, ...getBillingFields() }),
-        signal: signal ?? AbortSignal.timeout(60_000),
+        signal: signal ?? AbortSignal.timeout(20_000),
       })
       if (resp.ok) return (await resp.json()) as ConsultResponse
     } catch (e) {

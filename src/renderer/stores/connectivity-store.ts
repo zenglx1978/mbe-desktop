@@ -7,6 +7,7 @@
 
 import { create } from 'zustand'
 import { API_BASE } from '@/lib/api-client'
+import type { WindowWithElectron } from '@/types/api-responses'
 
 export type ConnectivityMode = 'online' | 'offline' | 'degraded'
 
@@ -72,12 +73,12 @@ export const useConnectivityStore = create<ConnectivityState>((set) => ({
 async function checkLocalCalcStatus() {
   const store = useConnectivityStore.getState()
   try {
-    const api = (window as any).electronAPI
+    const api = (window as WindowWithElectron).electronAPI
     if (!api?.calc) return
 
     const [pythonOk, scripts] = await Promise.all([
-      api.calc.pythonAvailable() as Promise<boolean>,
-      api.calc.available() as Promise<string[]>,
+      api.calc.pythonAvailable(),
+      api.calc.available(),
     ])
     store.setPythonStatus(pythonOk, scripts)
   } catch {

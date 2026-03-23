@@ -39,7 +39,9 @@ function writeLS(solutionId: string, docs: DocItem[]) {
 export async function fetchDocs(solutionId: string): Promise<DocItem[]> {
   try {
     const params = new URLSearchParams({ solution_id: solutionId, limit: '200' })
-    const resp = await authFetch(`${API_BASE}/api/v1/account/documents?${params}`)
+    const resp = await authFetch(`${API_BASE}/api/v1/account/documents?${params}`, {
+      signal: AbortSignal.timeout(15_000),
+    })
     if (!resp.ok) throw new Error(`${resp.status}`)
     const data = (await resp.json()) as AccountDocumentsListResponse
     const docs: DocItem[] = (data.documents || []).map((d: AccountDocumentApiRow) => ({
@@ -79,6 +81,7 @@ export async function createDoc(
     const resp = await authFetch(`${API_BASE}/api/v1/account/documents`, {
       method: 'POST',
       body: JSON.stringify({ title, doc_type: type, content, solution_id: solutionId }),
+      signal: AbortSignal.timeout(15_000),
     })
     if (!resp.ok) throw new Error(`${resp.status}`)
     const d = (await resp.json()) as AccountDocumentApiRow
@@ -103,15 +106,39 @@ export async function createDoc(
 export async function updateDoc(
   docId: string,
   updates: { title?: string; doc_type?: string; content?: string },
+  solutionId?: string,
 ): Promise<boolean> {
   try {
     const resp = await authFetch(`${API_BASE}/api/v1/account/documents/${docId}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
+      signal: AbortSignal.timeout(15_000),
     })
+    if (resp.ok && solutionId) {
+      const docs = readLS(solutionId)
+      const idx = docs.findIndex(d => d.id === docId)
+      if (idx >= 0) {
+        if (updates.title) docs[idx].title = updates.title
+        if (updates.doc_type) docs[idx].type = updates.doc_type as DocType
+        if (updates.content) docs[idx].content = updates.content
+        docs[idx].updatedAt = new Date().toISOString()
+        writeLS(solutionId, docs)
+      }
+    }
     return resp.ok
   } catch {
-    // Expected: 远端更新失败
+    if (solutionId) {
+      const docs = readLS(solutionId)
+      const idx = docs.findIndex(d => d.id === docId)
+      if (idx >= 0) {
+        if (updates.title) docs[idx].title = updates.title
+        if (updates.doc_type) docs[idx].type = updates.doc_type as DocType
+        if (updates.content) docs[idx].content = updates.content
+        docs[idx].updatedAt = new Date().toISOString()
+        writeLS(solutionId, docs)
+        return true
+      }
+    }
     return false
   }
 }
@@ -120,6 +147,7 @@ export async function deleteDoc(solutionId: string, docId: string): Promise<bool
   try {
     const resp = await authFetch(`${API_BASE}/api/v1/account/documents/${docId}`, {
       method: 'DELETE',
+      signal: AbortSignal.timeout(15_000),
     })
     if (resp.ok) {
       const docs = readLS(solutionId)

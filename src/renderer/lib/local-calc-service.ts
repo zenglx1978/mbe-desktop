@@ -44,12 +44,10 @@ export async function runLocalCalc(scriptName: string, args: string[]): Promise<
 /** 检查本地 Python 是否可用 */
 export async function checkPythonAvailable(): Promise<boolean> {
   const api = getAPI()
-  if (!api?.runLocalCalc) return false
+  if (!api?.calc?.pythonAvailable) return false
   try {
-    const { ipcRenderer } = window.require('electron')
-    return await ipcRenderer.invoke('calc:pythonAvailable')
+    return await api.calc.pythonAvailable()
   } catch {
-    // Expected: Electron IPC 不可用；视为 Python 检测失败
     return false
   }
 }
@@ -57,12 +55,10 @@ export async function checkPythonAvailable(): Promise<boolean> {
 /** 获取当前可用的本地计算脚本列表 */
 export async function getAvailableScripts(): Promise<string[]> {
   const api = getAPI()
-  if (!api?.runLocalCalc) return []
+  if (!api?.calc?.available) return []
   try {
-    const { ipcRenderer } = window.require('electron')
-    return await ipcRenderer.invoke('calc:available')
+    return await api.calc.available()
   } catch {
-    // Expected: IPC 不可用；无本地脚本列表
     return []
   }
 }

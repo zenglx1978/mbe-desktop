@@ -8,8 +8,10 @@
 
 import { useAuthStore } from '@/stores/auth-store'
 
-/** HTTP API 基地址：dev 走 Vite proxy，prod 直连 */
-export const API_BASE = import.meta.env.DEV ? '' : 'https://mbe.hi-maker.com'
+const PROD_BASE = import.meta.env.VITE_API_BASE || 'https://mbe.hi-maker.com'
+
+/** HTTP API 基地址：dev 走 Vite proxy，prod 直连（可通过 VITE_API_BASE 覆盖） */
+export const API_BASE = import.meta.env.DEV ? '' : PROD_BASE
 
 /** 检测当前是否运行在 Electron 桌面端（非浏览器 Web 模式） */
 export function isElectron(): boolean {
@@ -18,10 +20,18 @@ export function isElectron(): boolean {
     window.electronAPI !== null
 }
 
-/** WebSocket 基地址：dev 走 Vite proxy，prod 直连 */
+/** 将 HTTP(S) 基址转为 WS(S) 基址 */
+function toWsBase(httpBase: string): string {
+  if (!httpBase) {
+    return `ws://${typeof location !== 'undefined' ? location.host : 'localhost:5180'}`
+  }
+  return httpBase.replace(/^https:/, 'wss:').replace(/^http:/, 'ws:')
+}
+
+/** WebSocket 基地址：dev 走 Vite proxy，prod 直连（可通过 VITE_API_BASE 覆盖） */
 export const WS_BASE = import.meta.env.DEV
   ? `ws://${typeof location !== 'undefined' ? location.host : 'localhost:5180'}`
-  : 'wss://mbe.hi-maker.com'
+  : toWsBase(PROD_BASE)
 
 const DEVICE_ID_KEY = 'mbe_device_id'
 
@@ -49,6 +59,13 @@ export function authHeaders(extra?: Record<string, string>): Record<string, stri
   }
 
   return headers
+}
+
+/** 是否为 fetch / 流式取消（不向用户展示错误） */
+export function isAbortError(err: unknown): boolean {
+  if (err instanceof DOMException && err.name === 'AbortError') return true
+  if (err instanceof Error && err.name === 'AbortError') return true
+  return false
 }
 
 /** 带认证的 fetch 封装 */

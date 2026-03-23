@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { API_BASE } from '@/lib/api-client'
+import type { WindowWithElectron } from '@/types/api-responses'
 
 interface UserInfo {
   name: string
@@ -53,6 +54,7 @@ async function postUserAuthJson(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(15_000),
   })
   const data = (await resp.json().catch(() => ({}))) as Record<string, unknown>
   if (!resp.ok) {
@@ -81,7 +83,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setToken: (t) => {
     set({ token: t })
     try {
-      const api = (window as any).electronAPI
+      const api = (window as WindowWithElectron).electronAPI
       if (api?.session) {
         t ? api.session.set(TOKEN_KEY, t) : api.session.remove(TOKEN_KEY)
       } else {
@@ -96,7 +98,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setUser: (u) => {
     set({ user: u })
     try {
-      const api = (window as any).electronAPI
+      const api = (window as WindowWithElectron).electronAPI
       if (api?.session) {
         u ? api.session.set(USER_KEY, u) : api.session.remove(USER_KEY)
       } else {
@@ -117,7 +119,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   restoreAuth: async () => {
     try {
-      const api = (window as any).electronAPI
+      const api = (window as WindowWithElectron).electronAPI
       if (api?.session) {
         const [token, userRaw] = await Promise.all([
           api.session.get(TOKEN_KEY),
@@ -217,6 +219,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const resp = await fetch(`${API_BASE}/api/v1/users/resend-verification?email=${encodeURIComponent(email)}`, {
         method: 'POST',
+        signal: AbortSignal.timeout(15_000),
       })
       const data = await resp.json().catch(() => ({}))
       if (!resp.ok) {

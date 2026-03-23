@@ -30,17 +30,35 @@ import {
   type LocalAction,
 } from '@/lib/local-action-executor'
 
-import { getDeviceId, authHeaders } from '@/lib/api-client'
+import { getDeviceId, authHeaders, isAbortError } from '@/lib/api-client'
+export { isAbortError }
 import type { ConsultResponse, WindowWithElectron } from '@/types/api-responses'
 
 /** WebSocket 连接池 */
 const wsPool = new Map<string, WebSocket>()
 
-/** 是否为 fetch / 流式取消（不向用户展示错误） */
-export function isAbortError(err: unknown): boolean {
-  if (err instanceof DOMException && err.name === 'AbortError') return true
-  if (err instanceof Error && err.name === 'AbortError') return true
-  return false
+/** 心跳定时器池（与 wsPool 键一致） */
+const heartbeatTimers = new Map<string, ReturnType<typeof setInterval>>()
+
+const WS_HEARTBEAT_INTERVAL = 25_000
+
+function startHeartbeat(key: string, ws: WebSocket) {
+  stopHeartbeat(key)
+  heartbeatTimers.set(key, setInterval(() => {
+    if (ws.readyState === WebSocket.OPEN) {
+      try { ws.send(JSON.stringify({ type: 'ping' })) } catch { /* 静默 */ }
+    } else {
+      stopHeartbeat(key)
+    }
+  }, WS_HEARTBEAT_INTERVAL))
+}
+
+function stopHeartbeat(key: string) {
+  const timer = heartbeatTimers.get(key)
+  if (timer) {
+    clearInterval(timer)
+    heartbeatTimers.delete(key)
+  }
 }
 
 export type SendMessageOptions = {
@@ -234,25 +252,15 @@ async function streamViaWebSocket(
     const wsKey = `${agent.id}_${agent.role}`
 
     let ws = wsPool.get(wsKey)
+    let isNewSocket = false
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       const deviceId = getDeviceId()
-      const authToken = authHeaders()['Authorization']?.replace('Bearer ', '') ?? null
-      const wsUrlWithAuth = authToken
-        ? `${agent.wsUrl}?device_id=${deviceId}&token=${encodeURIComponent(authToken)}`
-        : `${agent.wsUrl}?device_id=${deviceId}`
-      const urls = [wsUrlWithAuth]
-      let connected = false
-      for (const url of urls) {
-        try {
-          ws = new WebSocket(url)
-          wsPool.set(wsKey, ws)
-          connected = true
-          break
-        } catch {
-          // Expected: 该 WS URL 建连失败；试下一候选
-        }
-      }
-      if (!connected || !ws) {
+      const wsUrl = `${agent.wsUrl}?device_id=${deviceId}`
+      try {
+        ws = new WebSocket(wsUrl)
+        wsPool.set(wsKey, ws)
+        isNewSocket = true
+      } catch {
         reject(new Error('WebSocket 不可用'))
         return
       }
@@ -272,6 +280,7 @@ async function streamViaWebSocket(
       socket.onmessage = null
       socket.onerror = null
       socket.onclose = null
+      stopHeartbeat(wsKey)
       try {
         socket.close()
       } catch {
@@ -284,19 +293,23 @@ async function streamViaWebSocket(
       signal.addEventListener('abort', onAbort)
     }
 
+    const authToken = authHeaders()['Authorization']?.replace('Bearer ', '') ?? null
     const payload = JSON.stringify({
       query: text,
+      ...(authToken ? { token: authToken } : {}),
       ...(memoryContext ? { memory_context: memoryContext } : {}),
       ...(billing?.solutionId ? { solution_id: billing.solutionId } : {}),
       ...(billing?.solutionRole ? { solution_role: billing.solutionRole } : {}),
       ...(billing?.subAccountId ? { sub_account_id: billing.subAccountId } : {}),
     })
 
-    socket.onopen = () => {
-      socket.send(payload)
-    }
-
-    if (socket.readyState === WebSocket.OPEN) {
+    // 防止双发：新建连接走 onopen，复用连接直接 send
+    if (isNewSocket) {
+      socket.onopen = () => {
+        startHeartbeat(wsKey, socket)
+        socket.send(payload)
+      }
+    } else {
       socket.send(payload)
     }
 
@@ -405,12 +418,14 @@ async function streamViaWebSocket(
 
     socket.onerror = () => {
       clearTimeout(timeout)
+      stopHeartbeat(wsKey)
       if (signal) signal.removeEventListener('abort', onAbort)
       wsPool.delete(wsKey)
       reject(new Error('WebSocket 连接失败'))
     }
 
     socket.onclose = () => {
+      stopHeartbeat(wsKey)
       wsPool.delete(wsKey)
       const msg = useChatStore.getState().messages.find(m => m.id === messageId)
       if (msg?.streaming) {

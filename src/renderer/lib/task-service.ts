@@ -148,15 +148,40 @@ export async function createTask(
 export async function updateTask(
   taskId: string,
   updates: { title?: string; status?: string; priority?: string; due_date?: string; note?: string },
+  solutionId?: string,
 ): Promise<boolean> {
   try {
     const resp = await authFetch(`${API_BASE}/api/v1/account/tasks/${taskId}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
     })
+    if (resp.ok && solutionId) {
+      const tasks = readLS(solutionId)
+      const idx = tasks.findIndex(t => t.id === taskId)
+      if (idx >= 0) {
+        if (updates.title) tasks[idx].title = updates.title
+        if (updates.status) tasks[idx].status = updates.status as TaskStatus
+        if (updates.priority) tasks[idx].priority = updates.priority as Priority
+        if (updates.due_date !== undefined) tasks[idx].dueDate = updates.due_date
+        if (updates.note !== undefined) tasks[idx].note = updates.note
+        writeLS(solutionId, tasks)
+      }
+    }
     return resp.ok
   } catch {
-    // Expected: 远端更新失败
+    if (solutionId) {
+      const tasks = readLS(solutionId)
+      const idx = tasks.findIndex(t => t.id === taskId)
+      if (idx >= 0) {
+        if (updates.title) tasks[idx].title = updates.title
+        if (updates.status) tasks[idx].status = updates.status as TaskStatus
+        if (updates.priority) tasks[idx].priority = updates.priority as Priority
+        if (updates.due_date !== undefined) tasks[idx].dueDate = updates.due_date
+        if (updates.note !== undefined) tasks[idx].note = updates.note
+        writeLS(solutionId, tasks)
+        return true
+      }
+    }
     return false
   }
 }

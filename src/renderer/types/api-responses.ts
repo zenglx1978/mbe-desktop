@@ -229,6 +229,17 @@ export interface ElectronAccessibilityBridge {
   readChat?: (appKey: string) => Promise<unknown>
 }
 
+export interface ElectronSessionBridge {
+  set: (key: string, value: unknown) => void | Promise<void>
+  get: (key: string) => Promise<unknown>
+  remove: (key: string) => void | Promise<void>
+}
+
+export interface ElectronCalcBridge {
+  pythonAvailable: () => Promise<boolean>
+  available: () => Promise<string[]>
+}
+
 /** 各文件实际用到的 preload 字段子集 */
 export interface ElectronAPIPreload {
   inference?: ElectronInferenceBridge
@@ -237,6 +248,8 @@ export interface ElectronAPIPreload {
   db?: ElectronDbBridge
   ecommerceCs?: ElectronEcommerceCsBridge
   accessibility?: ElectronAccessibilityBridge
+  session?: ElectronSessionBridge
+  calc?: ElectronCalcBridge
 }
 
 export type WindowWithElectron = Window & { electronAPI?: ElectronAPIPreload }

@@ -4,7 +4,7 @@
  * 更富更懒：不只是聊天，AI 直接替你干活、交付成果。
  */
 
-import { API_BASE, isElectron } from './api-client'
+import { API_BASE, isElectron, authHeaders, isAbortError } from './api-client'
 import type { CrossAgentWorkflowExecuteResponse } from '@/types/api-responses'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || API_BASE
@@ -110,22 +110,15 @@ function apiUrl(agentName: string, path: string): string {
   return `${BASE_URL}/api/${agentName}/workflow-os${path}`
 }
 
-function isAbortError(e: unknown): boolean {
-  if (e instanceof DOMException && e.name === 'AbortError') return true
-  if (e instanceof Error && e.name === 'AbortError') return true
-  return false
-}
-
-const _unavailable = new Response(null, { status: 503 })
-
 /**
  * Web 模式下 WorkflowOS API 不可用 — 直接返回 503 假响应，
  * 避免浏览器控制台出现大量 404 网络错误。
- * Electron 模式下正常发请求。
+ * Electron 模式下正常发请求，自动注入认证头。
  */
 function wfFetch(input: string, init?: RequestInit): Promise<Response> {
-  if (!isElectron()) return Promise.resolve(_unavailable)
-  return fetch(input, init)
+  if (!isElectron()) return Promise.resolve(new Response(null, { status: 503 }))
+  const headers = authHeaders(init?.headers as Record<string, string> | undefined)
+  return fetch(input, { ...init, headers })
 }
 
 export async function fetchDashboard(
