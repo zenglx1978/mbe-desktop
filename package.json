@@ -1,6 +1,6 @@
 {
   "name": "mbe-desktop",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "MBE Desktop — AI 专业服务统一桌面端",
   "main": "dist/main/index.js",
   "author": "MBE Team",
@@ -144,15 +144,21 @@
       }
     ],
     "nsis": {
+      "guid": "com.himaker.mbe-desktop",
       "oneClick": false,
-      "perMachine": false,
-      "allowToChangeInstallationDirectory": true,
+      "perMachine": true,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": false,
       "runAfterFinish": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "MBE Desktop",
       "artifactName": "MBE-Desktop-${version}-Setup.${ext}",
-      "uninstallDisplayName": "MBE Desktop"
+      "uninstallDisplayName": "MBE Desktop",
+      "include": "build/installer.nsh"
+    },
+    "msi": {
+      "upgradeCode": "7B3A4F2E-8C1D-4E5F-9A0B-6D2C8E7F1A3B"
     },
     "publish": [
       {
