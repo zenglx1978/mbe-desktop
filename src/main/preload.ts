@@ -384,6 +384,139 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('accessibility:newMessages', handler)
       return () => ipcRenderer.removeListener('accessibility:newMessages', handler)
     },
+
+    action: (appKey: string, action: {
+      type: 'click' | 'type' | 'key' | 'focus' | 'select'
+      target?: string; text?: string; key?: string; waitMs?: number
+    }) => ipcRenderer.invoke('accessibility:action', appKey, action),
+
+    batchActions: (appKey: string, actions: {
+      type: 'click' | 'type' | 'key' | 'focus' | 'select'
+      target?: string; text?: string; key?: string; waitMs?: number
+    }[]) => ipcRenderer.invoke('accessibility:batchActions', appKey, actions),
+
+    writeAllowedApps: () => ipcRenderer.invoke('accessibility:writeAllowedApps'),
+  },
+
+  // ── 下载管理器（断点续传 + 进度回调 + SHA256 校验） ──
+  download: {
+    start: (req: {
+      url: string
+      savePath?: string
+      fileName?: string
+      expectedHash?: string
+      hashAlgorithm?: 'sha256' | 'md5'
+      overwrite?: boolean
+      headers?: Record<string, string>
+    }) => ipcRenderer.invoke('download:start', req),
+
+    cancel: (downloadId: string) => ipcRenderer.invoke('download:cancel', downloadId),
+
+    status: () => ipcRenderer.invoke('download:status'),
+
+    verify: (filePath: string, expectedHash: string, algorithm?: string) =>
+      ipcRenderer.invoke('download:verify', filePath, expectedHash, algorithm),
+
+    onProgress: (cb: (data: {
+      id: string; url: string; savePath: string; status: string
+      bytesReceived: number; totalBytes: number; percent: number; speed: number
+      error?: string; hashMatch?: boolean
+    }) => void) => {
+      const handler = (_e: unknown, data: any) => cb(data)
+      ipcRenderer.on('download:progress', handler)
+      return () => ipcRenderer.removeListener('download:progress', handler)
+    },
+  },
+
+  // ── ERP 一键安装（检测→下载→安装→配置引导） ──
+  erpSetup: {
+    registry: () => ipcRenderer.invoke('erpSetup:registry'),
+
+    detect: (erpId?: string) => ipcRenderer.invoke('erpSetup:detect', erpId),
+
+    install: (erpId: string, method?: string) => ipcRenderer.invoke('erpSetup:install', erpId, method),
+
+    autoSetup: (erpIds?: string[]) => ipcRenderer.invoke('erpSetup:autoSetup', erpIds),
+
+    openWeb: (erpId: string) => ipcRenderer.invoke('erpSetup:openWeb', erpId),
+
+    getConfigGuide: (erpId: string) => ipcRenderer.invoke('erpSetup:getConfigGuide', erpId),
+
+    onStep: (cb: (step: {
+      step: number; totalSteps: number; action: string
+      status: string; detail?: string; error?: string
+    }) => void) => {
+      const handler = (_e: unknown, data: any) => cb(data)
+      ipcRenderer.on('erpSetup:step', handler)
+      return () => ipcRenderer.removeListener('erpSetup:step', handler)
+    },
+  },
+
+  // ── RPA 桌面全自动化（Python pyautogui 桥接） ──
+  rpa: {
+    detectPython: () => ipcRenderer.invoke('rpa:detectPython'),
+    checkDeps: () => ipcRenderer.invoke('rpa:checkDeps'),
+    installDeps: () => ipcRenderer.invoke('rpa:installDeps'),
+
+    action: (action: {
+      type: string; x?: number; y?: number; text?: string
+      keys?: string[]; scrollAmount?: number; imagePath?: string
+      confidence?: number; waitSeconds?: number; savePath?: string
+    }) => ipcRenderer.invoke('rpa:action', action),
+
+    workflow: (workflow: {
+      name: string; description: string; confirmEachStep: boolean
+      timeoutSeconds: number; retryCount: number
+      steps: { type: string; x?: number; y?: number; text?: string; keys?: string[]; interval?: number }[]
+    }) => ipcRenderer.invoke('rpa:workflow', workflow),
+
+    screenshot: () => ipcRenderer.invoke('rpa:screenshot'),
+    status: () => ipcRenderer.invoke('rpa:status'),
+
+    onStepCompleted: (cb: (data: { step: number; total: number; result: unknown }) => void) => {
+      const handler = (_e: unknown, data: any) => cb(data)
+      ipcRenderer.on('rpa:stepCompleted', handler)
+      return () => ipcRenderer.removeListener('rpa:stepCompleted', handler)
+    },
+    onRetrying: (cb: (data: { attempt: number; maxRetries: number }) => void) => {
+      const handler = (_e: unknown, data: any) => cb(data)
+      ipcRenderer.on('rpa:retrying', handler)
+      return () => ipcRenderer.removeListener('rpa:retrying', handler)
+    },
+  },
+
+  // ── 全流程自动化编排器（ERP 检测→安装→连接→Copilot→操作→报表） ──
+  fullPipeline: {
+    execute: (config: {
+      solutionId: string; phases?: number[]
+      erpType: string; csToolType: string; useWebErp: boolean
+      agentBaseUrl?: string; agentHeaders?: Record<string, string>
+    }) => ipcRenderer.invoke('fullPipeline:execute', config),
+
+    executePhase: (phaseNum: number, config: {
+      solutionId: string; erpType: string; csToolType: string; useWebErp: boolean
+      agentBaseUrl?: string; agentHeaders?: Record<string, string>
+    }) => ipcRenderer.invoke('fullPipeline:executePhase', phaseNum, config),
+
+    onProgress: (cb: (data: {
+      phase: number; name: string; step: string; status: string; detail?: string
+    }) => void) => {
+      const handler = (_e: unknown, data: any) => cb(data)
+      ipcRenderer.on('fullPipeline:progress', handler)
+      return () => ipcRenderer.removeListener('fullPipeline:progress', handler)
+    },
+
+    onStarted: (cb: (data: { solutionId: string; phases: number[]; erpType: string; csToolType: string }) => void) => {
+      const handler = (_e: unknown, data: any) => cb(data)
+      ipcRenderer.on('fullPipeline:started', handler)
+      return () => ipcRenderer.removeListener('fullPipeline:started', handler)
+    },
+
+    onCompleted: (cb: (data: { success: boolean; summary: string }) => void) => {
+      const handler = (_e: unknown, data: any) => cb(data)
+      ipcRenderer.on('fullPipeline:completed', handler)
+      return () => ipcRenderer.removeListener('fullPipeline:completed', handler)
+    },
   },
 
   // ── 电商客服 Copilot（三区安全模型 + 回复管理） ──

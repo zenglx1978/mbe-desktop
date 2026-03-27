@@ -53,6 +53,8 @@ export interface ToolConfig {
   acceptTypes?: string[]
   /** 工具描述 */
   description?: string
+  /** 工具分类标签（用于分组展示） */
+  category?: string
 }
 
 /** Slash 命令 */
@@ -73,7 +75,11 @@ export interface DashboardWidget {
   filter?: string
 }
 
-export type WorkbenchTab = 'chat' | 'tools' | 'documents' | 'tasks' | 'dashboard' | 'workflows' | 'approvals' | 'costs' | 'scheduler' | 'designer' | 'efficiency' | 'automation' | 'clients' | 'roi' | 'account' | 'scout'
+export type WorkbenchTab = 'chat' | 'tools' | 'documents' | 'tasks' | 'dashboard' | 'workflows' | 'approvals' | 'costs' | 'scheduler' | 'designer' | 'efficiency' | 'automation' | 'clients' | 'roi' | 'account' | 'scout' | 'pipeline' | 'brands' | 'erp-sync'
+  | 'today' | 'bookkeeping' | 'invoices' | 'tax-filing' | 'reports' | 'tax-planning'
+  | 'cases' | 'contracts' | 'legal-docs' | 'billing'
+  | 'employees' | 'payroll' | 'compliance' | 'disputes'
+  | 'research' | 'portfolio' | 'macro' | 'compliance-pub'
 
 /** 利润影响标注 — 米塞斯 P2：企业的目的是获取利润 */
 export interface ProfitImpact {
@@ -170,6 +176,10 @@ export interface SolutionConfig {
   workflows: WorkflowConfig[]
   /** 快捷场景（一键提问） */
   scenarios: ScenarioConfig[]
+  /** P2-10: 首次进入引导配置（QuickBooks 风格） */
+  onboarding?: {
+    questions: { key: string; label: string; options: string[] }[]
+  }
 }
 
 import { API_BASE, authHeaders } from '@/lib/api-client'
@@ -189,6 +199,7 @@ export async function fetchSolutionStatuses(): Promise<Map<string, SolutionConfi
   try {
     const res = await fetch(`${API_BASE}/api/v1/solutions?include_disabled=true`, {
       headers: authHeaders(),
+      signal: AbortSignal.timeout(10_000),
     })
     if (res.ok) {
       const data = await res.json()

@@ -11,9 +11,7 @@
  */
 
 import { useEffect, useRef, useCallback, useState } from 'react'
-import { getDeviceId } from '@/lib/api-client'
-
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
+import { WS_BASE, getDeviceId, authHeaders } from '@/lib/api-client'
 
 export interface WorkflowEvent {
   type: string
@@ -49,6 +47,9 @@ const MAX_RECONNECT_ATTEMPTS = 5
 const BASE_DELAY = 1000
 const MAX_DELAY = 30000
 
+/** 服务端主动拒绝（认证/策略），不应重连 */
+const NO_RECONNECT_CODES = new Set([1008, 4001, 4003])
+
 export function useWorkflowEvents({
   agentName,
   userId,
@@ -69,12 +70,12 @@ export function useWorkflowEvents({
     if (!enabled || !agentName) return
 
     try {
-      const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-      const host = BASE_URL
-        ? new URL(BASE_URL).host
-        : window.location.host
       const deviceId = getDeviceId()
-      const url = `${proto}//${host}/ws/${agentName}/events?user_id=${encodeURIComponent(userId)}&device_id=${deviceId}`
+      const authToken = authHeaders()['Authorization']?.replace('Bearer ', '') ?? null
+      let url = `${WS_BASE}/ws/${agentName}/events?user_id=${encodeURIComponent(userId)}&device_id=${deviceId}`
+      if (authToken) {
+        url += `&token=${encodeURIComponent(authToken)}`
+      }
 
       const ws = new WebSocket(url)
       wsRef.current = ws
@@ -96,10 +97,12 @@ export function useWorkflowEvents({
         }
       }
 
-      ws.onclose = () => {
+      ws.onclose = (event) => {
         wsRef.current = null
         setConnected(false)
         onConnRef.current?.(false)
+
+        if (NO_RECONNECT_CODES.has(event.code)) return
 
         if (reconnectRef.current < MAX_RECONNECT_ATTEMPTS) {
           const delay = Math.min(

@@ -27,7 +27,7 @@ const btn =
 
 export default function ExportToolbar({ content, title = '对话导出', className = '' }: ExportToolbarProps) {
   const [copied, setCopied] = useState(false)
-  const safeName = (title || 'export').replace(/[/\\?%*:|"<>]/g, '-').slice(0, 80)
+  const safeName = (title || '导出').replace(/[/\\?%*:|"<>]/g, '-').slice(0, 80)
 
   const copyMd = useCallback(async () => {
     try {
@@ -46,7 +46,7 @@ export default function ExportToolbar({ content, title = '对话导出', classNa
         const path = await api.saveFile({
           title: '导出 Markdown',
           defaultPath: `${safeName}.md`,
-          filters: [{ name: 'Markdown', extensions: ['md'] }],
+          filters: [{ name: 'Markdown 文档', extensions: ['md'] }],
         }) as string | null
         if (!path) return
         const wr = await api.writeFile(path, utf8ToBase64(content)) as { success?: boolean; error?: string }
@@ -75,7 +75,7 @@ export default function ExportToolbar({ content, title = '对话导出', classNa
         const path = await api.saveFile({
           title: '导出 PDF',
           defaultPath: `${safeName}.pdf`,
-          filters: [{ name: 'PDF', extensions: ['pdf'] }],
+          filters: [{ name: 'PDF 文档', extensions: ['pdf'] }],
         }) as string | null
         if (!path) return
         const wr = await api.writeFile(path, pdf.data) as { success?: boolean; error?: string }

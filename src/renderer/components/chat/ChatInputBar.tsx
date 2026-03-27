@@ -1,5 +1,5 @@
 import { useCallback, type Dispatch, type RefObject, type SetStateAction } from 'react'
-import { VoiceInput, ScreenshotInput } from '@/components/io'
+import { VoiceInput, ScreenshotInput, FileAttachInput, type AttachedFile } from '@/components/io'
 
 export interface ChatInputBarProps {
   input: string
@@ -8,6 +8,8 @@ export interface ChatInputBarProps {
   onKeyDown: (e: React.KeyboardEvent) => void
   onSend: () => void
   onImage?: (base64: string, filename: string) => void
+  onAttach?: (files: AttachedFile[]) => void
+  attachedFiles?: AttachedFile[]
   isLoading: boolean
 }
 
@@ -18,12 +20,16 @@ export function ChatInputBar({
   onKeyDown,
   onSend,
   onImage,
+  onAttach,
+  attachedFiles,
   isLoading,
 }: ChatInputBarProps) {
   const handleTranscript = useCallback(
     (text: string) => setInput((prev: string) => (prev ? `${prev} ${text}` : text)),
     [setInput],
   )
+
+  const hasContent = input.trim() || (attachedFiles && attachedFiles.length > 0)
 
   return (
     <div className="border-t border-border/50 p-4">
@@ -34,16 +40,17 @@ export function ChatInputBar({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder="输入问题，或点击上方决策链快速开始..."
+            placeholder="输入问题，或用 📎 上传发票/文件..."
             rows={1}
             className="flex-1 bg-transparent border-none outline-none resize-none text-sm leading-relaxed max-h-32 placeholder:text-muted-foreground/50"
             style={{ fieldSizing: 'content' } as React.CSSProperties}
           />
+          {onAttach && <FileAttachInput onAttach={onAttach} />}
           <VoiceInput onTranscript={handleTranscript} />
           {onImage && <ScreenshotInput onImage={onImage} />}
           <button
             onClick={() => onSend()}
-            disabled={!input.trim() || isLoading}
+            disabled={!hasContent || isLoading}
             className="shrink-0 w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
           >
             {isLoading ? (

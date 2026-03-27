@@ -428,7 +428,7 @@ export default function Settings() {
               className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md border border-border/50 hover:bg-muted/30 transition-colors text-muted-foreground hover:text-foreground"
             >
               <span className="text-base">🔬</span>
-              DeepMind Insights
+              实验洞察仪表盘
               <span className="text-[10px] text-muted-foreground/50 ml-auto">退火 · 波动 · 策略 · 暖启动</span>
             </button>
           </div>

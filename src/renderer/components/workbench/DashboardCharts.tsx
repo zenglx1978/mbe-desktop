@@ -64,7 +64,7 @@ export function DashboardCharts({
                     安装
                   </button>
                 </div>
-                {item.is_fork && <span className="text-[9px] text-amber-600 dark:text-amber-400">Fork</span>}
+                {item.is_fork && <span className="text-[9px] text-amber-600 dark:text-amber-400">衍生版</span>}
               </div>
             ))}
           </div>

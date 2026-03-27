@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { SOLUTION_REGISTRY, type SolutionConfig, fetchSolutionStatuses, getEffectiveStatus } from '@/lib/solution-router'
 import { useAppStore } from '@/stores/app-store'
 import { useAuthStore } from '@/stores/auth-store'
-import { LogOut, Zap, Briefcase, Search, Users, Wrench, Workflow, Sparkles, Scan, ArrowRight, ChevronDown } from 'lucide-react'
+import { LogOut, Zap, Briefcase, Search, Users, Sparkles, Scan, ArrowRight, ChevronDown } from 'lucide-react'
 import { getSolutionIcon } from '@/lib/solution-icons'
 import { API_BASE, authHeaders } from '@/lib/api-client'
 import UpdateBanner from '@/components/UpdateBanner'
@@ -101,10 +101,10 @@ function SolutionCard({ solution, index, onPick, onLearnMore }: {
             className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full"
             style={{ backgroundColor: color + '12', color }}
             title={`人工 ${solution.valueEquivalent.humanHours} 小时 → MBE ${solution.valueEquivalent.mbeMinutes} 分钟`}
-            aria-label={`效率提升：${solution.valueEquivalent.humanHours}h→${solution.valueEquivalent.mbeMinutes}min`}
+            aria-label={`效率提升：${solution.valueEquivalent.humanHours}小时→${solution.valueEquivalent.mbeMinutes}分钟`}
           >
             <Zap className="w-3 h-3 shrink-0" />
-            {solution.valueEquivalent.humanHours}h→{solution.valueEquivalent.mbeMinutes}min
+            {solution.valueEquivalent.humanHours}小时→{solution.valueEquivalent.mbeMinutes}分钟
           </span>
         ) : null}
       </div>
@@ -123,21 +123,12 @@ function SolutionCard({ solution, index, onPick, onLearnMore }: {
         </span>
       )}
 
-      <div className="flex items-center gap-3 mt-3 text-[11px] text-muted-foreground/50 group-hover:text-muted-foreground/70 transition-colors">
-        <span className="flex items-center gap-1">
-          <Users className="w-3 h-3" />
-          {solution.agents.length} 位专家
-        </span>
-        {solution.tools.length > 0 && (
+      {/* P2-8: 去掉技术计数（专家数/工具数/流程数），改为利润导向标签 */}
+      <div className="flex items-center gap-2 mt-3 text-[11px] text-muted-foreground/50 group-hover:text-muted-foreground/70 transition-colors">
+        {solution.valueEquivalent && (
           <span className="flex items-center gap-1">
-            <Wrench className="w-3 h-3" />
-            {solution.tools.length} 工具
-          </span>
-        )}
-        {solution.workflows.length > 0 && (
-          <span className="flex items-center gap-1">
-            <Workflow className="w-3 h-3" />
-            {solution.workflows.length} 流程
+            <Zap className="w-3 h-3" />
+            效率提升 {solution.valueEquivalent.acceleration}
           </span>
         )}
       </div>
@@ -269,10 +260,29 @@ export default function SolutionPicker() {
     })).filter((cat) => cat.ids.length > 0)
   }, [statusSynced])
 
+  // P2-10: 首次进入引导状态
+  const [onboardingFor, setOnboardingFor] = useState<string | null>(null)
+  const [onboardingAnswers, setOnboardingAnswers] = useState<Record<string, string>>({})
+
   const handlePick = useCallback((id: string) => {
+    const onboardedKey = `mbe_onboarded_${id}`
+    const already = localStorage.getItem(onboardedKey)
+    const sol = findSolution(id)
+    if (!already && sol?.onboarding) {
+      setOnboardingFor(id)
+      return
+    }
     setSolution(id)
     navigate('/', { replace: true })
   }, [setSolution, navigate])
+
+  const completeOnboarding = useCallback(() => {
+    if (!onboardingFor) return
+    localStorage.setItem(`mbe_onboarded_${onboardingFor}`, JSON.stringify(onboardingAnswers))
+    setSolution(onboardingFor)
+    setOnboardingFor(null)
+    navigate('/', { replace: true })
+  }, [onboardingFor, onboardingAnswers, setSolution, navigate])
 
   const handleLearnMore = useCallback((id: string) => {
     navigate(`/solution/${id}`)
@@ -286,12 +296,6 @@ export default function SolutionPicker() {
   const availableRegistry = useMemo(
     () => SOLUTION_REGISTRY.filter(s => getEffectiveStatus(s.id) === 'available'),
     [statusSynced],
-  )
-  const totalExperts = useMemo(
-    () => availableRegistry.reduce((sum, s) => sum + s.agents.length, 0), [availableRegistry]
-  )
-  const totalTools = useMemo(
-    () => availableRegistry.reduce((sum, s) => sum + s.tools.length, 0), [availableRegistry]
   )
 
   let cardIndex = 0
@@ -388,19 +392,11 @@ export default function SolutionPicker() {
               ))}
             </div>
 
-            {/* 统计 */}
+            {/* P2-8: 简化统计，去掉技术计数 */}
             <div className="flex items-center gap-5 text-xs text-muted-foreground/60 mt-1">
               <span className="flex items-center gap-1.5">
                 <Briefcase className="w-3.5 h-3.5" />
-                {availableRegistry.length} 个方案
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5" />
-                {totalExperts} 位专家
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Wrench className="w-3.5 h-3.5" />
-                {totalTools} 个工具
+                {availableRegistry.length} 个行业方案
               </span>
             </div>
           </div>
@@ -610,6 +606,58 @@ export default function SolutionPicker() {
           </div>
         )}
       </div>
+
+      {/* P2-10: 首次进入引导模态框 */}
+      {onboardingFor && (() => {
+        const sol = findSolution(onboardingFor)
+        const questions = sol?.onboarding?.questions
+        if (!questions) return null
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-fade-in">
+            <div className="w-full max-w-md mx-4 rounded-2xl bg-card border border-border p-6 shadow-2xl animate-fade-in-up">
+              <h3 className="text-lg font-bold text-foreground mb-1">快速设置</h3>
+              <p className="text-sm text-muted-foreground mb-6">帮我们了解你的情况，AI 专家会更准确地服务你</p>
+              <div className="space-y-5">
+                {questions.map((q) => (
+                  <div key={q.key}>
+                    <label className="text-sm font-medium text-foreground block mb-2">{q.label}</label>
+                    <div className="flex flex-wrap gap-2">
+                      {q.options.map((opt) => (
+                        <button
+                          key={opt}
+                          onClick={() => setOnboardingAnswers(prev => ({ ...prev, [q.key]: opt }))}
+                          className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${onboardingAnswers[q.key] === opt ? 'border-primary bg-primary/10 text-primary font-medium' : 'border-border/50 text-muted-foreground hover:border-primary/30'}`}
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-3 mt-6">
+                <button
+                  onClick={completeOnboarding}
+                  className="flex-1 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity"
+                >
+                  开始使用
+                </button>
+                <button
+                  onClick={() => {
+                    localStorage.setItem(`mbe_onboarded_${onboardingFor}`, '{}')
+                    setSolution(onboardingFor)
+                    setOnboardingFor(null)
+                    navigate('/', { replace: true })
+                  }}
+                  className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  跳过
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }

@@ -6,6 +6,8 @@ import { authHeaders } from '@/lib/api-client'
 import { CLIENT_PORTAL_API as API } from './client-portal-constants'
 import type { ClientInvite, ChannelMember } from './client-portal-types'
 
+const CP_TIMEOUT = 15_000
+
 export interface ClientSessionState {
   invites: ClientInvite[]
   activeChannel: string | null
@@ -84,7 +86,7 @@ export const useClientSessionStore = create<ClientSessionState>((set, get) => ({
 
   fetchInvites: async () => {
     try {
-      const res = await fetch(`${API}/invites`, { headers: authHeaders() })
+      const res = await fetch(`${API}/invites`, { headers: authHeaders(), signal: AbortSignal.timeout(CP_TIMEOUT) })
       if (res.ok) {
         const data = await res.json()
         set({ invites: data })
@@ -99,7 +101,7 @@ export const useClientSessionStore = create<ClientSessionState>((set, get) => ({
 
   fetchUnread: async () => {
     try {
-      const res = await fetch(`${API}/channels/unread`, { headers: authHeaders() })
+      const res = await fetch(`${API}/channels/unread`, { headers: authHeaders(), signal: AbortSignal.timeout(CP_TIMEOUT) })
       if (res.ok) {
         const data = await res.json()
         const prev = get().unreadCounts
@@ -136,6 +138,7 @@ export const useClientSessionStore = create<ClientSessionState>((set, get) => ({
           agent_id: agentId,
           expires_hours: 72,
         }),
+        signal: AbortSignal.timeout(CP_TIMEOUT),
       })
       if (!res.ok) return null
       const data = await res.json()
@@ -167,6 +170,7 @@ export const useClientSessionStore = create<ClientSessionState>((set, get) => ({
     try {
       const res = await fetch(`${API}/channels/${ch}/members`, {
         headers: authHeaders(),
+        signal: AbortSignal.timeout(CP_TIMEOUT),
       })
       if (res.ok) {
         const data = await res.json()
@@ -183,6 +187,7 @@ export const useClientSessionStore = create<ClientSessionState>((set, get) => ({
         method: 'POST',
         headers: authHeaders(),
         body: JSON.stringify({ user_id: userId, display_name: displayName, title, role }),
+        signal: AbortSignal.timeout(CP_TIMEOUT),
       })
       if (res.ok) {
         await get().fetchMembers(channelId)
@@ -200,6 +205,7 @@ export const useClientSessionStore = create<ClientSessionState>((set, get) => ({
       const res = await fetch(`${API}/channels/${channelId}/members/${userId}`, {
         method: 'DELETE',
         headers: authHeaders(),
+        signal: AbortSignal.timeout(CP_TIMEOUT),
       })
       if (res.ok) {
         await get().fetchMembers(channelId)

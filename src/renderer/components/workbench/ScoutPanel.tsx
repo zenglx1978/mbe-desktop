@@ -201,7 +201,7 @@ export default function ScoutPanel() {
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <div className="flex items-center gap-2">
           <Target className="w-4 h-4 text-primary" />
-          <span className="font-medium text-sm">Acquisition Scout</span>
+          <span className="font-medium text-sm">并购标的雷达</span>
           <span className="text-xs text-muted-foreground">标的发现与评分</span>
         </div>
         <div className="flex items-center gap-1">
@@ -380,7 +380,7 @@ function ScorecardBanner({
           onClick={onRollup}
           className="w-full py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-1.5"
         >
-          推送到 Roll-up 批量导入 <ArrowRight className="w-4 h-4" />
+          推送到整合打包批量导入 <ArrowRight className="w-4 h-4" />
         </button>
       )}
     </div>
@@ -431,7 +431,7 @@ function LeaderboardCard({
               onClick={(e) => { e.stopPropagation(); onRollup() }}
               className="px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-xs hover:opacity-90 transition-opacity flex items-center gap-1"
             >
-              推送到 Roll-up <ArrowRight className="w-3 h-3" />
+              推送到整合打包 <ArrowRight className="w-3 h-3" />
             </button>
           )}
         </div>
@@ -535,7 +535,7 @@ function TargetForm({
           <FormCheck label="持有行业资质/牌照" checked={form.has_license} onChange={(v) => set('has_license', v)} />
           <FormField label="资质详情" value={form.license_detail} onChange={(v) => set('license_detail', v)} />
           <FormCheck label="有数字化系统" checked={form.has_digital_system} onChange={(v) => set('has_digital_system', v)} />
-          <FormField label="系统名称" value={form.source_system} onChange={(v) => set('source_system', v)} placeholder="如 kingdee_kis" />
+          <FormField label="系统名称" value={form.source_system} onChange={(v) => set('source_system', v)} placeholder="如 金蝶 KIS" />
           <FormNum label="数据积累年数" value={form.data_years} onChange={(v) => set('data_years', v)} />
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">出售动机</label>

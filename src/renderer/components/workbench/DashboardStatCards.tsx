@@ -1,5 +1,7 @@
 import { StatCard, UsageBar } from './dashboard-panel-widgets'
 import type { BillingUsage, DashboardData, ROISummary, SLADashboardData } from '@/lib/workflow-os-service'
+import { useBrandStore } from '@/stores/brand-store'
+import { useAppStore } from '@/stores/app-store'
 
 export interface DashboardStatCardsProps {
   dashboard: DashboardData
@@ -8,7 +10,55 @@ export interface DashboardStatCardsProps {
   slaDash: SLADashboardData | null
 }
 
+function BrandOverviewCards() {
+  const { brands, settlements, activeBrandId, setActiveBrand } = useBrandStore()
+  const fmt = (n: number) => `¥${n >= 10000 ? `${(n / 10000).toFixed(1)}万` : n.toLocaleString()}`
+
+  if (brands.length === 0) return null
+
+  const filtered = activeBrandId
+    ? settlements.filter((s) => s.brandId === activeBrandId)
+    : settlements
+  const filteredBrands = activeBrandId
+    ? brands.filter((b) => b.id === activeBrandId)
+    : brands
+  const activeBrandsCount = filteredBrands.filter((b) => b.status === 'active').length
+  const totalGmv = filtered.reduce((sum, s) => sum + s.gmv, 0)
+  const receivable = filtered.filter((s) => s.status !== 'paid').reduce((sum, s) => sum + s.totalAmount, 0)
+  const paid = filtered.filter((s) => s.status === 'paid').reduce((sum, s) => sum + s.totalAmount, 0)
+  const selectedName = activeBrandId ? brands.find((b) => b.id === activeBrandId)?.name : null
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          {selectedName ? `${selectedName} 经营概览` : '品牌经营概览'}
+        </h3>
+        <select
+          value={activeBrandId || ''}
+          onChange={(e) => setActiveBrand(e.target.value || null)}
+          className="text-xs px-2 py-1 rounded-lg border border-border/50 bg-secondary/20 outline-none cursor-pointer"
+        >
+          <option value="">全部品牌</option>
+          {brands.map((b) => (
+            <option key={b.id} value={b.id}>{b.name}</option>
+          ))}
+        </select>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-4">
+        <StatCard label={activeBrandId ? '状态' : '管理品牌'} value={activeBrandId ? (filteredBrands[0]?.status === 'active' ? '运营中' : '其他') : activeBrandsCount} icon="🏪" accent="#e11d48" suffix={activeBrandId ? '' : `/${brands.length}`} />
+        <StatCard label="累计 GMV" value={fmt(totalGmv)} icon="📈" accent="#22c55e" />
+        <StatCard label="应收佣金" value={fmt(receivable)} icon="⏳" accent="#f59e0b" />
+        <StatCard label="已收佣金" value={fmt(paid)} icon="✅" accent="#22c55e" />
+      </div>
+    </div>
+  )
+}
+
 export function DashboardStatCards({ dashboard, roi, billing, slaDash }: DashboardStatCardsProps) {
+  const solutionId = useAppStore((s) => s.solutionId)
+  const isEcommerce = solutionId === 'ecommerce-brand-service'
+
   return (
     <>
       {(roi?.total_workflows_completed ?? 0) > 0 && (
@@ -32,6 +82,8 @@ export function DashboardStatCards({ dashboard, roi, billing, slaDash }: Dashboa
           </div>
         </div>
       )}
+
+      {isEcommerce && <BrandOverviewCards />}
 
       <div>
         <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">

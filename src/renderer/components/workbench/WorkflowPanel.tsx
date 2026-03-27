@@ -449,7 +449,7 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
                 )}
                 {view === 'done' && result?.success && (
                   <span className="ml-auto text-xs px-2 py-1 rounded-full bg-green-500/10 text-green-500">
-                    已完成 · {(result.totalDurationMs / 1000).toFixed(1)}s
+                    已完成 · {(result.totalDurationMs / 1000).toFixed(1)}秒
                   </span>
                 )}
               </div>
@@ -645,7 +645,7 @@ function StepCard({ index, step, status, answer, error, durationMs, color }: {
 
         {durationMs != null && (
           <span className="text-[10px] text-muted-foreground shrink-0">
-            {(durationMs / 1000).toFixed(1)}s
+            {(durationMs / 1000).toFixed(1)}秒
           </span>
         )}
 

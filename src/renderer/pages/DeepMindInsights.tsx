@@ -147,10 +147,10 @@ export default function DeepMindInsights() {
         </button>
         <div className="flex-1">
           <h1 className="text-sm font-semibold flex items-center gap-2">
-            DeepMind Insights Dashboard
+            实验洞察仪表盘
           </h1>
           <p className="text-[10px] text-muted-foreground">
-            P0-P5 + I1-I4 | AlphaEvolve / SHOR-PSRO / VAD-CFR
+            P0-P5 + I1-I4 | 进化调度 · 博弈收敛 · 波动自适应
             {useMock && <span className="ml-2 text-amber-500">（示例数据 — 启动 dashboard_server.py 获取实时数据）</span>}
           </p>
         </div>
@@ -171,7 +171,7 @@ export default function DeepMindInsights() {
           <section className="rounded-xl border border-border bg-card p-5">
             <div className="flex items-center gap-2 mb-4">
               <Thermometer className="w-4 h-4 text-violet-400" />
-              <h2 className="text-sm font-semibold">P1+I1: Annealing Schedule</h2>
+              <h2 className="text-sm font-semibold">P1+I1：退火调度</h2>
             </div>
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={annealChartData} margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
@@ -180,26 +180,29 @@ export default function DeepMindInsights() {
                   tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                   axisLine={false}
                   tickLine={false}
-                  label={{ value: 'Turn', position: 'insideBottomRight', offset: -2, style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' } }}
+                  label={{ value: '轮次', position: 'insideBottomRight', offset: -2, style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' } }}
                 />
                 <YAxis
                   domain={[0, 0.6]}
                   tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                   axisLine={false}
                   tickLine={false}
-                  label={{ value: 'Blend', angle: -90, position: 'insideLeft', style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' } }}
+                  label={{ value: '混合度', angle: -90, position: 'insideLeft', style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' } }}
                 />
                 <Tooltip
                   content={({ payload, label }) => {
                     if (!payload?.length) return null
                     return (
                       <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-lg">
-                        <p className="text-muted-foreground mb-1">Turn {label}</p>
-                        {payload.map(p => (
-                          <p key={String(p.dataKey)} style={{ color: p.color }}>
-                            {String(p.dataKey)}: {(p.value as number).toFixed(4)}
-                          </p>
-                        ))}
+                        <p className="text-muted-foreground mb-1">第 {label} 轮</p>
+                        {payload.map(p => {
+                          const envMap: Record<string, string> = { default: '默认', development: '开发', production: '生产' }
+                          return (
+                            <p key={String(p.dataKey)} style={{ color: p.color }}>
+                              {envMap[String(p.dataKey)] || String(p.dataKey)}: {(p.value as number).toFixed(4)}
+                            </p>
+                          )
+                        })}
                       </div>
                     )
                   }}
@@ -207,8 +210,9 @@ export default function DeepMindInsights() {
                 <Legend
                   wrapperStyle={{ fontSize: 10 }}
                   formatter={(v: string) => {
+                    const envMap: Record<string, string> = { default: '默认', development: '开发', production: '生产' }
                     const h = annealData[v]?.horizon
-                    return <span className="text-muted-foreground text-[10px]">{v}{h ? ` (h=${h})` : ''}</span>
+                    return <span className="text-muted-foreground text-[10px]">{envMap[v] || v}{h ? ` (范围=${h})` : ''}</span>
                   }}
                 />
                 {Object.keys(annealData).map(env => (
@@ -225,7 +229,7 @@ export default function DeepMindInsights() {
               </LineChart>
             </ResponsiveContainer>
             <p className="text-[10px] text-muted-foreground mt-2">
-              SHOR-PSRO: dev explores more, prod converges faster
+              开发环境探索更多，生产环境更快收敛
             </p>
           </section>
 
@@ -233,7 +237,7 @@ export default function DeepMindInsights() {
           <section className="rounded-xl border border-border bg-card p-5">
             <div className="flex items-center gap-2 mb-4">
               <Activity className="w-4 h-4 text-orange-400" />
-              <h2 className="text-sm font-semibold">P4: Expert Volatility (EWMA)</h2>
+              <h2 className="text-sm font-semibold">P4：专家波动性（EWMA）</h2>
             </div>
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={volChartData} margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
@@ -242,20 +246,20 @@ export default function DeepMindInsights() {
                   tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                   axisLine={false}
                   tickLine={false}
-                  label={{ value: 'Window', position: 'insideBottomRight', offset: -2, style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' } }}
+                  label={{ value: '时间窗', position: 'insideBottomRight', offset: -2, style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' } }}
                 />
                 <YAxis
                   tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                   axisLine={false}
                   tickLine={false}
-                  label={{ value: 'EWMA Vol', angle: -90, position: 'insideLeft', style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' } }}
+                  label={{ value: 'EWMA 波动率', angle: -90, position: 'insideLeft', style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' } }}
                 />
                 <Tooltip
                   content={({ payload, label }) => {
                     if (!payload?.length) return null
                     return (
                       <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-lg">
-                        <p className="text-muted-foreground mb-1">Window {label}</p>
+                        <p className="text-muted-foreground mb-1">窗口 {label}</p>
                         {payload.map(p => (
                           <p key={String(p.dataKey)} style={{ color: p.color }}>
                             {String(p.dataKey)}: {(p.value as number).toFixed(4)}
@@ -269,7 +273,7 @@ export default function DeepMindInsights() {
                   wrapperStyle={{ fontSize: 10 }}
                   formatter={(v: string) => {
                     const vol = volData.expert_volatility[v]?.volatility
-                    return <span className="text-muted-foreground text-[10px]">{v}{vol != null ? ` (vol=${vol.toFixed(3)})` : ''}</span>
+                    return <span className="text-muted-foreground text-[10px]">{v}{vol != null ? ` (波动=${vol.toFixed(3)})` : ''}</span>
                   }}
                 />
                 {expertNames.map((eid, i) => (
@@ -286,9 +290,9 @@ export default function DeepMindInsights() {
               </LineChart>
             </ResponsiveContainer>
             <p className="text-[10px] text-muted-foreground mt-2">
-              Domain avg volatility: {volData.domain_avg_volatility.toFixed(4)}
+              领域平均波动率：{volData.domain_avg_volatility.toFixed(4)}
               {' · '}
-              {Object.values(volData.expert_volatility).filter(v => v.iteration_priority !== 'low').length} experts need iteration
+              {Object.values(volData.expert_volatility).filter(v => v.iteration_priority !== 'low').length} 位专家需迭代
             </p>
           </section>
 
@@ -296,27 +300,34 @@ export default function DeepMindInsights() {
           <section className="rounded-xl border border-border bg-card p-5">
             <div className="flex items-center gap-2 mb-4">
               <Server className="w-4 h-4 text-cyan-400" />
-              <h2 className="text-sm font-semibold">P3: Environment Asymmetry</h2>
+              <h2 className="text-sm font-semibold">P3：环境策略非对称</h2>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="text-muted-foreground border-b border-border/30">
-                    <th className="text-left py-2 pr-3 font-medium">Dimension</th>
-                    <th className="text-right py-2 px-3 font-medium">Dev</th>
-                    <th className="text-right py-2 px-3 font-medium">Prod</th>
-                    <th className="text-right py-2 pl-3 font-medium">Ratio</th>
+                    <th className="text-left py-2 pr-3 font-medium">维度</th>
+                    <th className="text-right py-2 px-3 font-medium">开发</th>
+                    <th className="text-right py-2 px-3 font-medium">生产</th>
+                    <th className="text-right py-2 pl-3 font-medium">比值</th>
                   </tr>
                 </thead>
                 <tbody>
                   {Object.entries(envPolicy).map(([dim, v]) => {
                     const isDiff = String(v.development) !== String(v.production)
+                    const dimNames: Record<string, string> = {
+                      annealing_horizon: '退火范围',
+                      temperature_init: '初始温度',
+                      diversity_weight: '多样性权重',
+                      cache_ttl: '缓存有效期',
+                      kb_min_confidence: 'KB 最低置信度',
+                    }
                     return (
                       <tr
                         key={dim}
                         className={`border-b border-border/10 ${isDiff ? 'text-cyan-400' : 'text-muted-foreground/50'}`}
                       >
-                        <td className="py-2 pr-3 font-medium">{dim}</td>
+                        <td className="py-2 pr-3 font-medium">{dimNames[dim] || dim}</td>
                         <td className="text-right py-2 px-3 font-mono">{String(v.development)}</td>
                         <td className="text-right py-2 px-3 font-mono">{String(v.production)}</td>
                         <td className="text-right py-2 pl-3 font-mono">{String(v.asymmetry_ratio)}</td>
@@ -332,7 +343,7 @@ export default function DeepMindInsights() {
           <section className="rounded-xl border border-border bg-card p-5">
             <div className="flex items-center gap-2 mb-4">
               <Database className="w-4 h-4 text-emerald-400" />
-              <h2 className="text-sm font-semibold">P2: KB Warm-Start Curve</h2>
+              <h2 className="text-sm font-semibold">P2：知识库暖启动曲线</h2>
             </div>
             <ResponsiveContainer width="100%" height={220}>
               <AreaChart data={warmup.warmup_curve} margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
@@ -347,14 +358,14 @@ export default function DeepMindInsights() {
                   tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                   axisLine={false}
                   tickLine={false}
-                  label={{ value: 'Query Count', position: 'insideBottomRight', offset: -2, style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' } }}
+                  label={{ value: '查询次数', position: 'insideBottomRight', offset: -2, style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' } }}
                 />
                 <YAxis
                   domain={[0, 1.1]}
                   tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                   axisLine={false}
                   tickLine={false}
-                  label={{ value: 'Retrieval Weight', angle: -90, position: 'insideLeft', style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' } }}
+                  label={{ value: '检索权重', angle: -90, position: 'insideLeft', style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' } }}
                 />
                 <Tooltip
                   content={({ payload }) => {
@@ -362,8 +373,8 @@ export default function DeepMindInsights() {
                     const d = payload[0].payload as WarmupPoint
                     return (
                       <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-lg">
-                        <p>Query #{d.query_count}</p>
-                        <p className="text-emerald-400 font-bold">Weight: {d.weight.toFixed(3)}</p>
+                        <p>第 {d.query_count} 次查询</p>
+                        <p className="text-emerald-400 font-bold">权重：{d.weight.toFixed(3)}</p>
                       </div>
                     )
                   }}
@@ -380,7 +391,7 @@ export default function DeepMindInsights() {
               </AreaChart>
             </ResponsiveContainer>
             <p className="text-[10px] text-muted-foreground mt-2">
-              Maturity: {warmup.maturity} | Cooldown: {(warmup.gate as Record<string, number>).cooldown_turns ?? '?'} turns
+              成熟度：{warmup.maturity === 'production' ? '生产' : warmup.maturity} | 冷却：{(warmup.gate as Record<string, number>).cooldown_turns ?? '?'} 轮
             </p>
           </section>
         </div>

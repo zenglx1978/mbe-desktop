@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import type { SolutionConfig, ToolConfig, ToolField } from '@/lib/solution-router'
 import { runCalculation } from '@/lib/tool-service'
 import { useAdaptiveUIStore } from '@/stores/adaptive-ui-store'
@@ -8,12 +8,37 @@ interface Props {
 }
 
 export default function ToolPanel({ solution }: Props) {
+  const grouped = useMemo(() => {
+    const hasCategories = solution.tools.some((t) => t.category)
+    if (!hasCategories) return null
+    const map = new Map<string, ToolConfig[]>()
+    for (const tool of solution.tools) {
+      const cat = tool.category || '其他'
+      if (!map.has(cat)) map.set(cat, [])
+      map.get(cat)!.push(tool)
+    }
+    return map
+  }, [solution.tools])
+
   return (
     <div className="flex-1 overflow-y-auto p-6">
       <div className="max-w-3xl mx-auto space-y-6">
-        {solution.tools.map((tool) => (
-          <ToolCard key={tool.id} tool={tool} solutionId={solution.id} />
-        ))}
+        {grouped ? (
+          Array.from(grouped.entries()).map(([category, tools]) => (
+            <div key={category} className="space-y-3">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                {category}
+              </h3>
+              {tools.map((tool) => (
+                <ToolCard key={tool.id} tool={tool} solutionId={solution.id} />
+              ))}
+            </div>
+          ))
+        ) : (
+          solution.tools.map((tool) => (
+            <ToolCard key={tool.id} tool={tool} solutionId={solution.id} />
+          ))
+        )}
       </div>
     </div>
   )

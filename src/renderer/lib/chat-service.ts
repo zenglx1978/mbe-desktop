@@ -64,6 +64,8 @@ function stopHeartbeat(key: string) {
 export type SendMessageOptions = {
   /** 取消本次请求（新消息发送或组件卸载时 abort） */
   signal?: AbortSignal
+  /** 附件文件列表（发票/单据 PDF/图片），上传后 OCR 结果注入对话上下文 */
+  files?: Array<{ file: File; name: string; type: string }>
 }
 
 /**
@@ -151,6 +153,18 @@ export async function sendMessage(
   }
 
   chatStore.setLoading(true)
+
+  // 附件上传：先上传文件获取 OCR 结果，再注入对话上下文
+  let fileContext = ''
+  if (options?.files?.length) {
+    const uploadResults = await uploadFilesForChat(options.files, agent, signal)
+    if (uploadResults.length > 0) {
+      fileContext = uploadResults.join('\n\n')
+    }
+  }
+  if (fileContext) {
+    text = `${text}\n\n---\n以下是系统自动识别的文件内容：\n${fileContext}`
+  }
 
   // 如果是自动路由切换，在回复头部加提示
   const routeHint = route.autoRouted && route.agentIndex !== currentIdx
@@ -654,4 +668,50 @@ function autoLearnFromMessage(text: string, solutionId?: string, conversationId?
   } catch {
     // Expected: memory.learn 入口不可用；跳过隐式学习
   }
+}
+
+// ── 文件上传 → OCR → 上下文注入 ──
+
+async function uploadFilesForChat(
+  files: Array<{ file: File; name: string; type: string }>,
+  agent: AgentEndpoint,
+  signal?: AbortSignal,
+): Promise<string[]> {
+  const results: string[] = []
+  const headers = authHeaders()
+  delete (headers as Record<string, string>)['Content-Type']
+
+  for (const { file, name } of files) {
+    if (signal?.aborted) break
+    try {
+      const formData = new FormData()
+      formData.append('file', file, name)
+      formData.append('auto_recognize', 'true')
+
+      const uploadUrl = `${agent.baseUrl}/documents/upload`
+      const res = await fetch(uploadUrl, {
+        method: 'POST',
+        headers,
+        body: formData,
+        signal,
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        const ocr = data.recognized_text || data.ocr_text || data.content || ''
+        const docType = data.document_type || data.type || '文档'
+        if (ocr) {
+          results.push(`【${name}】（类型：${docType}）\n${ocr}`)
+        } else {
+          results.push(`【${name}】已上传，待处理`)
+        }
+      } else {
+        results.push(`【${name}】上传失败（${res.status}）`)
+      }
+    } catch (e) {
+      if (isAbortError(e)) break
+      results.push(`【${name}】上传异常`)
+    }
+  }
+  return results
 }

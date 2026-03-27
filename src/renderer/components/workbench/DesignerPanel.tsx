@@ -334,7 +334,7 @@ export default function DesignerPanel({ solution }: Props) {
                     {node.label.length > 16 ? node.label.slice(0, 15) + '…' : node.label}
                   </text>
                   <text x="16" y="52" fontSize="10" className="fill-muted-foreground">
-                    {node.node_type}{node.requires_approval ? ' · 需审批' : ''}
+                    {({ expert: '专家步骤', operation: '运维步骤', cross_agent: '跨智能体', decision: '决策节点' } as Record<string, string>)[node.node_type] || node.node_type}{node.requires_approval ? ' · 需审批' : ''}
                   </text>
                   {/* 连接点 */}
                   <circle cx={NODE_W / 2} cy={0} r="4" fill={typeInfo.color} className="opacity-60" />
@@ -353,8 +353,8 @@ export default function DesignerPanel({ solution }: Props) {
               <PropField label="ID" value={selNode.node_id} />
               <PropField label="名称" value={selNode.label} />
               <PropField label="类型" value={selNode.node_type} />
-              <PropField label="Agent" value={selNode.agent} />
-              <PropField label="Expert" value={selNode.expert || '—'} />
+              <PropField label="智能体" value={selNode.agent} />
+              <PropField label="专家" value={selNode.expert || '—'} />
               <PropField label="SLA (分钟)" value={selNode.sla_minutes || '—'} />
               <PropField label="需审批" value={selNode.requires_approval ? '是' : '否'} />
               {selNode.description && <PropField label="描述" value={selNode.description} />}

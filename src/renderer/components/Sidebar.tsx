@@ -5,7 +5,7 @@ import { useToolStore } from '@/stores/tool-store'
 import { useAuthStore } from '@/stores/auth-store'
 import { useAdaptiveUIStore } from '@/stores/adaptive-ui-store'
 import { getTabMeta, SIDEBAR_ACTIONS } from '@/lib/tab-icons'
-import { Sparkles } from 'lucide-react'
+import { Sparkles, Power } from 'lucide-react'
 import type { WorkbenchTab } from '@/lib/solution-router'
 
 const api = (window as any).electronAPI
@@ -53,6 +53,7 @@ export default function Sidebar() {
 
   const initials = user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || '?'
 
+  const SwitchIcon = SIDEBAR_ACTIONS.switchSolution.icon
   const SettingsIcon = SIDEBAR_ACTIONS.settings.icon
   const LogoutIcon = SIDEBAR_ACTIONS.logout.icon
   const CollapseIcon = sidebarExpanded ? SIDEBAR_ACTIONS.collapse.icon : SIDEBAR_ACTIONS.expand.icon
@@ -140,6 +141,19 @@ export default function Sidebar() {
           {sidebarExpanded && <span>AI 副驾驶</span>}
         </button>
         <button
+          onClick={() => {
+            useAppStore.getState().clearSolution()
+            navigate('/pick', { replace: true })
+          }}
+          className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/30 transition-colors ${
+            sidebarExpanded ? '' : 'justify-center px-2'
+          }`}
+          title={sidebarExpanded ? undefined : '切换方案'}
+        >
+          <SwitchIcon className="w-4 h-4 shrink-0" />
+          {sidebarExpanded && <span>切换方案</span>}
+        </button>
+        <button
           onClick={() => navigate('/settings')}
           className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/30 transition-colors ${
             sidebarExpanded ? '' : 'justify-center px-2'
@@ -154,13 +168,23 @@ export default function Sidebar() {
             useAuthStore.getState().logout()
             navigate('/auth', { replace: true })
           }}
-          className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors ${
+          className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-muted-foreground hover:text-orange-400 hover:bg-orange-500/10 transition-colors ${
             sidebarExpanded ? '' : 'justify-center px-2'
           }`}
           title={sidebarExpanded ? undefined : '退出登录'}
         >
           <LogoutIcon className="w-4 h-4 shrink-0" />
           {sidebarExpanded && <span>退出登录</span>}
+        </button>
+        <button
+          onClick={() => api?.close()}
+          className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors ${
+            sidebarExpanded ? '' : 'justify-center px-2'
+          }`}
+          title={sidebarExpanded ? undefined : '退出应用'}
+        >
+          <Power className="w-4 h-4 shrink-0" />
+          {sidebarExpanded && <span>退出应用</span>}
         </button>
         <button
           onClick={toggleSidebar}

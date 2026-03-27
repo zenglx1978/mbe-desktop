@@ -1,6 +1,6 @@
 {
   "name": "mbe-desktop",
-  "version": "0.6.1",
+  "version": "0.6.5",
   "description": "MBE Desktop — AI 专业服务统一桌面端",
   "main": "dist/main/index.js",
   "author": "MBE Team",
@@ -155,6 +155,7 @@
       "shortcutName": "MBE Desktop",
       "artifactName": "MBE-Desktop-${version}-Setup.${ext}",
       "uninstallDisplayName": "MBE Desktop",
+      "deleteAppDataOnUninstall": false,
       "include": "build/installer.nsh"
     },
     "msi": {

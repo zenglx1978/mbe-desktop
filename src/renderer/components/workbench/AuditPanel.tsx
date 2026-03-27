@@ -168,7 +168,7 @@ export default function AuditPanel() {
                       key={level}
                       className={`${colors[level]} transition-all`}
                       style={{ width: `${pct}%` }}
-                      title={`${level}: ${count}`}
+                      title={`${({ critical: '严重', high: '高', medium: '中', low: '低' } as Record<string, string>)[level] || level}：${count}`}
                     />
                   )
                 })}
@@ -234,7 +234,7 @@ export default function AuditPanel() {
                   <th className="text-left px-3 py-2 font-medium text-muted-foreground/70">状态</th>
                   <th className="text-left px-3 py-2 font-medium text-muted-foreground/70">风险</th>
                   <th className="text-left px-3 py-2 font-medium text-muted-foreground/70">操作</th>
-                  <th className="text-left px-3 py-2 font-medium text-muted-foreground/70">Agent</th>
+                  <th className="text-left px-3 py-2 font-medium text-muted-foreground/70">智能体</th>
                   <th className="text-left px-3 py-2 font-medium text-muted-foreground/70">审批人</th>
                   <th className="text-left px-3 py-2 font-medium text-muted-foreground/70">时间</th>
                 </tr>
@@ -384,7 +384,7 @@ function AuditDetail({ item, onClose }: { item: ApprovalItem; onClose: () => voi
       )}
 
       <div className="grid grid-cols-2 gap-2 mb-3">
-        <DetailField label="Agent" value={item.agent_name} />
+        <DetailField label="智能体" value={item.agent_name} />
         {item.expert_id && <DetailField label="专家" value={item.expert_id} />}
         {item.solution_id && <DetailField label="方案" value={item.solution_id} />}
         {item.user_id && <DetailField label="发起人" value={item.user_id} />}

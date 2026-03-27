@@ -133,8 +133,8 @@ export function connectApprovalWs() {
   }
 
   try {
-    const wsUrl = solution.agents[0].wsUrl || WS_BASE
-    _ws = new WebSocket(`${wsUrl}/ws/governance/approvals`)
+    // 治理审批 WS 走 WS_BASE，不走 agent.wsUrl（后者含 /ws/{id}/chat 路径）
+    _ws = new WebSocket(`${WS_BASE}/ws/governance/approvals`)
 
     _ws.onopen = () => {
       useApprovalStore.setState({ wsConnected: true })

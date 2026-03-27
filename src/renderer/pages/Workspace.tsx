@@ -7,9 +7,10 @@ import { useAdaptiveUIStore } from '@/stores/adaptive-ui-store'
 import { useLocalFeedbackStore, startFeedbackSync } from '@/stores/local-feedback-store'
 import { useSmartCacheStore } from '@/stores/smart-cache-store'
 import { useCloudSyncStore, startCloudSync } from '@/stores/cloud-sync-store'
-import { applySolutionTheme, fetchSolutionStatuses, getEffectiveStatus, type WorkbenchTab } from '@/lib/solution-router'
+import { applySolutionTheme, fetchSolutionStatuses, getEffectiveStatus, type WorkbenchTab, type SolutionConfig } from '@/lib/solution-router'
 import { API_BASE, authHeaders } from '@/lib/api-client'
 import { getSolutionIcon } from '@/lib/solution-icons'
+import { useState } from 'react'
 import Sidebar from '@/components/Sidebar'
 import ChatPanel from '@/components/ChatPanel'
 import ConnectivityBadge from '@/components/ConnectivityBadge'
@@ -31,19 +32,113 @@ import ROIPanel from '@/components/workbench/ROIPanel'
 import ScoutPanel from '@/components/workbench/ScoutPanel'
 import AccountPanel from '@/components/workbench/AccountPanel'
 import AutomationPanel from '@/components/workbench/AutomationPanel'
+import SalesPipelinePanel from '@/components/workbench/SalesPipelinePanel'
+import BrandsPanel from '@/components/workbench/BrandsPanel'
+import ERPSyncPanel from '@/components/workbench/ERPSyncPanel'
+import TodayPanel from '@/components/workbench/TodayPanel'
+import LawTodayPanel from '@/components/workbench/LawTodayPanel'
+import LaborTodayPanel from '@/components/workbench/LaborTodayPanel'
+import InvestTodayPanel from '@/components/workbench/InvestTodayPanel'
+import TaskContextPanel from '@/components/workbench/TaskContextPanel'
 import NotificationBell from '@/components/NotificationBell'
 import OfflineBanner from '@/components/OfflineBanner'
+import UndoToast from '@/components/workbench/UndoToast'
 import { startApprovalPolling } from '@/stores/approval-store'
 import { useApprovalNotifications } from '@/hooks/useApprovalNotifications'
+import { MessageSquare, ChevronDown, X, ArrowLeftRight, Sparkles } from 'lucide-react'
 
 let connectivityInitialized = false
 let clientIntelInitialized = false
+
+const ONBOARDING_PREFIX = 'mbe-onboarding-done-'
+
+function OnboardingDialog({ solution, onComplete }: { solution: SolutionConfig; onComplete: () => void }) {
+  const [step, setStep] = useState(0)
+  const [answers, setAnswers] = useState<Record<string, string>>({})
+  const questions = solution.onboarding?.questions || []
+  if (questions.length === 0) return null
+
+  const current = questions[step]
+  const isLast = step === questions.length - 1
+
+  const handleSelect = (value: string) => {
+    const next = { ...answers, [current.key]: value }
+    setAnswers(next)
+    if (isLast) {
+      try { localStorage.setItem(`mbe-onboarding-answers-${solution.id}`, JSON.stringify(next)) } catch {}
+      onComplete()
+    } else {
+      setStep(step + 1)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
+      <div className="bg-card border border-border/50 rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-5">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${solution.color}20` }}>
+            <Sparkles className="w-5 h-5" style={{ color: solution.color }} />
+          </div>
+          <div>
+            <h2 className="text-base font-bold">快速了解你的业务</h2>
+            <p className="text-xs text-muted-foreground">AI 专家会根据你的回答优化建议（{step + 1}/{questions.length}）</p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold">{current.label}</h3>
+          <div className="grid gap-2">
+            {current.options.map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => handleSelect(opt)}
+                className={`w-full text-left px-4 py-3 rounded-xl border text-sm transition-all hover:border-primary/50 hover:bg-primary/5 ${
+                  answers[current.key] === opt ? 'border-primary bg-primary/10 font-medium' : 'border-border/40'
+                }`}
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className="flex gap-1">
+            {questions.map((_, i) => (
+              <div key={i} className="w-2 h-2 rounded-full transition-colors" style={{ backgroundColor: i <= step ? solution.color : 'var(--border)' }} />
+            ))}
+          </div>
+          <button type="button" onClick={onComplete} className="text-xs text-muted-foreground hover:text-foreground">
+            跳过
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** 是否支持 AI 助手侧面板（非 chat tab 时可滑出） */
+function supportsAssistant(tab: string): boolean {
+  return tab !== 'chat' && !['today'].includes(tab)
+}
 
 export default function Workspace() {
   const navigate = useNavigate()
   const { currentSolution, hasPickedSolution, sidebarExpanded } = useAppStore()
   const { activeTab, setActiveTab } = useToolStore()
   const solution = currentSolution()
+
+  const [assistantOpen, setAssistantOpen] = useState(false)
+  const [activeClient, setActiveClient] = useState<string>('default')
+  const [clientDropdownOpen, setClientDropdownOpen] = useState(false)
+  const [showOnboarding, setShowOnboarding] = useState(false)
+
+  useEffect(() => {
+    if (!solution?.onboarding?.questions?.length) return
+    const done = localStorage.getItem(`${ONBOARDING_PREFIX}${solution.id}`)
+    if (!done) setShowOnboarding(true)
+  }, [solution?.id])
 
   const switchToApprovalTab = useCallback(() => setActiveTab('approvals'), [setActiveTab])
   useApprovalNotifications(switchToApprovalTab)
@@ -113,14 +208,19 @@ export default function Workspace() {
   const allTabs = useMemo(() => {
     if (!solution) return [] as WorkbenchTab[]
     const tabs = [...solution.enabledTabs]
+    const isTaskOriented = ['finance-tax-service', 'law-firm', 'labor-dispatch', 'investment-research'].includes(solution.id)
+    // P1-6: 任务导向方案仅追加 approvals，efficiency/automation/roi 等降级
     if (!tabs.includes('approvals')) tabs.push('approvals' as (typeof tabs)[number])
-    if (!tabs.includes('costs')) tabs.push('costs' as (typeof tabs)[number])
-    if (!tabs.includes('efficiency')) tabs.push('efficiency' as (typeof tabs)[number])
-    if (!tabs.includes('automation')) tabs.push('automation' as (typeof tabs)[number])
-    if (!tabs.includes('clients')) tabs.push('clients' as (typeof tabs)[number])
-    if (!tabs.includes('roi')) tabs.push('roi' as (typeof tabs)[number])
-    if (!tabs.includes('scout')) tabs.push('scout' as (typeof tabs)[number])
-    if (!tabs.includes('account')) tabs.push('account' as (typeof tabs)[number])
+    if (!isTaskOriented) {
+      if (!tabs.includes('costs')) tabs.push('costs' as (typeof tabs)[number])
+      if (!tabs.includes('efficiency')) tabs.push('efficiency' as (typeof tabs)[number])
+      if (!tabs.includes('automation')) tabs.push('automation' as (typeof tabs)[number])
+      if (!tabs.includes('clients')) tabs.push('clients' as (typeof tabs)[number])
+      if (!tabs.includes('roi')) tabs.push('roi' as (typeof tabs)[number])
+      if (!tabs.includes('scout')) tabs.push('scout' as (typeof tabs)[number])
+      if (!tabs.includes('account')) tabs.push('account' as (typeof tabs)[number])
+      if (!tabs.includes('pipeline')) tabs.push('pipeline' as (typeof tabs)[number])
+    }
     return tabs
   }, [solution])
 
@@ -153,6 +253,10 @@ export default function Workspace() {
 
   const showTabs = allTabs.length > 1
 
+  const isFinance = solution.id === 'finance-tax-service'
+  const isLawFirm = solution.id === 'law-firm'
+  const showAssistantButton = supportsAssistant(activeTab)
+
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       <UpdateBanner />
@@ -166,10 +270,49 @@ export default function Workspace() {
         <OfflineBanner />
         {/* 顶部栏 */}
         <header className="h-12 border-b border-border/50 flex items-center px-4 shrink-0" role="banner">
-          <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => {
+              useAppStore.getState().clearSolution()
+              navigate('/pick', { replace: true })
+            }}
+            className="flex items-center gap-2 shrink-0 px-2 py-1 -ml-2 rounded-md hover:bg-secondary/40 transition-colors group"
+            title="切换行业方案"
+          >
             <SolutionIcon className="w-5 h-5 text-primary" />
             <span className="font-medium text-sm hidden sm:inline">{solution.name}</span>
-          </div>
+            <ArrowLeftRight className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+          </button>
+
+          {/* P1-7: 客户切换下拉（代理记账多客户场景） */}
+          {isFinance && (
+            <div className="relative ml-3">
+              <button
+                onClick={() => setClientDropdownOpen(!clientDropdownOpen)}
+                className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-muted/40 hover:bg-muted/70 rounded-md transition-colors"
+              >
+                <span className="text-muted-foreground">{activeClient === 'default' ? '全部客户' : activeClient}</span>
+                <ChevronDown className="w-3 h-3 text-muted-foreground" />
+              </button>
+              {clientDropdownOpen && (
+                <div className="absolute top-full left-0 mt-1 w-48 py-1 bg-card border border-border rounded-lg shadow-lg z-50">
+                  {['default', '客户A-某贸易公司', '客户B-某科技公司', '客户C-某餐饮店'].map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => { setActiveClient(c); setClientDropdownOpen(false) }}
+                      className={`w-full text-left px-3 py-1.5 text-xs hover:bg-muted/50 transition-colors ${activeClient === c ? 'text-primary font-medium' : 'text-foreground'}`}
+                    >
+                      {c === 'default' ? '全部客户' : c}
+                    </button>
+                  ))}
+                  <div className="border-t border-border/30 mt-1 pt-1">
+                    <button className="w-full text-left px-3 py-1.5 text-xs text-primary hover:bg-muted/50 transition-colors">
+                      + 添加客户
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Tab 栏 — 窄屏可横向滚动 */}
           {showTabs && (
@@ -178,21 +321,67 @@ export default function Workspace() {
                 activeTab={activeTab}
                 enabledTabs={allTabs}
                 color={solution.color}
-                onTabChange={setActiveTab}
+                onTabChange={setActiveTab as (tab: string) => void}
               />
             </div>
           )}
 
           <div className="ml-auto flex items-center gap-3">
+            {/* AI Copilot 状态指示灯 — 品牌电商方案专属 */}
+            {solution.id === 'ecommerce-brand-service' && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-green-500/10 text-green-600 rounded-md">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                <span className="hidden sm:inline">Copilot 在线</span>
+              </div>
+            )}
+            {/* P1-5: AI 助手按钮（非 chat tab 时显示） */}
+            {showAssistantButton && (
+              <button
+                onClick={() => setAssistantOpen(!assistantOpen)}
+                className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md transition-colors ${assistantOpen ? 'bg-primary/15 text-primary' : 'bg-muted/40 hover:bg-muted/70 text-muted-foreground'}`}
+                title="打开 AI 助手"
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{isLawFirm ? '问律师' : solution?.id === 'investment-research' ? '问分析师' : '问专家'}</span>
+              </button>
+            )}
             <NotificationBell />
             <ConnectivityBadge />
           </div>
         </header>
 
-        {/* 内容区 — 根据 activeTab 切换 */}
-        <ActivePanel tab={activeTab} />
+        {/* 内容区 + AI 助手侧面板 */}
+        <div className="flex-1 flex overflow-hidden">
+          <div className="flex-1 overflow-hidden">
+            <ActivePanel tab={activeTab} />
+          </div>
+          {/* P1-5: AI 助手侧面板（滑出式） */}
+          {assistantOpen && showAssistantButton && (
+            <aside className="w-80 border-l border-border/50 flex flex-col bg-card shrink-0 animate-slide-in-right">
+              <div className="flex items-center justify-between px-3 py-2 border-b border-border/30">
+                <span className="text-xs font-medium text-foreground">AI 助手</span>
+                <button onClick={() => setAssistantOpen(false)} className="p-1 hover:bg-muted/50 rounded">
+                  <X className="w-3.5 h-3.5 text-muted-foreground" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <ChatPanel />
+              </div>
+            </aside>
+          )}
+        </div>
       </main>
       <ToastContainer />
+      <UndoToast />
+      {showOnboarding && solution && (
+        <OnboardingDialog
+          solution={solution}
+          onComplete={() => {
+            setShowOnboarding(false)
+            localStorage.setItem(`${ONBOARDING_PREFIX}${solution.id}`, '1')
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -235,6 +424,55 @@ function ActivePanel({ tab }: { tab: string }) {
       return <ScoutPanel />
     case 'account':
       return <AccountPanel />
+    case 'pipeline':
+      return <SalesPipelinePanel solution={solution} />
+    case 'brands':
+      return <BrandsPanel solution={solution} />
+    case 'erp-sync':
+      return <ERPSyncPanel solution={solution} />
+    // QuickBooks 任务导向 tab — 财税 + 律所 + 劳务派遣 + 投研
+    case 'today':
+      if (solution.id === 'law-firm') return <LawTodayPanel solution={solution} />
+      if (solution.id === 'labor-dispatch') return <LaborTodayPanel solution={solution} />
+      if (solution.id === 'investment-research') return <InvestTodayPanel solution={solution} />
+      return <TodayPanel solution={solution} />
+    case 'bookkeeping':
+      return <TaskContextPanel solution={solution} taskId="bookkeeping" />
+    case 'invoices':
+      return <TaskContextPanel solution={solution} taskId="invoices" />
+    case 'tax-filing':
+      return <TaskContextPanel solution={solution} taskId="tax-filing" />
+    case 'reports':
+      return <TaskContextPanel solution={solution} taskId="reports" />
+    case 'tax-planning':
+      return <TaskContextPanel solution={solution} taskId="tax-planning" />
+    // 律所专属任务 tab
+    case 'cases':
+      return <TaskContextPanel solution={solution} taskId="cases" />
+    case 'contracts':
+      return <TaskContextPanel solution={solution} taskId="contracts" />
+    case 'legal-docs':
+      return <TaskContextPanel solution={solution} taskId="legal-docs" />
+    case 'billing':
+      return <TaskContextPanel solution={solution} taskId="billing" />
+    // 劳务派遣专属任务 tab
+    case 'employees':
+      return <TaskContextPanel solution={solution} taskId="employees" />
+    case 'payroll':
+      return <TaskContextPanel solution={solution} taskId="payroll" />
+    case 'compliance':
+      return <TaskContextPanel solution={solution} taskId="compliance" />
+    case 'disputes':
+      return <TaskContextPanel solution={solution} taskId="disputes" />
+    // 投研方案专属任务 tab
+    case 'research':
+      return <TaskContextPanel solution={solution} taskId="research" />
+    case 'portfolio':
+      return <TaskContextPanel solution={solution} taskId="portfolio" />
+    case 'macro':
+      return <TaskContextPanel solution={solution} taskId="macro" />
+    case 'compliance-pub':
+      return <TaskContextPanel solution={solution} taskId="compliance-pub" />
     default:
       return <ChatPanel />
   }

@@ -83,7 +83,7 @@ export default function KnowledgeGraphPage() {
         <aside className="w-48 shrink-0 border-r border-border/20 bg-card/30 p-3 overflow-y-auto">
           <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/60 mb-3">
             <Filter className="w-3 h-3" />
-            <span>Agent 筛选</span>
+            <span>智能体筛选</span>
           </div>
           <button
             onClick={() => setHighlightAgent(null)}
@@ -91,7 +91,7 @@ export default function KnowledgeGraphPage() {
               highlightAgent === null ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
             }`}
           >
-            全部 Agent
+            全部智能体
           </button>
           {agentStats.map((a) => (
             <button
@@ -114,7 +114,7 @@ export default function KnowledgeGraphPage() {
           <div className="mt-6 pt-4 border-t border-border/20">
             <div className="text-[10px] text-muted-foreground/60 mb-2">图例</div>
             <div className="space-y-1.5">
-              <LegendItem icon={<Circle className="w-3 h-3" />} color="#6366f1" label="Agent" />
+              <LegendItem icon={<Circle className="w-3 h-3" />} color="#6366f1" label="智能体" />
               <LegendItem icon={<Circle className="w-2.5 h-2.5" />} color="#3b82f6" label="知识文件" />
               <LegendItem icon={<Diamond className="w-2.5 h-2.5" />} color="#f59e0b" label="计算规则" />
               <LegendItem icon={<Hexagon className="w-2.5 h-2.5" />} color="#10b981" label="解决方案" />
@@ -208,7 +208,7 @@ export default function KnowledgeGraphPage() {
 
             <div className="space-y-3">
               <DetailRow label="类型" value={NODE_TYPE_LABELS[selectedNode.type]} />
-              <DetailRow label="所属 Agent" value={selectedNode.agentId} />
+              <DetailRow label="所属智能体" value={selectedNode.agentId} />
               <DetailRow label="引用次数" value={String(selectedNode.refCount)} />
               {selectedNode.category && (
                 <DetailRow label="分类" value={selectedNode.category} />
@@ -285,7 +285,7 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 // ── 常量 ──
 
 const NODE_TYPE_LABELS: Record<string, string> = {
-  agent: 'Agent',
+  agent: '智能体',
   knowledge: '知识文件',
   rule: '计算规则',
   solution: '解决方案',

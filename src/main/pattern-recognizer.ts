@@ -135,6 +135,7 @@ let dbAdapter: {
 } | null = null
 
 let analysisInterval: ReturnType<typeof setInterval> | null = null
+let initialAnalysisTimer: ReturnType<typeof setTimeout> | null = null
 const ANALYSIS_INTERVAL_MS = 4 * 3600 * 1000 // 每 4 小时分析一次
 
 // ────────────────────── 模块初始化 ──────────────────────
@@ -511,13 +512,19 @@ function hashString(s: string): string {
 
 export function startPatternRecognizer(): void {
   if (analysisInterval) return
-  // 启动后 30 秒做首次分析（等 BehaviorObserver 积累数据）
-  setTimeout(() => runPatternAnalysis(), 30000)
+  initialAnalysisTimer = setTimeout(() => {
+    initialAnalysisTimer = null
+    runPatternAnalysis()
+  }, 30000)
   analysisInterval = setInterval(() => runPatternAnalysis(), ANALYSIS_INTERVAL_MS)
   console.log('[PatternRecognizer] 已启动（每 4h 分析一次）')
 }
 
 export function stopPatternRecognizer(): void {
+  if (initialAnalysisTimer) {
+    clearTimeout(initialAnalysisTimer)
+    initialAnalysisTimer = null
+  }
   if (analysisInterval) {
     clearInterval(analysisInterval)
     analysisInterval = null

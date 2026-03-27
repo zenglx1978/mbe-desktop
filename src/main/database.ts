@@ -125,7 +125,22 @@ export async function initDatabase(): Promise<void> {
 
     if (fs.existsSync(dbFilePath)) {
       const fileData = fs.readFileSync(dbFilePath)
-      sqlDb = new SQL.Database(new Uint8Array(fileData))
+      try {
+        sqlDb = new SQL.Database(new Uint8Array(fileData))
+        // 验证数据库完整性
+        const check = sqlDb.exec('PRAGMA integrity_check')
+        const ok = check?.[0]?.values?.[0]?.[0]
+        if (ok !== 'ok') {
+          console.warn('[Database] Integrity check failed:', ok)
+          throw new Error(`integrity_check: ${ok}`)
+        }
+      } catch (loadErr) {
+        console.error('[Database] Failed to load existing db, attempting recovery:', loadErr)
+        const backupName = dbFilePath + '.corrupt.' + Date.now()
+        try { fs.renameSync(dbFilePath, backupName) } catch { /* ignore */ }
+        console.log('[Database] Corrupt file moved to:', backupName)
+        sqlDb = new SQL.Database()
+      }
     } else {
       sqlDb = new SQL.Database()
     }

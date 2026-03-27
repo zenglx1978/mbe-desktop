@@ -20,6 +20,8 @@ interface AppState {
   _billingCacheKey: string
 
   setSolution: (id: string) => void
+  /** 清除当前方案选择，回到方案选择器 */
+  clearSolution: () => void
   switchAgent: (index: number) => void
   toggleSidebar: () => void
   currentSolution: () => SolutionConfig | undefined
@@ -59,6 +61,20 @@ export const useAppStore = create<AppState>((set, get) => {
       set({ solutionId: id, currentSolutionId: id, hasPickedSolution: true, currentAgentIndex: 0 })
       persist(id)
       get().fetchBillingContext(id)
+    },
+
+    clearSolution: () => {
+      set({ solutionId: null, currentSolutionId: null, hasPickedSolution: false, currentAgentIndex: 0, billingContext: null, _billingCacheKey: '' })
+      try {
+        const api = (window as any).electronAPI
+        if (api?.session?.remove) {
+          api.session.remove(STORAGE_KEY).catch(() => localStorage.removeItem(STORAGE_KEY))
+        } else {
+          localStorage.removeItem(STORAGE_KEY)
+        }
+      } catch {
+        localStorage.removeItem(STORAGE_KEY)
+      }
     },
 
     switchAgent: (index) => set({ currentAgentIndex: index }),

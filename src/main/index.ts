@@ -20,6 +20,25 @@ import { setupUserMemoryIPC, setMemoryMainWindow, setMemoryDb } from './user-mem
 import { setupLocalInferenceIPC, setInferenceDb, setInferenceMainWindow, initLocalInference } from './local-inference'
 import { setupBehaviorObserverIPC, setBehaviorObserverMainWindow, setBehaviorObserverDb, startBehaviorObserver, stopBehaviorObserver } from './behavior-observer'
 import { setupPatternRecognizerIPC, setPatternRecognizerMainWindow, setPatternRecognizerDb, startPatternRecognizer, stopPatternRecognizer } from './pattern-recognizer'
+import { setupDownloadManagerIPC, setDownloadManagerMainWindow } from './download-manager'
+import { setupErpAutoSetupIPC, setErpSetupMainWindow } from './erp-auto-setup'
+import { setupRpaBridgeIPC, setRpaMainWindow } from './rpa-bridge'
+import { setupFullPipelineIPC, setFullPipelineMainWindow } from './full-pipeline'
+
+console.log(`[App] MBE Desktop starting — pid=${process.pid}, platform=${process.platform}, electron=${process.versions.electron}`)
+
+process.on('uncaughtException', (err) => {
+  console.error('[App] Uncaught exception:', err)
+  try {
+    const lockFile = path.join(app.getPath('userData'), '.mbe-running.lock')
+    if (fs.existsSync(lockFile)) fs.unlinkSync(lockFile)
+  } catch { /* ignore */ }
+  app.quit()
+})
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[App] Unhandled rejection:', reason)
+})
 
 if (process.platform === 'win32') {
   app.disableHardwareAcceleration()
@@ -101,8 +120,27 @@ function writeSession(data: Record<string, unknown>): void {
 
 const gotLock = app.requestSingleInstanceLock()
 if (!gotLock) {
+  console.log('[App] Another instance is running, exiting.')
   app.quit()
+  process.exit(0)
 }
+
+// 清理上次异常退出遗留的锁标记文件（Windows 僵尸进程保护）
+const lockFilePath = path.join(app.getPath('userData'), '.mbe-running.lock')
+
+function writeLockFile(): void {
+  try {
+    fs.writeFileSync(lockFilePath, JSON.stringify({ pid: process.pid, time: Date.now() }))
+  } catch { /* ignore */ }
+}
+
+function removeLockFile(): void {
+  try {
+    if (fs.existsSync(lockFilePath)) fs.unlinkSync(lockFilePath)
+  } catch { /* ignore */ }
+}
+
+writeLockFile()
 
 let mainWindow: BrowserWindow | null = null
 
@@ -230,6 +268,9 @@ function getIconPath(): string | undefined {
 
 // ==================== 自动更新 ====================
 
+let autoUpdateInterval: ReturnType<typeof setInterval> | null = null
+let autoUpdateInitTimer: ReturnType<typeof setTimeout> | null = null
+
 function setupAutoUpdater() {
   if (isDev) {
     console.log('[AutoUpdater] Skipped in dev mode')
@@ -276,13 +317,19 @@ function setupAutoUpdater() {
     console.error('[AutoUpdater] Error:', err.message)
   })
 
-  setInterval(() => {
+  autoUpdateInterval = setInterval(() => {
     autoUpdater.checkForUpdates().catch(() => {})
   }, 30 * 60 * 1000)
 
-  setTimeout(() => {
+  autoUpdateInitTimer = setTimeout(() => {
     autoUpdater.checkForUpdates().catch(() => {})
+    autoUpdateInitTimer = null
   }, 10 * 1000)
+}
+
+function cleanupAutoUpdater(): void {
+  if (autoUpdateInterval) { clearInterval(autoUpdateInterval); autoUpdateInterval = null }
+  if (autoUpdateInitTimer) { clearTimeout(autoUpdateInitTimer); autoUpdateInitTimer = null }
 }
 
 function sendUpdateStatus(status: string, data?: Record<string, unknown>) {
@@ -301,7 +348,14 @@ ipcMain.on('update:download', () => {
 // ==================== App 生命周期 ====================
 
 app.whenReady().then(async () => {
-  await initDatabase()
+  console.log('[App] whenReady fired, starting initialization...')
+
+  try {
+    await initDatabase()
+  } catch (err) {
+    console.error('[App] Database init failed, continuing with null db:', err)
+  }
+
   setupDatabaseIPC()
   checkAutoBackup()
   setupLocalCalcIPC()
@@ -319,9 +373,16 @@ app.whenReady().then(async () => {
   setupLocalInferenceIPC()
   setupBehaviorObserverIPC()
   setupPatternRecognizerIPC()
+  setupDownloadManagerIPC()
+  setupErpAutoSetupIPC()
+  setupRpaBridgeIPC()
+  setupFullPipelineIPC()
   setMigrationDb(getDb())
   setupMigrationIPC()
+
   createWindow()
+  console.log('[App] Window created successfully')
+
   setMainWindow(mainWindow)
   setCopilotMainWindow(mainWindow)
   setAccessibilityMainWindow(mainWindow)
@@ -342,6 +403,10 @@ app.whenReady().then(async () => {
   setPatternRecognizerMainWindow(mainWindow!)
   setPatternRecognizerDb(getDb())
   startPatternRecognizer()
+  setDownloadManagerMainWindow(mainWindow)
+  setErpSetupMainWindow(mainWindow)
+  setRpaMainWindow(mainWindow)
+  setFullPipelineMainWindow(mainWindow)
   initCopilotBridge()
   setupAutoUpdater()
 
@@ -355,6 +420,15 @@ app.whenReady().then(async () => {
       createWindow()
     }
   })
+
+  console.log('[App] Initialization complete')
+}).catch((err) => {
+  console.error('[App] FATAL: whenReady initialization failed:', err)
+  dialog.showErrorBox(
+    'MBE Desktop 启动失败',
+    `初始化过程中出现错误，请重启应用。\n\n错误信息: ${err?.message || err}`
+  )
+  app.quit()
 })
 
 app.on('second-instance', (_event, argv) => {
@@ -370,18 +444,36 @@ app.on('second-instance', (_event, argv) => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
-    closeDatabase()
     app.quit()
   }
 })
 
+let isQuitting = false
+
 app.on('before-quit', () => {
-  stopBehaviorObserver()
-  stopPatternRecognizer()
-  destroyScheduler()
-  destroyCopilotBridge()
-  destroyAccessibilityBridge()
-  closeDatabase()
+  if (isQuitting) return
+  isQuitting = true
+  console.log('[Quit] before-quit fired, cleaning up...')
+
+  try { cleanupAutoUpdater() } catch (e) { console.error('[Quit] cleanupAutoUpdater:', e) }
+  try { stopBehaviorObserver() } catch (e) { console.error('[Quit] stopBehaviorObserver:', e) }
+  try { stopPatternRecognizer() } catch (e) { console.error('[Quit] stopPatternRecognizer:', e) }
+  try { destroyScheduler() } catch (e) { console.error('[Quit] destroyScheduler:', e) }
+  try { destroyCopilotBridge() } catch (e) { console.error('[Quit] destroyCopilotBridge:', e) }
+  try { destroyAccessibilityBridge() } catch (e) { console.error('[Quit] destroyAccessibilityBridge:', e) }
+  try { closeDatabase() } catch (e) { console.error('[Quit] closeDatabase:', e) }
+
+  removeLockFile()
+  console.log('[Quit] Cleanup done')
+})
+
+// 兜底：will-quit 后如果事件循环仍未退出，强制终止
+app.on('will-quit', () => {
+  removeLockFile()
+  setTimeout(() => {
+    console.warn('[Quit] 强制退出（超时 5s）')
+    process.exit(0)
+  }, 5000).unref()
 })
 
 // ==================== IPC Handlers ====================

@@ -9,6 +9,9 @@ import { authHeaders } from '@/lib/api-client'
 import { CLIENT_PORTAL_API as API } from './client-portal-constants'
 import { useClientSessionStore } from './client-session-store'
 import { useClientInputStore } from './client-input-store'
+
+const CP_TIMEOUT = 15_000
+const CP_UPLOAD_TIMEOUT = 30_000
 import type {
   ClientMsg,
   ChannelDigest,
@@ -90,7 +93,7 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
       const url = channelId
         ? `${API}/channels/${channelId}/search?q=${encodeURIComponent(query)}`
         : `${API}/search?q=${encodeURIComponent(query)}`
-      const res = await fetch(url, { headers: authHeaders() })
+      const res = await fetch(url, { headers: authHeaders(), signal: AbortSignal.timeout(CP_TIMEOUT) })
       if (res.ok) {
         const data = await res.json()
         set({ searchResults: data.results || [] })
@@ -108,7 +111,7 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
       const url = category
         ? `${API}/quick-replies?category=${encodeURIComponent(category)}`
         : `${API}/quick-replies`
-      const res = await fetch(url, { headers: authHeaders() })
+      const res = await fetch(url, { headers: authHeaders(), signal: AbortSignal.timeout(CP_TIMEOUT) })
       if (res.ok) {
         const data = await res.json()
         set({ quickReplies: data.items || [] })
@@ -124,6 +127,7 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
         method: 'POST',
         headers: authHeaders(),
         body: JSON.stringify({ title, content, category, shortcut }),
+        signal: AbortSignal.timeout(CP_TIMEOUT),
       })
       if (res.ok) {
         get().fetchQuickReplies()
@@ -140,6 +144,7 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
       const res = await fetch(`${API}/quick-replies/${replyId}`, {
         method: 'DELETE',
         headers: authHeaders(),
+        signal: AbortSignal.timeout(CP_TIMEOUT),
       })
       if (res.ok) {
         set({ quickReplies: get().quickReplies.filter(r => r.reply_id !== replyId) })
@@ -156,6 +161,7 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
       const res = await fetch(`${API}/quick-replies/${replyId}/use`, {
         method: 'POST',
         headers: authHeaders(),
+        signal: AbortSignal.timeout(CP_TIMEOUT),
       })
       if (res.ok) {
         const data = await res.json()
@@ -169,7 +175,7 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
 
   fetchChannelAnalytics: async (channelId, days = 30) => {
     try {
-      const res = await fetch(`${API}/analytics/channels/${channelId}?days=${days}`, { headers: authHeaders() })
+      const res = await fetch(`${API}/analytics/channels/${channelId}?days=${days}`, { headers: authHeaders(), signal: AbortSignal.timeout(CP_TIMEOUT) })
       if (res.ok) {
         set({ channelAnalytics: await res.json() })
       }
@@ -180,7 +186,7 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
 
   fetchGlobalDashboard: async (days = 30) => {
     try {
-      const res = await fetch(`${API}/analytics/dashboard?days=${days}`, { headers: authHeaders() })
+      const res = await fetch(`${API}/analytics/dashboard?days=${days}`, { headers: authHeaders(), signal: AbortSignal.timeout(CP_TIMEOUT) })
       if (res.ok) {
         set({ globalDashboard: await res.json() })
       }
@@ -195,6 +201,7 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
     try {
       const res = await fetch(`${API}/channels/${ch}/messages?limit=200`, {
         headers: authHeaders(),
+        signal: AbortSignal.timeout(CP_TIMEOUT),
       })
       if (res.ok) {
         const data = await res.json()
@@ -214,6 +221,7 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
         method: 'POST',
         headers: authHeaders(),
         body: JSON.stringify({ content, message_type: 'text', visible_to: visibleTo }),
+        signal: AbortSignal.timeout(CP_TIMEOUT),
       })
       await get().fetchMessages()
     } finally {
@@ -233,7 +241,7 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
       fd.append('sender_name', 'advisor')
       fd.append('visible_to', Array.isArray(visibleTo) ? visibleTo.join(',') : visibleTo)
       const { 'Content-Type': _, ...h } = authHeaders()
-      await fetch(`${API}/upload`, { method: 'POST', headers: h, body: fd })
+      await fetch(`${API}/upload`, { method: 'POST', headers: h, body: fd, signal: AbortSignal.timeout(CP_UPLOAD_TIMEOUT) })
       await get().fetchMessages()
     } finally {
       set({ loading: false })
@@ -247,6 +255,7 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
         method: 'POST',
         headers: authHeaders(),
         body: JSON.stringify({ digest_type: digestType, visible_to: visibleTo }),
+        signal: AbortSignal.timeout(CP_TIMEOUT),
       })
       if (res.ok) {
         const digest = await res.json()
@@ -266,7 +275,7 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
     const ch = channelId ?? activeChannelId()
     if (!ch) return
     try {
-      const res = await fetch(`${API}/channels/${ch}/digests`, { headers: authHeaders() })
+      const res = await fetch(`${API}/channels/${ch}/digests`, { headers: authHeaders(), signal: AbortSignal.timeout(CP_TIMEOUT) })
       if (res.ok) {
         const data = await res.json()
         set({ digests: data })
@@ -282,6 +291,7 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
         method: 'PUT',
         headers: authHeaders(),
         body: JSON.stringify({ status: 'published' }),
+        signal: AbortSignal.timeout(CP_TIMEOUT),
       })
       if (res.ok) {
         await get().fetchDigests()
@@ -305,6 +315,7 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
           question: question || '',
           context_messages: 15,
         }),
+        signal: AbortSignal.timeout(CP_TIMEOUT),
       })
       if (res.ok) {
         return await res.json() as AIDraft
@@ -328,6 +339,7 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
           edited_content: editedContent || '',
           visible_to: visibleTo,
         }),
+        signal: AbortSignal.timeout(CP_TIMEOUT),
       })
       if (res.ok) {
         await get().fetchMessages()
@@ -344,7 +356,7 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
     const ch = channelId ?? activeChannelId()
     if (!ch) return
     try {
-      const res = await fetch(`${API}/channels/${ch}/tasks`, { headers: authHeaders() })
+      const res = await fetch(`${API}/channels/${ch}/tasks`, { headers: authHeaders(), signal: AbortSignal.timeout(CP_TIMEOUT) })
       if (res.ok) set({ tasks: await res.json() })
     } catch {
       // Expected: 快捷回复列表可选；失败保持当前列表
@@ -357,6 +369,7 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
         method: 'POST',
         headers: authHeaders(),
         body: JSON.stringify({ title, ...opts }),
+        signal: AbortSignal.timeout(CP_TIMEOUT),
       })
       if (res.ok) {
         const task = await res.json() as ChannelTask
@@ -376,6 +389,7 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
         method: 'PUT',
         headers: authHeaders(),
         body: JSON.stringify(updates),
+        signal: AbortSignal.timeout(CP_TIMEOUT),
       })
       if (res.ok) {
         await get().fetchTasks()
@@ -394,6 +408,7 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
         method: 'POST',
         headers: authHeaders(),
         body: JSON.stringify({ digest_id: digestId }),
+        signal: AbortSignal.timeout(CP_TIMEOUT),
       })
       if (res.ok) {
         const data = await res.json()

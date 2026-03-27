@@ -157,7 +157,7 @@ export function SchedulerResultView({ result, actionType }: { result: SchedulerJ
         <span>{icon}</span>
         <span>{typeLabel}已创建</span>
         <span className={`text-[10px] px-1.5 py-0.5 rounded ${statusColor} bg-white/60 dark:bg-black/20`}>
-          {result.status ?? 'active'}
+          {({ active: '运行中', failed: '失败', paused: '已暂停', completed: '已完成' } as Record<string, string>)[result.status ?? 'active'] || result.status || '运行中'}
         </span>
       </div>
 
@@ -169,7 +169,7 @@ export function SchedulerResultView({ result, actionType }: { result: SchedulerJ
         {result.cronExpr && (
           <div className="flex items-center gap-1.5">
             <span className="text-gray-400">🕐</span>
-            <span>Cron: <code className="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-xs">{result.cronExpr}</code></span>
+            <span>定时表达式：<code className="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-xs">{result.cronExpr}</code></span>
           </div>
         )}
         {result.watchPath && (

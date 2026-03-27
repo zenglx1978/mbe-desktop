@@ -51,6 +51,8 @@ import { DashboardWorkflowInstances } from './DashboardWorkflowInstances'
 import { DashboardExtendedSections } from './DashboardExtendedSections'
 import { DashboardTimeline } from './DashboardTimeline'
 import { DashboardCatalogFooter } from './DashboardCatalogFooter'
+import BrandReportsPanel from './BrandReportsPanel'
+import { DashboardBrandCharts } from './BrandCharts'
 
 interface Props {
   solution: SolutionConfig
@@ -240,9 +242,10 @@ export default function DashboardPanel({ solution }: Props) {
             <p className="text-xs text-muted-foreground/60 italic">
               Richer &amp; Lazier — AI 专家替你干活，按效果付费
             </p>
+            {/* P2-9: WebSocket graceful fallback — 断线时静默降级到轮询，不显示错误 */}
             <span
-              className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${wsConnected ? 'bg-green-400' : 'bg-zinc-400'}`}
-              title={wsConnected ? '实时连接' : '轮询模式'}
+              className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${wsConnected ? 'bg-green-400' : 'bg-zinc-400 animate-pulse'}`}
+              title={wsConnected ? '实时连接' : '自动刷新模式（每 5 秒）'}
             />
           </div>
         </div>
@@ -261,6 +264,12 @@ export default function DashboardPanel({ solution }: Props) {
         {dashboard && hasAnyWorkflow && (
           <>
             <DashboardStatCards dashboard={dashboard} roi={roi} billing={billing} slaDash={slaDash} />
+            {solution.id === 'ecommerce-brand-service' && (
+              <>
+                <DashboardBrandCharts brandId={null} />
+                <BrandReportsPanel color={solution.color} />
+              </>
+            )}
             <DashboardCharts
               agentName={agentName}
               mktQuery={mktQuery}

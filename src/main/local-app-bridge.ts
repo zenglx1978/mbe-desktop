@@ -69,8 +69,18 @@ const SECURITY_DESCRIPTIONS: Record<SecurityLevel, string> = {
 const ALLOWED_COMMANDS: Set<string> = new Set([
   // Python 计算脚本
   'python', 'python3', 'py',
-  // 系统工具（where/which 仅用于应用检测，cmd/open 已移除：可执行任意命令）
+  // 系统工具（where/which 仅用于应用检测）
   'where', 'which',
+  // 包管理器 — ERP 自动安装（L2/L3 安全级别，需用户确认）
+  'winget', 'choco',
+  // 安装器 — 静默安装已下载的安装包（L3 安全级别）
+  'msiexec',
+  // 文件下载 — 下载 ERP 安装包（L2 安全级别）
+  'curl', 'certutil',
+  // 进程管理 — 检测/启动/停止 ERP 进程
+  'tasklist', 'taskkill', 'sc',
+  // 注册表查询 — 检测已安装软件（只读）
+  'reg',
   // Office / 文档
   'libreoffice', 'soffice',
   'libreoffice-cli', 'gimp-cli', 'blender-cli', 'inkscape-cli', 'mbe-calc',
@@ -351,6 +361,10 @@ async function detectInstalledApps(): Promise<DetectedApp[]> {
     // 电商平台客服工具（只读区）
     { name: 'QianNiu', winCmd: 'where AliWorkbench', macCmd: 'mdfind -name "千牛工作台.app"' },
     { name: 'AliWangWang', winCmd: 'where AliIM', macCmd: 'mdfind -name "阿里旺旺.app"' },
+    // 电商 ERP（安全区，AI 可读写 Web 版）
+    { name: 'JuShuiTan', winCmd: 'reg query "HKLM\\SOFTWARE\\JuShuiTan" /ve 2>nul || where jushuitan', macCmd: 'mdfind -name "聚水潭.app"' },
+    { name: 'WangDianTong', winCmd: 'reg query "HKLM\\SOFTWARE\\WangDianTong" /ve 2>nul || where wangdiantong', macCmd: 'mdfind -name "旺店通.app"' },
+    { name: 'GuanYiYun', winCmd: 'reg query "HKLM\\SOFTWARE\\GuanYiCloud" /ve 2>nul || where guanyiyun', macCmd: 'mdfind -name "管易云.app"' },
     // 投资终端
     { name: 'EastMoney', winCmd: 'where EmStock', macCmd: 'mdfind -name "东方财富.app"' },
     { name: 'THS_iFinD', winCmd: 'where hexin', macCmd: 'mdfind -name "同花顺.app"' },

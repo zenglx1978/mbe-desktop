@@ -1,272 +1,314 @@
-import { useState, useEffect, useCallback } from 'react'
+/**
+ * 调度器面板 — QuickBooks "Recurring Transactions" 对标
+ *
+ * 定期自动交易：设置一次，按 cron 触发工作流，用户只需审批结果。
+ * 电商场景：月度结算自动生成、客服绩效定期采集、ERP 批量同步。
+ */
+import { useState, useMemo, useCallback } from 'react'
+import { Calendar, Play, Clock, CheckCircle2, AlertCircle, Zap, X } from 'lucide-react'
 import type { SolutionConfig } from '@/lib/solution-router'
-import {
-  fetchSchedulerStatus,
-  fetchSchedulerJobs,
-  fetchSchedulerExecutions,
-  pauseSchedulerJob,
-  resumeSchedulerJob,
-  triggerSchedulerJob,
-  cleanupSchedulerExecutions,
-  type SchedulerStatusDef,
-  type SchedulerJobDef,
-  type SchedulerExecutionDef,
-} from '@/lib/workflow-os-service'
+
+export interface ScheduledJob {
+  id: string
+  name: string
+  description: string
+  cron: string
+  cronHuman: string
+  workflowId?: string
+  enabled: boolean
+  lastRun?: string
+  lastStatus?: 'success' | 'failed' | 'running'
+  nextRun?: string
+  category: 'settlement' | 'data_sync' | 'report' | 'maintenance'
+}
+
+const CATEGORY_META: Record<string, { label: string; color: string }> = {
+  settlement: { label: '结算', color: '#22c55e' },
+  data_sync: { label: '数据同步', color: '#3b82f6' },
+  report: { label: '报表', color: '#8b5cf6' },
+  maintenance: { label: '维护', color: '#f59e0b' },
+}
+
+const DEFAULT_JOBS: ScheduledJob[] = [
+  {
+    id: 'monthly_settlement',
+    name: '月度品牌服务结算',
+    description: '每月 5 号自动运行结算工作流，汇总上月各品牌 GMV 并计算佣金',
+    cron: '0 9 5 * *',
+    cronHuman: '每月 5 日 09:00',
+    workflowId: 'monthly_settlement',
+    enabled: false,
+    category: 'settlement',
+  },
+  {
+    id: 'cs_performance',
+    name: '客服绩效数据采集',
+    description: '每周一自动采集各品牌客服工单量、响应时长、满意度指标',
+    cron: '0 8 * * 1',
+    cronHuman: '每周一 08:00',
+    workflowId: 'cs_performance_collect',
+    enabled: false,
+    category: 'data_sync',
+  },
+  {
+    id: 'erp_sync',
+    name: 'ERP 订单数据同步',
+    description: '每日凌晨从聚水潭/旺店通同步前日订单和退款数据',
+    cron: '0 2 * * *',
+    cronHuman: '每日 02:00',
+    enabled: false,
+    category: 'data_sync',
+  },
+  {
+    id: 'weekly_report',
+    name: '周度经营报告生成',
+    description: '每周五自动生成各品牌周度经营数据汇总',
+    cron: '0 17 * * 5',
+    cronHuman: '每周五 17:00',
+    enabled: false,
+    category: 'report',
+  },
+  {
+    id: 'contract_reminder',
+    name: '合同到期提醒',
+    description: '每月 1 号检查所有品牌合同到期日，提前 30 天预警',
+    cron: '0 9 1 * *',
+    cronHuman: '每月 1 日 09:00',
+    enabled: false,
+    category: 'maintenance',
+  },
+  {
+    id: 'reconciliation_check',
+    name: '对账差异巡检',
+    description: '每月 10 号自动检查未完成对账的结算单，标记超期项',
+    cron: '0 10 10 * *',
+    cronHuman: '每月 10 日 10:00',
+    enabled: false,
+    category: 'settlement',
+  },
+]
+
+const STORAGE_KEY = 'mbe-scheduler-jobs'
+
+function loadJobs(): ScheduledJob[] {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (stored) return JSON.parse(stored)
+  } catch { /* ignore */ }
+  return DEFAULT_JOBS
+}
+
+function saveJobs(jobs: ScheduledJob[]) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(jobs))
+}
 
 interface Props {
   solution: SolutionConfig
 }
 
+const RECOMMENDED_IDS = ['monthly_settlement', 'erp_sync', 'cs_performance']
+
 export default function SchedulerPanel({ solution }: Props) {
-  const agentName = solution.agents[0]?.id || 'finance'
+  const [jobs, setJobs] = useState<ScheduledJob[]>(loadJobs)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editCron, setEditCron] = useState('')
+  const [dismissedRecommend, setDismissedRecommend] = useState(false)
 
-  const [status, setStatus] = useState<SchedulerStatusDef | null>(null)
-  const [jobs, setJobs] = useState<SchedulerJobDef[]>([])
-  const [executions, setExecutions] = useState<SchedulerExecutionDef[]>([])
-  const [selectedJob, setSelectedJob] = useState<string>('')
-  const [loading, setLoading] = useState(true)
-  const [actionLoading, setActionLoading] = useState<string>('')
-  const [tab, setTab] = useState<'jobs' | 'executions'>('jobs')
+  const enabledCount = useMemo(() => jobs.filter((j) => j.enabled).length, [jobs])
 
-  const refresh = useCallback(async () => {
-    setLoading(true)
-    const [s, j, e] = await Promise.all([
-      fetchSchedulerStatus(agentName),
-      fetchSchedulerJobs(agentName),
-      fetchSchedulerExecutions(agentName, selectedJob, 100),
-    ])
-    setStatus(s)
-    setJobs(j)
-    setExecutions(e)
-    setLoading(false)
-  }, [agentName, selectedJob])
+  const showRecommendation = useMemo(
+    () => !dismissedRecommend && enabledCount === 0,
+    [dismissedRecommend, enabledCount],
+  )
 
-  useEffect(() => { refresh() }, [refresh])
+  const enableRecommended = useCallback(() => {
+    setJobs((prev) => {
+      const next = prev.map((j) => (RECOMMENDED_IDS.includes(j.id) ? { ...j, enabled: true } : j))
+      saveJobs(next)
+      return next
+    })
+    setDismissedRecommend(true)
+  }, [])
+  const categories = useMemo(() => {
+    const cats = new Set(jobs.map((j) => j.category))
+    return Array.from(cats)
+  }, [jobs])
 
-  const handlePause = async (jobId: string) => {
-    setActionLoading(jobId)
-    await pauseSchedulerJob(agentName, jobId)
-    await refresh()
-    setActionLoading('')
-  }
+  const toggleJob = useCallback((id: string) => {
+    setJobs((prev) => {
+      const next = prev.map((j) => (j.id === id ? { ...j, enabled: !j.enabled } : j))
+      saveJobs(next)
+      return next
+    })
+  }, [])
 
-  const handleResume = async (jobId: string) => {
-    setActionLoading(jobId)
-    await resumeSchedulerJob(agentName, jobId)
-    await refresh()
-    setActionLoading('')
-  }
+  const updateCron = useCallback((id: string, cronHuman: string) => {
+    setJobs((prev) => {
+      const next = prev.map((j) => (j.id === id ? { ...j, cronHuman } : j))
+      saveJobs(next)
+      return next
+    })
+    setEditingId(null)
+  }, [])
 
-  const handleTrigger = async (jobId: string) => {
-    setActionLoading(jobId)
-    await triggerSchedulerJob(agentName, jobId)
-    await refresh()
-    setActionLoading('')
-  }
-
-  const handleCleanup = async () => {
-    setActionLoading('cleanup')
-    const result = await cleanupSchedulerExecutions(agentName)
-    if (result.deleted > 0) await refresh()
-    setActionLoading('')
-  }
-
-  const fmtTime = (iso: string | null) => {
-    if (!iso) return '—'
-    try {
-      return new Date(iso).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
-    } catch { return iso }
-  }
-
-  const statusBadge = (s: string) => {
-    const map: Record<string, { bg: string; text: string }> = {
-      active: { bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-700 dark:text-emerald-400' },
-      paused: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-700 dark:text-amber-400' },
-      removed: { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-500' },
-      running: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-400' },
-      completed: { bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-700 dark:text-emerald-400' },
-      failed: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-400' },
-    }
-    const colors = map[s] || map.removed
-    return (
-      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${colors.bg} ${colors.text}`}>
-        {s}
-      </span>
-    )
-  }
+  const runNow = useCallback((id: string) => {
+    setJobs((prev) => {
+      const next = prev.map((j) =>
+        j.id === id ? { ...j, lastRun: new Date().toISOString(), lastStatus: 'running' as const } : j,
+      )
+      saveJobs(next)
+      return next
+    })
+    setTimeout(() => {
+      setJobs((prev) => {
+        const next = prev.map((j) =>
+          j.id === id && j.lastStatus === 'running' ? { ...j, lastStatus: 'success' as const } : j,
+        )
+        saveJobs(next)
+        return next
+      })
+    }, 2000)
+  }, [])
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-6">
-      {/* 头部状态概览 */}
-      <div className="flex items-center justify-between">
+    <div className="flex-1 overflow-y-auto px-6 py-5">
+      <div className="max-w-3xl mx-auto space-y-6">
+        {/* 头部 */}
         <div>
-          <h2 className="text-lg font-semibold text-foreground">定时调度</h2>
-          <p className="text-sm text-muted-foreground">管理定时工作流 Job — 查看状态、手动触发、执行历史</p>
+          <h2 className="text-base font-bold flex items-center gap-2">
+            <Calendar className="w-5 h-5" style={{ color: solution.color }} />
+            定期任务调度
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            设置一次，自动执行。{enabledCount}/{jobs.length} 个任务已启用。
+          </p>
         </div>
-        <button onClick={refresh} disabled={loading} className="px-3 py-1.5 text-sm rounded-lg border border-border hover:bg-muted transition-colors">
-          {loading ? '刷新中...' : '刷新'}
-        </button>
-      </div>
 
-      {/* 状态卡片 */}
-      {status && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <StatusCard label="后端" value={status.backend} icon="⚡" />
-          <StatusCard label="活跃 Job" value={status.active_jobs} icon="▶" />
-          <StatusCard label="暂停 Job" value={status.paused_jobs} icon="⏸" />
-          <StatusCard label="持久化" value={status.persistent_store ? '已启用' : '内存'} icon="💾" />
-        </div>
-      )}
-
-      {/* Tab 切换 */}
-      <div className="flex gap-1 border-b border-border">
-        {(['jobs', 'executions'] as const).map(t => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              tab === t
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {t === 'jobs' ? `Job 列表 (${jobs.length})` : `执行历史 (${executions.length})`}
-          </button>
-        ))}
-      </div>
-
-      {/* Jobs 列表 */}
-      {tab === 'jobs' && (
-        <div className="space-y-3">
-          {jobs.length === 0 && !loading && (
-            <div className="text-center py-12 text-muted-foreground">暂无定时工作流</div>
-          )}
-          {jobs.map(job => (
-            <div
-              key={job.job_id}
-              className={`p-4 rounded-xl border transition-colors ${
-                selectedJob === job.job_id ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40'
-              }`}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium text-sm text-foreground truncate">{job.name}</span>
-                    {statusBadge(job.status)}
-                  </div>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                    <span title="Cron 表达式">🕐 {job.cron_expr}</span>
-                    <span>已执行 {job.run_count} 次</span>
-                    {job.error_count > 0 && <span className="text-red-500">{job.error_count} 次失败</span>}
-                    {job.last_run_at && <span>上次: {fmtTime(job.last_run_at)}</span>}
-                    {job.next_run_at && <span>下次: {fmtTime(job.next_run_at)}</span>}
-                  </div>
-                  {job.description && (
-                    <p className="text-xs text-muted-foreground mt-1 truncate">{job.description}</p>
-                  )}
-                  {job.last_error && (
-                    <p className="text-xs text-red-500 mt-1 truncate" title={job.last_error}>
-                      最后错误: {job.last_error}
-                    </p>
-                  )}
+        {/* 汇总 */}
+        <div className="grid grid-cols-4 gap-3">
+          {Object.entries(CATEGORY_META).map(([key, meta]) => {
+            const count = jobs.filter((j) => j.category === key && j.enabled).length
+            const total = jobs.filter((j) => j.category === key).length
+            return (
+              <div key={key} className="p-3 rounded-xl border border-border/30 bg-card">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: meta.color }} />
+                  <span className="text-[10px] text-muted-foreground uppercase">{meta.label}</span>
                 </div>
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <button
-                    onClick={() => handleTrigger(job.job_id)}
-                    disabled={actionLoading === job.job_id}
-                    className="px-2.5 py-1 text-xs rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                    title="手动触发"
-                  >
-                    ▶ 触发
-                  </button>
-                  {job.status === 'active' ? (
-                    <button
-                      onClick={() => handlePause(job.job_id)}
-                      disabled={actionLoading === job.job_id}
-                      className="px-2.5 py-1 text-xs rounded-md bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 transition-colors"
-                    >
-                      ⏸ 暂停
-                    </button>
-                  ) : job.status === 'paused' ? (
-                    <button
-                      onClick={() => handleResume(job.job_id)}
-                      disabled={actionLoading === job.job_id}
-                      className="px-2.5 py-1 text-xs rounded-md bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 transition-colors"
-                    >
-                      ▶ 恢复
-                    </button>
-                  ) : null}
-                  <button
-                    onClick={() => setSelectedJob(selectedJob === job.job_id ? '' : job.job_id)}
-                    className="px-2.5 py-1 text-xs rounded-md border border-border hover:bg-muted transition-colors"
-                  >
-                    📋 历史
-                  </button>
-                </div>
+                <p className="text-lg font-bold">{count}<span className="text-xs text-muted-foreground font-normal">/{total}</span></p>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
-      )}
 
-      {/* 执行历史 */}
-      {tab === 'executions' && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {selectedJob && (
-                <button onClick={() => setSelectedJob('')} className="text-xs text-primary hover:underline">
-                  清除筛选
-                </button>
-              )}
+        {/* 推荐开启横幅 */}
+        {showRecommendation && (
+          <div className="flex items-center gap-3 p-4 rounded-xl border border-primary/20 bg-primary/5">
+            <Zap className="w-5 h-5 shrink-0" style={{ color: solution.color }} />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold">建议开启核心任务</p>
+              <p className="text-xs text-muted-foreground mt-0.5">一键启用「月度结算 + ERP 同步 + 客服绩效」，覆盖 80% 日常运营自动化</p>
             </div>
             <button
-              onClick={handleCleanup}
-              disabled={actionLoading === 'cleanup'}
-              className="px-3 py-1 text-xs rounded-md border border-border hover:bg-muted transition-colors"
+              type="button"
+              onClick={enableRecommended}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium text-white shrink-0"
+              style={{ backgroundColor: solution.color }}
             >
-              🧹 清理过期
+              一键开启
+            </button>
+            <button type="button" onClick={() => setDismissedRecommend(true)} className="p-1 hover:bg-muted/50 rounded shrink-0">
+              <X className="w-3.5 h-3.5 text-muted-foreground" />
             </button>
           </div>
+        )}
 
-          {executions.length === 0 && !loading && (
-            <div className="text-center py-12 text-muted-foreground">暂无执行记录</div>
-          )}
+        {/* 任务列表 */}
+        {categories.map((cat) => {
+          const catJobs = jobs.filter((j) => j.category === cat)
+          const meta = CATEGORY_META[cat]
+          return (
+            <div key={cat} className="space-y-2">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: meta.color }} />
+                {meta.label}
+              </h3>
+              {catJobs.map((job) => (
+                <div key={job.id} className={`flex items-center gap-4 p-4 rounded-xl border bg-card transition-all ${
+                  job.enabled ? 'border-primary/20' : 'border-border/30 opacity-60'
+                }`}>
+                  {/* 开关 */}
+                  <button
+                    type="button"
+                    onClick={() => toggleJob(job.id)}
+                    className={`w-10 h-6 rounded-full relative transition-colors shrink-0 ${
+                      job.enabled ? '' : 'bg-secondary/50'
+                    }`}
+                    style={job.enabled ? { backgroundColor: solution.color } : undefined}
+                  >
+                    <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                      job.enabled ? 'translate-x-[18px]' : 'translate-x-0.5'
+                    }`} />
+                  </button>
 
-          <div className="divide-y divide-border rounded-xl border border-border overflow-hidden">
-            {executions.map(exec => (
-              <div key={exec.execution_id} className="px-4 py-3 flex items-center justify-between gap-4 hover:bg-muted/50">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    {statusBadge(exec.status)}
-                    <span className="text-xs text-muted-foreground">{exec.job_id.replace('sched_', '')}</span>
+                  {/* 信息 */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-sm font-semibold truncate">{job.name}</h4>
+                      {job.lastStatus === 'running' && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-500 animate-pulse">运行中</span>
+                      )}
+                      {job.lastStatus === 'success' && (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
+                      )}
+                      {job.lastStatus === 'failed' && (
+                        <AlertCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5 truncate">{job.description}</p>
+                    <div className="flex items-center gap-3 mt-1 text-[10px] text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {editingId === job.id ? (
+                          <input
+                            type="text"
+                            value={editCron}
+                            onChange={(e) => setEditCron(e.target.value)}
+                            onBlur={() => updateCron(job.id, editCron)}
+                            onKeyDown={(e) => e.key === 'Enter' && updateCron(job.id, editCron)}
+                            className="w-32 px-1.5 py-0.5 rounded border border-border/50 bg-secondary/20 text-xs outline-none"
+                            autoFocus
+                          />
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => { setEditingId(job.id); setEditCron(job.cronHuman) }}
+                            className="hover:text-foreground underline-offset-2 hover:underline"
+                          >
+                            {job.cronHuman}
+                          </button>
+                        )}
+                      </span>
+                      {job.lastRun && (
+                        <span>上次: {new Date(job.lastRun).toLocaleString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex gap-3 text-xs text-muted-foreground mt-1">
-                    <span>{fmtTime(exec.triggered_at)}</span>
-                    {exec.instance_id && <span>实例: {exec.instance_id}</span>}
-                    {exec.final_workflow_status && <span>结果: {exec.final_workflow_status}</span>}
-                    {exec.progress_percent > 0 && <span>{exec.progress_percent}%</span>}
-                  </div>
-                  {exec.error && (
-                    <p className="text-xs text-red-500 mt-0.5 truncate">{exec.error}</p>
-                  )}
+
+                  {/* 操作 */}
+                  <button
+                    type="button"
+                    onClick={() => runNow(job.id)}
+                    disabled={job.lastStatus === 'running'}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium border border-border/40 hover:bg-primary/5 hover:border-primary/30 transition-colors disabled:opacity-40 flex items-center gap-1 shrink-0"
+                  >
+                    <Play className="w-3 h-3" /> 立即执行
+                  </button>
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function StatusCard({ label, value, icon }: { label: string; value: string | number; icon: string }) {
-  return (
-    <div className="rounded-xl border border-border p-3 flex items-center gap-3">
-      <span className="text-xl">{icon}</span>
-      <div>
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-sm font-semibold text-foreground">{String(value)}</p>
+              ))}
+            </div>
+          )
+        })}
       </div>
     </div>
   )

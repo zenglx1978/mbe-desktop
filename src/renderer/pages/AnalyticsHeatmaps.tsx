@@ -224,7 +224,7 @@ export default function AnalyticsHeatmaps() {
                 <Layers className="w-4 h-4 text-cyan-500" />
                 <h2 className="text-sm font-semibold">AI 价值链六层瓶颈评分</h2>
                 <span className="ml-auto text-xs text-amber-500 font-medium">
-                  当前瓶颈: {bottleneck.current_bottleneck}
+                  当前瓶颈：{bottleneck.layers.find(l => l.name === bottleneck.current_bottleneck)?.name_cn || bottleneck.current_bottleneck}
                 </span>
               </div>
               <ResponsiveContainer width="100%" height={200}>

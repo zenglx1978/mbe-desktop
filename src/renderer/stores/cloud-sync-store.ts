@@ -10,7 +10,7 @@
  */
 
 import { create } from 'zustand'
-import { API_BASE, isElectron } from '@/lib/api-client'
+import { API_BASE, isElectron, authHeaders } from '@/lib/api-client'
 
 interface ExpertRanking {
   score: number
@@ -70,7 +70,7 @@ export const useCloudSyncStore = create<CloudSyncState>((set, get) => ({
     try {
       const resp = await fetch(
         `${API_BASE}/api/v1/config-snapshot/${solutionId}/version`,
-        { signal: AbortSignal.timeout(5000) },
+        { headers: authHeaders(), signal: AbortSignal.timeout(5000) },
       )
       if (!resp.ok) return 0
       const data = await resp.json()
@@ -89,7 +89,7 @@ export const useCloudSyncStore = create<CloudSyncState>((set, get) => ({
 
       const resp = await fetch(
         `${API_BASE}/api/v1/config-snapshot/${solutionId}?since_version=${localVersion}`,
-        { signal: AbortSignal.timeout(15000) },
+        { headers: authHeaders(), signal: AbortSignal.timeout(15000) },
       )
 
       if (!resp.ok) {

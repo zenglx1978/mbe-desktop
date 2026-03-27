@@ -1,3 +1,4 @@
-/** 客户门户 API 基址（与 client-portal 后端一致） */
-export const CLIENT_PORTAL_BASE = import.meta.env.DEV ? '' : 'https://mbe.hi-maker.com'
-export const CLIENT_PORTAL_API = `${CLIENT_PORTAL_BASE}/api/v1/client-portal`
+/** 客户门户 API 基址（复用统一 API_BASE，避免逻辑重复） */
+import { API_BASE } from '@/lib/api-client'
+
+export const CLIENT_PORTAL_API = `${API_BASE}/api/v1/client-portal`
