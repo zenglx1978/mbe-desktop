@@ -18,7 +18,6 @@ export default function ChatPanel() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const sendAbortRef = useRef<AbortController | null>(null)
-  const pendingConsumed = useRef(false)
 
   useEffect(() => () => {
     sendAbortRef.current?.abort()
@@ -56,19 +55,20 @@ export default function ChatPanel() {
   // 从快捷操作跳转过来时自动发送 pendingPrompt
   const pendingPrompt = useToolStore((s) => s.pendingPrompt)
   useEffect(() => {
-    if (!solution || !pendingPrompt || pendingConsumed.current) return
+    if (!solution || !pendingPrompt) return
     const prompt = useToolStore.getState().consumePendingPrompt()
     if (!prompt) return
-    pendingConsumed.current = true
     const ac = new AbortController()
     sendAbortRef.current?.abort()
     sendAbortRef.current = ac
     if (solutionId) trackTabSwitch(solutionId, 'chat_send')
-    sendMessage(prompt, solution, undefined, { signal: ac.signal }).finally(() => {
-      pendingConsumed.current = false
-      textareaRef.current?.focus()
-    })
-  }, [pendingPrompt]) // eslint-disable-line react-hooks/exhaustive-deps
+    sendMessage(prompt, solution, undefined, { signal: ac.signal })
+      .catch(() => {
+        const chatStore = useChatStore.getState()
+        chatStore.setLoading(false)
+      })
+      .finally(() => textareaRef.current?.focus())
+  }, [pendingPrompt, solution]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!solution) return null
 
