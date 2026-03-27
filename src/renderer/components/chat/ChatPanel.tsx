@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useAppStore } from '@/stores/app-store'
 import { useChatStore } from '@/stores/chat-store'
+import { useToolStore } from '@/stores/tool-store'
 import { useAdaptiveUIStore } from '@/stores/adaptive-ui-store'
 import { sendMessage } from '@/lib/chat-service'
 import { ChatMessageList } from './ChatMessageList'
@@ -17,6 +18,7 @@ export default function ChatPanel() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const sendAbortRef = useRef<AbortController | null>(null)
+  const pendingConsumed = useRef(false)
 
   useEffect(() => () => {
     sendAbortRef.current?.abort()
@@ -50,6 +52,23 @@ export default function ChatPanel() {
       setInput(cmd.label + ' ')
     }
   }, [])
+
+  // 从快捷操作跳转过来时自动发送 pendingPrompt
+  const pendingPrompt = useToolStore((s) => s.pendingPrompt)
+  useEffect(() => {
+    if (!solution || !pendingPrompt || pendingConsumed.current) return
+    const prompt = useToolStore.getState().consumePendingPrompt()
+    if (!prompt) return
+    pendingConsumed.current = true
+    const ac = new AbortController()
+    sendAbortRef.current?.abort()
+    sendAbortRef.current = ac
+    if (solutionId) trackTabSwitch(solutionId, 'chat_send')
+    sendMessage(prompt, solution, undefined, { signal: ac.signal }).finally(() => {
+      pendingConsumed.current = false
+      textareaRef.current?.focus()
+    })
+  }, [pendingPrompt]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!solution) return null
 

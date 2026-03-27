@@ -110,15 +110,26 @@ function apiUrl(agentName: string, path: string): string {
   return `${BASE_URL}/api/${agentName}/workflow-os${path}`
 }
 
+let _wfUnavailable = false
+let _wfFailCount = 0
+const WF_FAIL_THRESHOLD = 3
+
 /**
- * Web 模式下 WorkflowOS API 不可用 — 直接返回 503 假响应，
- * 避免浏览器控制台出现大量 404 网络错误。
- * Electron 模式下正常发请求，自动注入认证头。
+ * WorkflowOS API 请求封装。
+ * - Web 模式：直接返回 503（WorkflowOS 仅 Electron 可用）
+ * - Electron 模式：正常发请求，连续失败超阈值后熔断，不再发请求
  */
 function wfFetch(input: string, init?: RequestInit): Promise<Response> {
-  if (!isElectron()) return Promise.resolve(new Response(null, { status: 503 }))
+  if (!isElectron() || _wfUnavailable) return Promise.resolve(new Response(null, { status: 503 }))
   const headers = authHeaders(init?.headers as Record<string, string> | undefined)
-  return fetch(input, { ...init, headers })
+  return fetch(input, { ...init, headers }).then(res => {
+    if (res.ok) _wfFailCount = 0
+    else {
+      _wfFailCount++
+      if (_wfFailCount >= WF_FAIL_THRESHOLD) _wfUnavailable = true
+    }
+    return res
+  })
 }
 
 export async function fetchDashboard(

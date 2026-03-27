@@ -46,14 +46,16 @@ export const useApprovalStore = create<ApprovalState>((set, get) => ({
         return
       }
 
+      let allFailed = true
       const results = await Promise.all(
         solution.agents.map(async (agent) => {
           try {
             const resp = await authFetch(
               `${agent.baseUrl}/governance/approvals/pending?limit=50`,
-              { signal: AbortSignal.timeout(8000) },
+              { signal: AbortSignal.timeout(5000) },
             )
             if (!resp.ok) return []
+            allFailed = false
             const data = await resp.json()
             return (data.items || []).map((item: any) => ({
               ...item,
@@ -64,6 +66,8 @@ export const useApprovalStore = create<ApprovalState>((set, get) => ({
           }
         })
       )
+
+      if (allFailed) _backendUnavailable = true
 
       const allItems = results.flat().sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -105,13 +109,17 @@ export const useApprovalStore = create<ApprovalState>((set, get) => ({
 
 let _ws: WebSocket | null = null
 let _pollTimer: ReturnType<typeof setInterval> | null = null
+let _backendUnavailable = false
 
 /**
- * 启动审批轮询（WS 优先，降级 HTTP），返回清理函数
+ * 启动审批轮询（WS 优先，降级 HTTP），返回清理函数。
+ * 首次 refresh 失败后标记后端不可用，停止一切重试。
  */
 export function startApprovalPolling(): () => void {
-  useApprovalStore.getState().refresh()
-  connectApprovalWs()
+  _backendUnavailable = false
+  useApprovalStore.getState().refresh().then(() => {
+    if (!_backendUnavailable) connectApprovalWs()
+  })
   return stopApprovalPolling
 }
 
@@ -124,16 +132,12 @@ export function stopApprovalPolling() {
 }
 
 export function connectApprovalWs() {
-  if (_ws) return
+  if (_ws || _backendUnavailable) return
 
   const solution = useAppStore.getState().currentSolution?.()
-  if (!solution || !solution.agents[0]) {
-    startPolling()
-    return
-  }
+  if (!solution || !solution.agents[0]) return
 
   try {
-    // 治理审批 WS 走 WS_BASE，不走 agent.wsUrl（后者含 /ws/{id}/chat 路径）
     _ws = new WebSocket(`${WS_BASE}/ws/governance/approvals`)
 
     _ws.onopen = () => {
@@ -153,19 +157,19 @@ export function connectApprovalWs() {
     _ws.onclose = () => {
       useApprovalStore.setState({ wsConnected: false })
       _ws = null
-      startPolling()
     }
 
     _ws.onerror = () => {
+      _backendUnavailable = true
       _ws?.close()
     }
   } catch {
-    startPolling()
+    _backendUnavailable = true
   }
 }
 
 function startPolling() {
-  if (_pollTimer) return
+  if (_pollTimer || _backendUnavailable) return
   _pollTimer = setInterval(() => {
     useApprovalStore.getState().refresh()
   }, 30000)

@@ -53,7 +53,7 @@ function getUpcomingDeadlines(): TaxDeadline[] {
 }
 
 export default function TodayPanel({ solution }: Props) {
-  const { setActiveTab } = useToolStore()
+  const { setActiveTab, navigateToChat } = useToolStore()
   const [deadlines] = useState<TaxDeadline[]>(getUpcomingDeadlines)
 
   const goToTab = useCallback((tab: WorkbenchTab) => {
@@ -182,7 +182,7 @@ export default function TodayPanel({ solution }: Props) {
               icon={<FileText className="w-5 h-5" />}
               title="审查合同"
               desc="上传合同，AI 逐条审查风险"
-              onClick={() => goToTab('chat')}
+              onClick={() => navigateToChat('帮我审查合同，标注风险条款并给出修改建议')}
               color="text-violet-500"
             />
             <QuickAction

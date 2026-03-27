@@ -304,7 +304,7 @@ const COMPLIANCE_CHECKLIST = [
 ]
 
 export default function TaskContextPanel({ solution, taskId }: Props) {
-  const { setActiveTab } = useToolStore()
+  const { setActiveTab, navigateToChat } = useToolStore()
   const ctx = TASK_CONTEXTS[taskId]
   const [expandedWorkflow, setExpandedWorkflow] = useState<string | null>(null)
 
@@ -344,9 +344,7 @@ export default function TaskContextPanel({ solution, taskId }: Props) {
                 key={i}
                 icon={qa.icon}
                 label={qa.label}
-                onClick={() => {
-                  setActiveTab('chat')
-                }}
+                onClick={() => navigateToChat(qa.prompt)}
               />
             ))}
           </div>
@@ -412,7 +410,7 @@ export default function TaskContextPanel({ solution, taskId }: Props) {
               {CONTRACT_TEMPLATES.map((tpl) => (
                 <button
                   key={tpl.id}
-                  onClick={() => setActiveTab('chat')}
+                  onClick={() => navigateToChat(`帮我起草一份${tpl.name}（${tpl.desc}）`)}
                   className="text-left p-3 rounded-lg border border-border/50 bg-card hover:border-primary/30 hover:shadow-sm transition-all group"
                 >
                   <div className="text-lg mb-1">{tpl.icon}</div>
@@ -540,7 +538,7 @@ export default function TaskContextPanel({ solution, taskId }: Props) {
               {relatedScenarios.map((sc) => (
                 <button
                   key={sc.id}
-                  onClick={() => setActiveTab('chat')}
+                  onClick={() => navigateToChat(sc.prompt)}
                   className="w-full flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-card hover:border-primary/30 transition-colors text-left"
                 >
                   <span className="text-lg">{sc.icon}</span>
