@@ -17,10 +17,17 @@ const MemoizedBubble = memo(ChatMessageBubble)
 
 const VIRTUAL_THRESHOLD = 40
 
+/** 判断容器是否滚动到接近底部（60px 容差） */
+function isNearBottom(el: HTMLElement | null, threshold = 60): boolean {
+  if (!el) return true
+  return el.scrollHeight - el.scrollTop - el.clientHeight < threshold
+}
+
 function VirtualizedMessages({ messages }: { messages: ChatMessage[] }) {
   const parentRef = useRef<HTMLDivElement>(null)
   const prevCountRef = useRef(messages.length)
   const isStreamingRef = useRef(false)
+  const userScrolledUpRef = useRef(false)
 
   const lastMsg = messages[messages.length - 1]
   isStreamingRef.current = !!lastMsg?.streaming
@@ -35,29 +42,44 @@ function VirtualizedMessages({ messages }: { messages: ChatMessage[] }) {
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
     if (messages.length === 0) return
+    userScrolledUpRef.current = false
     virtualizer.scrollToIndex(messages.length - 1, { align: 'end', behavior })
   }, [virtualizer, messages.length])
 
+  // 用户滚动时检测是否离开底部
   useEffect(() => {
-    if (messages.length > prevCountRef.current) {
+    const el = parentRef.current
+    if (!el) return
+    const onScroll = () => {
+      userScrolledUpRef.current = !isNearBottom(el)
+    }
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [])
+
+  // 新消息到达时，仅在用户未手动上滚时自动滚到底部
+  useEffect(() => {
+    if (messages.length > prevCountRef.current && !userScrolledUpRef.current) {
       requestAnimationFrame(() => scrollToBottom('smooth'))
     }
     prevCountRef.current = messages.length
   }, [messages.length, scrollToBottom])
 
+  // 流式输出时跟踪底部，但用户上滚后停止
   useEffect(() => {
     if (!isStreamingRef.current) return
     const timer = setInterval(() => {
-      if (isStreamingRef.current) {
+      if (isStreamingRef.current && !userScrolledUpRef.current) {
         virtualizer.scrollToIndex(messages.length - 1, { align: 'end', behavior: 'smooth' })
       }
     }, 300)
     return () => clearInterval(timer)
   }, [lastMsg?.streaming, virtualizer, messages.length])
 
+  // 初始加载滚到底部
   useEffect(() => {
     requestAnimationFrame(() => scrollToBottom('auto'))
-  }, [scrollToBottom])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const items = virtualizer.getVirtualItems()
 
@@ -97,12 +119,37 @@ function PlainMessages({
   messages: ChatMessage[]
   messagesEndRef: RefObject<HTMLDivElement | null>
 }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const userScrolledUpRef = useRef(false)
+  const prevCountRef = useRef(messages.length)
+
+  // 用户滚动时检测是否离开底部
   useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const onScroll = () => {
+      userScrolledUpRef.current = !isNearBottom(el)
+    }
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [])
+
+  // 新消息到达或流式更新时，仅在用户未手动上滚时自动滚到底部
+  useEffect(() => {
+    if (userScrolledUpRef.current) return
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, messagesEndRef])
 
+  // 新增消息（用户发送/AI 回复开始）时重置滚动状态
+  useEffect(() => {
+    if (messages.length > prevCountRef.current) {
+      userScrolledUpRef.current = false
+    }
+    prevCountRef.current = messages.length
+  }, [messages.length])
+
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-4" role="log" aria-label="对话消息">
+    <div ref={containerRef} className="flex-1 overflow-y-auto px-6 py-4" role="log" aria-label="对话消息">
       <div className="max-w-3xl mx-auto space-y-6" aria-live="polite" aria-relevant="additions">
         {messages.map((msg) => (
           <MemoizedBubble key={msg.id} message={msg} />
