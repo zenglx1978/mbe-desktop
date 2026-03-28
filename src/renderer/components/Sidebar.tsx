@@ -109,6 +109,10 @@ export default function Sidebar() {
                   navigate('/schedules')
                   return
                 }
+                if (tab === 'dispatch-dashboard') {
+                  navigate('/dispatch/dashboard')
+                  return
+                }
                 setActiveTab(tab)
                 if (solutionId) trackTabSwitch(solutionId, tab)
               }}

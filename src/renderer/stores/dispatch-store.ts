@@ -17,20 +17,63 @@ export interface DispatchResult {
   completed_at: string
 }
 
+export interface HubDesktopInfo {
+  client_id: string
+  device_name: string
+  connected_at: string
+  last_pong_age_s: number
+  agents: string[]
+  active_load: number
+}
+
+export interface HubStatus {
+  connected_desktops: number
+  desktop_details: HubDesktopInfo[]
+  pending_requests: number
+  history_size: number
+  config: {
+    ping_interval_s: number
+    heartbeat_timeout_s: number
+    request_timeout_s: number
+    jwt_enabled: boolean
+  }
+  reconnect_advice: { initial_delay_ms: number; max_delay_ms: number; backoff_multiplier: number }
+}
+
+export interface DispatchHistoryItem {
+  request_id: string
+  user_id: string
+  source: string
+  agent_name: string
+  expert_id: string
+  prompt: string
+  status: string
+  result_summary: string
+  token_cost: number
+  created_at: string
+  completed_at: string | null
+}
+
 interface DispatchState {
   connectionStatus: DispatchConnectionStatus
   results: DispatchResult[]
+  hubStatus: HubStatus | null
+  dispatchHistory: DispatchHistoryItem[]
   error: string | null
 
   connect: (userId: string, backendUrl: string) => Promise<void>
   disconnect: () => Promise<void>
   getStatus: () => Promise<void>
   listResults: () => Promise<void>
+  fetchHubStatus: (baseUrl: string) => Promise<void>
+  fetchDispatchHistory: (baseUrl: string, limit?: number) => Promise<void>
 }
 
 export const useDispatchStore = create<DispatchState>((set) => ({
   connectionStatus: 'disconnected',
   results: [],
+  hubStatus: null,
+  dispatchHistory: [],
   error: null,
 
   connect: async (userId, backendUrl) => {
@@ -68,6 +111,24 @@ export const useDispatchStore = create<DispatchState>((set) => ({
     try {
       const results = await api.dispatch.listResults()
       set({ results: results || [] })
+    } catch { /* ignore */ }
+  },
+
+  fetchHubStatus: async (baseUrl: string) => {
+    try {
+      const res = await fetch(`${baseUrl}/api/v1/dispatch/status`)
+      if (!res.ok) return
+      const data = await res.json()
+      set({ hubStatus: data as HubStatus })
+    } catch { /* ignore */ }
+  },
+
+  fetchDispatchHistory: async (baseUrl: string, limit = 20) => {
+    try {
+      const res = await fetch(`${baseUrl}/api/v1/dispatch/history/list?limit=${limit}`)
+      if (!res.ok) return
+      const data = await res.json()
+      set({ dispatchHistory: data.dispatches || [] })
     } catch { /* ignore */ }
   },
 }))

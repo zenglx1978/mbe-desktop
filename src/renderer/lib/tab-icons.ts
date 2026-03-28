@@ -8,7 +8,7 @@ import {
   ShieldCheck, Coins, Landmark, LayoutDashboard,
   Calendar, Palette, Settings, LogOut, PanelLeftClose, PanelLeft,
   TrendingUp, Users, Wallet, Sparkles, Target, GitMerge,
-  Building2, Link2,
+  Building2, Link2, Radio,
   ClipboardList, BookOpen, Receipt, FileBarChart, Lightbulb,
   Scale, FileSignature, FilePen, BadgeDollarSign,
   UserCheck, Banknote, ShieldAlert, Gavel,
@@ -63,6 +63,7 @@ export const TAB_ICON_MAP: Record<string, TabMeta> = {
   portfolio:        { icon: Briefcase,    label: '组合' },
   macro:            { icon: Globe,        label: '宏观' },
   'compliance-pub': { icon: FileCheck,    label: '合规发布' },
+  'dispatch-dashboard': { icon: Radio,  label: 'Dispatch 控制台' },
 }
 
 export const SIDEBAR_ACTIONS = {

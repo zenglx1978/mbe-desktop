@@ -18,6 +18,7 @@ const AnalyticsHeatmaps = lazy(() => import('@/pages/AnalyticsHeatmaps'))
 const DeepMindInsights = lazy(() => import('@/pages/DeepMindInsights'))
 const ScheduleManager = lazy(() => import('@/pages/ScheduleManager'))
 const DispatchPanel = lazy(() => import('@/pages/DispatchPanel'))
+const DispatchDashboard = lazy(() => import('@/pages/DispatchDashboard'))
 
 function LoadingScreen() {
   return (
@@ -195,6 +196,15 @@ function AppRoutes() {
           element={
             <RequireAuth>
               <DispatchPanel />
+            </RequireAuth>
+          }
+        />
+        {/* Dispatch 控制台（多设备路由 + 负载 + 请求历史） */}
+        <Route
+          path="/dispatch/dashboard"
+          element={
+            <RequireAuth>
+              <DispatchDashboard />
             </RequireAuth>
           }
         />
