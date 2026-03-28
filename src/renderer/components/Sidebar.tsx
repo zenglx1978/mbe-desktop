@@ -105,6 +105,10 @@ export default function Sidebar() {
             <button
               key={tab}
               onClick={() => {
+                if (tab === 'scheduler') {
+                  navigate('/schedules')
+                  return
+                }
                 setActiveTab(tab)
                 if (solutionId) trackTabSwitch(solutionId, tab)
               }}

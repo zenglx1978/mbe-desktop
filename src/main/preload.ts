@@ -136,6 +136,29 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('localApp:notify', handler)
       return () => ipcRenderer.removeListener('localApp:notify', handler)
     },
+
+    fillTemplate: (request: {
+      templatePath: string
+      outputPath?: string
+      format: 'docx' | 'xlsx' | 'pptx'
+      variables: Record<string, unknown>
+      autoOpen?: boolean
+    }) => ipcRenderer.invoke('localApp:fillTemplate', request),
+
+    batchDocgen: (requests: Array<{
+      format: 'pptx' | 'xlsx' | 'docx'
+      template?: string
+      data: Record<string, unknown>
+      outputDir?: string
+      fileName?: string
+    }>) => ipcRenderer.invoke('localApp:batchDocgen', requests),
+
+    pipeline: (steps: Array<{
+      type: 'docgen' | 'open' | 'copy' | 'rename' | 'fillTemplate'
+      params: Record<string, unknown>
+    }>) => ipcRenderer.invoke('localApp:pipeline', steps),
+
+    systemInfo: () => ipcRenderer.invoke('localApp:systemInfo'),
   },
 
   // ── 网页阅读器（法条/财税政策跟踪，内置 Chromium 读网页，非爬虫） ──
@@ -621,6 +644,49 @@ contextBridge.exposeInMainWorld('electronAPI', {
       const handler = (_e: unknown, data: any) => callback(data)
       ipcRenderer.on('scheduler:navigate', handler)
       return () => ipcRenderer.removeListener('scheduler:navigate', handler)
+    },
+  },
+
+  // ── Dispatch 远程触发（借鉴三 — Anthropic Dispatch 启发） ──
+  dispatch: {
+    configure: (config: {
+      wsUrl?: string
+      apiBaseUrl?: string
+      authToken?: string
+      pollIntervalMs?: number
+    }) => ipcRenderer.invoke('dispatch:configure', config),
+
+    status: () => ipcRenderer.invoke('dispatch:status'),
+
+    send: (request: {
+      agentName: string
+      expertId?: string
+      prompt: string
+      notifyChannels?: string[]
+    }) => ipcRenderer.invoke('dispatch:send', request),
+
+    getResult: (requestId: string) => ipcRenderer.invoke('dispatch:getResult', requestId),
+
+    listResults: (limit?: number) => ipcRenderer.invoke('dispatch:listResults', limit),
+
+    disconnect: () => ipcRenderer.invoke('dispatch:disconnect'),
+
+    onStatusChange: (callback: (data: { status: string; attempt?: number }) => void) => {
+      const handler = (_e: unknown, data: { status: string; attempt?: number }) => callback(data)
+      ipcRenderer.on('dispatch:statusChange', handler)
+      return () => ipcRenderer.removeListener('dispatch:statusChange', handler)
+    },
+
+    onRequestReceived: (callback: (data: unknown) => void) => {
+      const handler = (_e: unknown, data: unknown) => callback(data)
+      ipcRenderer.on('dispatch:requestReceived', handler)
+      return () => ipcRenderer.removeListener('dispatch:requestReceived', handler)
+    },
+
+    onResultReady: (callback: (data: unknown) => void) => {
+      const handler = (_e: unknown, data: unknown) => callback(data)
+      ipcRenderer.on('dispatch:resultReady', handler)
+      return () => ipcRenderer.removeListener('dispatch:resultReady', handler)
     },
   },
 

@@ -463,4 +463,149 @@ export function setupLocalAppBridgeIPC(): void {
       return []
     }
   })
+
+  // ═══════════════════ Computer Use 增强（借鉴二）═══════════════════
+  // Anthropic Computer Use 启发：AI 不只是回答问题，直接操控本地应用完成业务
+  // MBE 优势：走 API/IPC 而非截屏+鼠标模拟，更可靠、更快、更安全
+
+  // 批量文档生成（如：一键生成月度财务报表套件）
+  ipcMain.handle('localApp:batchDocgen', async (_, requests: DocGenRequest[]): Promise<{
+    results: DocGenResult[]
+    successCount: number
+    failCount: number
+    outputDir: string
+  }> => {
+    const results: DocGenResult[] = []
+    let successCount = 0
+    let failCount = 0
+    for (const req of requests.slice(0, 20)) {
+      const result = await handleDocGen(req)
+      results.push(result)
+      if (result.success) successCount++
+      else failCount++
+    }
+    return { results, successCount, failCount, outputDir: getExportsDir() }
+  })
+
+  // 文件模板填充（如：用审查结果填入 Word 合同模板）
+  ipcMain.handle('localApp:fillTemplate', async (_, request: {
+    templatePath: string
+    outputPath?: string
+    format: 'docx' | 'xlsx' | 'pptx'
+    variables: Record<string, unknown>
+    autoOpen?: boolean
+  }): Promise<DocGenResult> => {
+    if (!isReadPathAllowed(request.templatePath)) {
+      return { success: false, error: '模板路径不在允许的目录中' }
+    }
+    if (!fs.existsSync(request.templatePath)) {
+      return { success: false, error: `模板文件不存在: ${request.templatePath}` }
+    }
+    return handleDocGen({
+      format: request.format,
+      template: request.templatePath,
+      data: request.variables,
+      outputDir: request.outputPath ? path.dirname(request.outputPath) : undefined,
+      fileName: request.outputPath ? path.basename(request.outputPath) : undefined,
+      autoOpen: request.autoOpen,
+    })
+  })
+
+  // 文件操作流水线（Computer Use 核心：连续多步本地操作）
+  ipcMain.handle('localApp:pipeline', async (_, steps: {
+    action: 'docgen' | 'open' | 'copy' | 'rename' | 'archive'
+    params: Record<string, unknown>
+  }[]): Promise<{
+    success: boolean
+    completedSteps: number
+    totalSteps: number
+    results: { step: number; action: string; success: boolean; output?: unknown; error?: string }[]
+  }> => {
+    const results: { step: number; action: string; success: boolean; output?: unknown; error?: string }[] = []
+    let completedSteps = 0
+
+    for (let i = 0; i < Math.min(steps.length, 10); i++) {
+      const step = steps[i]
+      try {
+        let output: unknown
+
+        switch (step.action) {
+          case 'docgen':
+            output = await handleDocGen(step.params as unknown as DocGenRequest)
+            break
+          case 'open':
+            output = await handleAppLaunch(step.params as unknown as AppLaunchRequest)
+            break
+          case 'copy': {
+            const src = String(step.params.source || '')
+            const dest = String(step.params.destination || '')
+            if (!isReadPathAllowed(src) || !isWritePathAllowed(dest)) {
+              throw new Error('路径不在允许的目录中')
+            }
+            fs.copyFileSync(src, dest)
+            output = { copied: true, source: src, destination: dest }
+            break
+          }
+          case 'rename': {
+            const from = String(step.params.from || '')
+            const to = String(step.params.to || '')
+            if (!isWritePathAllowed(from) || !isWritePathAllowed(to)) {
+              throw new Error('路径不在允许的目录中')
+            }
+            fs.renameSync(from, to)
+            output = { renamed: true, from, to }
+            break
+          }
+          case 'archive':
+            output = { archived: false, message: '归档功能开发中' }
+            break
+          default:
+            throw new Error(`未知操作: ${step.action}`)
+        }
+
+        const isSuccess = typeof output === 'object' && output !== null
+          && ('success' in output ? (output as Record<string, unknown>).success !== false : true)
+        results.push({ step: i, action: step.action, success: isSuccess, output })
+        if (isSuccess) completedSteps++
+      } catch (err) {
+        results.push({
+          step: i,
+          action: step.action,
+          success: false,
+          error: err instanceof Error ? err.message : String(err),
+        })
+      }
+    }
+
+    return {
+      success: completedSteps === steps.length,
+      completedSteps,
+      totalSteps: steps.length,
+      results,
+    }
+  })
+
+  // 系统信息采集（AI 专家可了解用户环境以提供更精准的建议）
+  ipcMain.handle('localApp:systemInfo', async (): Promise<{
+    platform: string
+    arch: string
+    electronVersion: string
+    appVersion: string
+    locale: string
+    timezone: string
+    homeDir: string
+    tempDir: string
+  }> => {
+    const os = await import('os')
+    return {
+      platform: process.platform,
+      arch: process.arch,
+      electronVersion: process.versions.electron,
+      appVersion: app.getVersion(),
+      locale: app.getLocale(),
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      homeDir: os.homedir(),
+      tempDir: os.tmpdir(),
+    }
+  })
 }

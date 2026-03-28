@@ -16,6 +16,7 @@ import { setupLocalDataReaderIPC } from './local-data-reader'
 import { setupFileIntelIPC, setFileIntelMainWindow } from './file-intel'
 import { setupDataPipelineIPC, setPipelineMainWindow } from './data-pipeline'
 import { setupSchedulerIPC, setSchedulerMainWindow, setSchedulerDb, initScheduler, destroyScheduler } from './scheduler'
+import { setupDispatchIPC, setDispatchMainWindow, destroyDispatch } from './dispatch-bridge'
 import { setupUserMemoryIPC, setMemoryMainWindow, setMemoryDb } from './user-memory'
 import { setupLocalInferenceIPC, setInferenceDb, setInferenceMainWindow, initLocalInference } from './local-inference'
 import { setupBehaviorObserverIPC, setBehaviorObserverMainWindow, setBehaviorObserverDb, startBehaviorObserver, stopBehaviorObserver } from './behavior-observer'
@@ -369,6 +370,7 @@ app.whenReady().then(async () => {
   setupFileIntelIPC()
   setupDataPipelineIPC()
   setupSchedulerIPC()
+  setupDispatchIPC()
   setupUserMemoryIPC()
   setupLocalInferenceIPC()
   setupBehaviorObserverIPC()
@@ -391,6 +393,7 @@ app.whenReady().then(async () => {
   setPipelineMainWindow(mainWindow)
   setSchedulerMainWindow(mainWindow!)
   setSchedulerDb(getDb())
+  setDispatchMainWindow(mainWindow!)
   setMemoryMainWindow(mainWindow!)
   setMemoryDb(getDb())
   setInferenceMainWindow(mainWindow!)
@@ -459,6 +462,7 @@ app.on('before-quit', () => {
   try { stopBehaviorObserver() } catch (e) { console.error('[Quit] stopBehaviorObserver:', e) }
   try { stopPatternRecognizer() } catch (e) { console.error('[Quit] stopPatternRecognizer:', e) }
   try { destroyScheduler() } catch (e) { console.error('[Quit] destroyScheduler:', e) }
+  try { destroyDispatch() } catch (e) { console.error('[Quit] destroyDispatch:', e) }
   try { destroyCopilotBridge() } catch (e) { console.error('[Quit] destroyCopilotBridge:', e) }
   try { destroyAccessibilityBridge() } catch (e) { console.error('[Quit] destroyAccessibilityBridge:', e) }
   try { closeDatabase() } catch (e) { console.error('[Quit] closeDatabase:', e) }

@@ -16,6 +16,8 @@ const SolutionStory = lazy(() => import('@/pages/SolutionStory'))
 const KnowledgeGraphPage = lazy(() => import('@/pages/KnowledgeGraphPage'))
 const AnalyticsHeatmaps = lazy(() => import('@/pages/AnalyticsHeatmaps'))
 const DeepMindInsights = lazy(() => import('@/pages/DeepMindInsights'))
+const ScheduleManager = lazy(() => import('@/pages/ScheduleManager'))
+const DispatchPanel = lazy(() => import('@/pages/DispatchPanel'))
 
 function LoadingScreen() {
   return (
@@ -175,6 +177,24 @@ function AppRoutes() {
           element={
             <RequireAuth>
               <DeepMindInsights />
+            </RequireAuth>
+          }
+        />
+        {/* AI 专家定时巡检管理 */}
+        <Route
+          path="/schedules"
+          element={
+            <RequireAuth>
+              <ScheduleManager />
+            </RequireAuth>
+          }
+        />
+        {/* 远程派遣面板（Anthropic Dispatch 启发） */}
+        <Route
+          path="/dispatch"
+          element={
+            <RequireAuth>
+              <DispatchPanel />
             </RequireAuth>
           }
         />
