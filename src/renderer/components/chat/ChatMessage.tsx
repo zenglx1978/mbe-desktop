@@ -11,6 +11,7 @@ import SourcePanel from '@/components/SourcePanel'
 import ConfidenceBadge, { getConfidenceCssClass } from '@/components/ConfidenceBadge'
 import { ChatLocalActionCards } from './ChatLocalActionCards'
 import { ExportToolbar } from '@/components/io'
+import { ChatMarkdownLink } from './WorkflowActionLink'
 
 const UPGRADE_PATTERN = /\n*💡\s*当前为.+版[，,]回答内容有限。升级.+[。.]/
 const QUOTA_PATTERN = /您今日的免费咨询次数已用完.+升级套餐可获得.+[。.]/
@@ -71,7 +72,12 @@ export function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
             <div className="whitespace-pre-wrap">{message.content}</div>
           ) : (
             <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{ a: ChatMarkdownLink }}
+              >
+                {body}
+              </ReactMarkdown>
             </div>
           )}
           {message.streaming && (
