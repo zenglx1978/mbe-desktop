@@ -1,10 +1,10 @@
 /**
- * 云端配置同步 Store — Bitter Lesson Phase 10.4
+ * 云端配置同步 Store
  *
- * 联邦学习闭环：服务端学习 → 快照打包 → Desktop 拉取 → 应用到本地 Store
+ * 服务端学习 → 快照打包 → Desktop 拉取 → 应用到本地 Store
  *
  * 数据流:
- *   服务端(HOPE/Telemetry/AutoExp) → generate_snapshot()
+ *   服务端 generate_snapshot()
  *   → GET /api/v1/config-snapshot/{solution_id}
  *   → Desktop pull → 保存到 SQLite → 分发到 LocalFeedback/SmartCache/AdaptiveUI
  */

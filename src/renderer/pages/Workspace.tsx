@@ -171,7 +171,7 @@ export default function Workspace() {
     useAdaptiveUIStore.getState().loadPreferences(solution.id)
     useLocalFeedbackStore.getState().computeScores(solution.id)
     useSmartCacheStore.getState().prune(500)
-    // Phase 10: 定时将本地反馈同步到服务端 HOPE 学习系统
+    // 定时将本地反馈同步到服务端
     const stopFeedback = startFeedbackSync(solution.id)
     // Phase 10.4: 云端配置快照拉取 → 应用到本地 Store
     useCloudSyncStore.getState().loadCachedSnapshot(solution.id).then(() => {

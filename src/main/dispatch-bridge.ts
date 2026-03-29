@@ -66,7 +66,7 @@ export interface DispatchResult {
 
 type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'reconnecting'
 
-// ────────────────────── 内部状态 ──────────────────────
+// ────────────────────── Module State ──────────────────────
 
 let mainWindow: BrowserWindow | null = null
 let config: DispatchConfig | null = null

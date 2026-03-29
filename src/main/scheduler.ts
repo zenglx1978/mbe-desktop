@@ -94,7 +94,7 @@ export interface JobExecutionResult {
   error?: string
 }
 
-// ────────────────────── 内部状态 ──────────────────────
+// ────────────────────── Module State ──────────────────────
 
 let mainWindow: BrowserWindow | null = null
 const activeJobs = new Map<string, {

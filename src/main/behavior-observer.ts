@@ -38,7 +38,7 @@ export interface DailyAppSummary {
   avgSessionMs: number
 }
 
-// ────────────────────── 内部状态 ──────────────────────
+// ────────────────────── Module State ──────────────────────
 
 let mainWindow: BrowserWindow | null = null
 let dbAdapter: {

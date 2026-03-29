@@ -122,7 +122,7 @@ const SOLUTION_PATTERNS: PatternMatch[] = [
   },
 ]
 
-// ────────────────────── 内部状态 ──────────────────────
+// ────────────────────── Module State ──────────────────────
 
 let mainWindow: BrowserWindow | null = null
 let dbAdapter: {

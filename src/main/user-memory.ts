@@ -77,7 +77,7 @@ export interface MemorySummary {
   topParams: FrequentParam[]
 }
 
-// ────────────────────── 内部状态 ──────────────────────
+// ────────────────────── Module State ──────────────────────
 
 let mainWindow: BrowserWindow | null = null
 let dbAdapter: {
