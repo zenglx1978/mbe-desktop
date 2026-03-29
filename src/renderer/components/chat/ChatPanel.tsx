@@ -77,10 +77,15 @@ export default function ChatPanel() {
     if (solutionId) trackTabSwitch(solutionId, 'chat_send')
     sendAbortRef.current?.abort()
     sendAbortRef.current = new AbortController()
-    await sendMessage(text, solution, undefined, {
-      signal: sendAbortRef.current.signal,
-    })
-    textareaRef.current?.focus()
+    try {
+      await sendMessage(text, solution, undefined, {
+        signal: sendAbortRef.current.signal,
+      })
+    } catch {
+      useChatStore.getState().setLoading(false)
+    } finally {
+      textareaRef.current?.focus()
+    }
   }
 
   async function handleSend(text?: string) {
@@ -109,11 +114,16 @@ export default function ChatPanel() {
         : `请处理以下文件：\n${fileList}`
     }
 
-    await sendMessage(messageText, solution, undefined, {
-      signal: sendAbortRef.current.signal,
-      files: filesToSend,
-    })
-    textareaRef.current?.focus()
+    try {
+      await sendMessage(messageText, solution, undefined, {
+        signal: sendAbortRef.current.signal,
+        files: filesToSend,
+      })
+    } catch {
+      useChatStore.getState().setLoading(false)
+    } finally {
+      textareaRef.current?.focus()
+    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {

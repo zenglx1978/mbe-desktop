@@ -5,7 +5,7 @@
  * 支持 WS 实时推送 + HTTP 轮询降级。
  */
 import { create } from 'zustand'
-import { WS_BASE, authFetch, isElectron } from '@/lib/api-client'
+import { API_BASE, WS_BASE, authFetch, isElectron } from '@/lib/api-client'
 import type { ApprovalItem } from '@/lib/approval-service'
 import { useAppStore } from '@/stores/app-store'
 
@@ -51,7 +51,7 @@ export const useApprovalStore = create<ApprovalState>((set, get) => ({
         solution.agents.map(async (agent) => {
           try {
             const resp = await authFetch(
-              `${agent.baseUrl}/governance/approvals/pending?limit=50`,
+              `${API_BASE}/governance/approvals/pending?agent_name=${agent.id}&limit=50`,
               { signal: AbortSignal.timeout(5000) },
             )
             if (!resp.ok) return []
@@ -93,7 +93,7 @@ export const useApprovalStore = create<ApprovalState>((set, get) => ({
       if (!agent) return false
 
       const resp = await authFetch(
-        `${agent.baseUrl}/governance/approvals/${id}/decide`,
+        `${API_BASE}/governance/approvals/${id}/decide`,
         { method: 'POST', body: JSON.stringify(decision) },
       )
       if (resp.ok) {

@@ -102,7 +102,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // ── 本地应用控制（CLI-Anything 启发，AI Agent 操控用户本机应用） ──
   localApp: {
     docgen: (request: {
-      format: 'pptx' | 'xlsx' | 'docx'
+      format: 'pptx' | 'xlsx' | 'docx' | 'svg'
       template?: string
       data: Record<string, unknown>
       outputDir?: string
@@ -146,7 +146,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     }) => ipcRenderer.invoke('localApp:fillTemplate', request),
 
     batchDocgen: (requests: Array<{
-      format: 'pptx' | 'xlsx' | 'docx'
+      format: 'pptx' | 'xlsx' | 'docx' | 'svg'
       template?: string
       data: Record<string, unknown>
       outputDir?: string

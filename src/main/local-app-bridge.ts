@@ -2,7 +2,7 @@
 // 受 CLI-Anything 启发：AI Agent 通过结构化指令控制用户本机应用
 // 三层架构：DocGen（文档生成）→ AppLauncher（应用启动）→ AppControl（应用控制）
 
-import { ipcMain, dialog, shell, BrowserWindow } from 'electron'
+import { app, ipcMain, dialog, shell, BrowserWindow } from 'electron'
 import { spawn } from 'child_process'
 import path from 'path'
 import fs from 'fs'
@@ -14,7 +14,7 @@ import { isReadPathAllowed, isWritePathAllowed, ipcRateLimit } from './safe-path
 // ────────────────────── 类型定义 ──────────────────────
 
 export interface DocGenRequest {
-  format: 'pptx' | 'xlsx' | 'docx'
+  format: 'pptx' | 'xlsx' | 'docx' | 'svg'
   template?: string
   data: Record<string, unknown>
   outputDir?: string
@@ -183,23 +183,33 @@ async function handleDocGen(request: DocGenRequest): Promise<DocGenResult> {
     const fileName = request.fileName || generateFileName(request.format, request.template)
     const filePath = path.join(outputDir, fileName)
 
-    let buffer: Buffer
-
-    switch (request.format) {
-      case 'pptx':
-        buffer = await generatePptx(request.data, request.template)
-        break
-      case 'xlsx':
-        buffer = await generateXlsx(request.data, request.template)
-        break
-      case 'docx':
-        buffer = await generateDocx(request.data, request.template)
-        break
-      default:
-        return { success: false, error: `不支持的格式: ${request.format}` }
+    if (request.format === 'svg') {
+      const svgContent = typeof request.data?.svgContent === 'string'
+        ? request.data.svgContent
+        : typeof request.data?.content === 'string'
+          ? request.data.content
+          : ''
+      if (!svgContent) {
+        return { success: false, error: 'SVG 内容为空，data 中需包含 svgContent 或 content 字段' }
+      }
+      fs.writeFileSync(filePath, svgContent, 'utf-8')
+    } else {
+      let buffer: Buffer
+      switch (request.format) {
+        case 'pptx':
+          buffer = await generatePptx(request.data, request.template)
+          break
+        case 'xlsx':
+          buffer = await generateXlsx(request.data, request.template)
+          break
+        case 'docx':
+          buffer = await generateDocx(request.data, request.template)
+          break
+        default:
+          return { success: false, error: `不支持的格式: ${request.format}` }
+      }
+      fs.writeFileSync(filePath, buffer)
     }
-
-    fs.writeFileSync(filePath, buffer)
     const stats = fs.statSync(filePath)
 
     if (request.autoOpen !== false) {
@@ -448,7 +458,7 @@ export function setupLocalAppBridgeIPC(): void {
     try {
       const files = fs.readdirSync(dir)
       return files
-        .filter(f => /\.(pptx|xlsx|docx|pdf)$/i.test(f))
+        .filter(f => /\.(pptx|xlsx|docx|pdf|svg)$/i.test(f))
         .map(f => {
           const stat = fs.statSync(path.join(dir, f))
           return {

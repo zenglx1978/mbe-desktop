@@ -172,9 +172,9 @@ async function executeSingle(
     case 'docgen': {
       const result = await api.localApp.docgen({
         format: action.params?.format ?? 'xlsx',
-        title: action.params?.title ?? '导出文档',
+        fileName: action.params?.title ?? action.params?.fileName ?? '导出文档',
         data: action.params?.data ?? prevOutput ?? {},
-        auto_open: action.params?.auto_open ?? true,
+        autoOpen: action.params?.auto_open ?? action.params?.autoOpen ?? true,
       })
       return result
     }

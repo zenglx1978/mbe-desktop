@@ -25,6 +25,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: true,
       },
+      '/governance': {
+        target: 'https://mbe.hi-maker.com',
+        changeOrigin: true,
+        secure: true,
+      },
       '/ws': {
         target: 'wss://mbe.hi-maker.com',
         changeOrigin: true,

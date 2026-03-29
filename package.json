@@ -146,9 +146,6 @@
       "deleteAppDataOnUninstall": false,
       "include": "build/installer.nsh"
     },
-    "msi": {
-      "upgradeCode": "7B3A4F2E-8C1D-4E5F-9A0B-6D2C8E7F1A3B"
-    },
     "publish": [
       {
         "provider": "generic",
