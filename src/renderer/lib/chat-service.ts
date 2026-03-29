@@ -15,6 +15,7 @@ import {
   type OrchestrationExpert,
   type OrchestrationState,
   type SourceCitation,
+  type WorkflowSuggestion,
 } from '@/stores/chat-store'
 import { useConversationStore } from '@/stores/conversation-store'
 import { useConnectivityStore } from '@/stores/connectivity-store'
@@ -522,6 +523,12 @@ async function streamViaHTTP(
       }
       if (data.confidence != null) {
         chatStore.updateMessage(messageId, { confidence: data.confidence })
+      }
+      if (data.workflow_suggestion) {
+        chatStore.updateMessage(messageId, { workflowSuggestion: data.workflow_suggestion as WorkflowSuggestion })
+      }
+      if (data.workflow_instance) {
+        chatStore.updateMessage(messageId, { workflowInstance: data.workflow_instance })
       }
       if (data.local_actions?.length) {
         chatStore.updateMessage(messageId, { localActions: data.local_actions as LocalActionInfo[] })

@@ -74,6 +74,7 @@ export function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
             <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
+                urlTransform={(url: string) => url}
                 components={{ a: ChatMarkdownLink }}
               >
                 {body}

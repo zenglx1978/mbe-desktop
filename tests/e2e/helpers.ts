@@ -23,11 +23,37 @@ export async function mockSolution(page: Page, solutionId: string) {
 }
 
 /**
- * 注入已登录 + 已选方案的完整状态
+ * 拦截 /api/health 返回 200，防止 connectivity-store 将模式设为 degraded/offline。
+ * 不做此拦截时，Vite dev server 无法处理 /api/health → 请求失败 → OfflineBanner 遮挡 UI。
+ */
+export async function mockConnectivity(page: Page) {
+  await page.route('**/api/health', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ status: 'ok', service: 'e2e-mock' }),
+    })
+  })
+}
+
+/**
+ * 在 localStorage 标记方案 onboarding 已完成，跳过「快速了解你的业务」弹窗。
+ * Workspace 组件通过 `mbe-onboarding-done-{solutionId}` 判断是否展示引导。
+ */
+export async function mockSkipOnboarding(page: Page, solutionId: string) {
+  await page.addInitScript(({ solutionId }) => {
+    localStorage.setItem(`mbe-onboarding-done-${solutionId}`, '1')
+  }, { solutionId })
+}
+
+/**
+ * 注入已登录 + 已选方案 + 网络连通性 + 跳过引导 的完整状态
  */
 export async function mockFullState(page: Page, solutionId = 'labor-dispatch') {
+  await mockConnectivity(page)
   await mockAuth(page)
   await mockSolution(page, solutionId)
+  await mockSkipOnboarding(page, solutionId)
 }
 
 /**
