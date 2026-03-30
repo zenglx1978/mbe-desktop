@@ -80,6 +80,75 @@ export const ALL_SOLUTION_IDS = [
   'investment-research',
 ]
 
+/**
+ * 拦截 WebSocket 连接并通过 WS 协议直接返回 mock 回复（跳过 HTTP 降级）。
+ * 用于测试 chat-service 的 streamViaWebSocket 主路径，速度比 HTTP fallback 更快。
+ */
+export async function mockWebSocket(
+  page: Page,
+  reply: string | {
+    answer: string
+    confidence?: number
+    sources?: Array<{ title: string; url: string; reliability: string }>
+    workflow_suggestion?: Record<string, unknown>
+  },
+) {
+  const body = typeof reply === 'string'
+    ? { answer: reply, confidence: 0.85 }
+    : reply
+
+  await page.routeWebSocket(/\/ws\/[\w-]+\/chat/, (ws) => {
+    ws.onMessage((message) => {
+      let data: Record<string, unknown>
+      try {
+        data = JSON.parse(message.toString())
+      } catch {
+        return
+      }
+      if (data.type === 'ping') return
+
+      const text = body.answer
+      const chunkSize = 40
+      for (let i = 0; i < text.length; i += chunkSize) {
+        ws.send(JSON.stringify({ type: 'chat_chunk', chunk: text.slice(i, i + chunkSize) }))
+      }
+
+      const complete: Record<string, unknown> = {
+        type: 'chat_complete',
+        confidence: body.confidence ?? 0.85,
+      }
+      if (body.sources) complete.sources = body.sources
+      if ('workflow_suggestion' in body && body.workflow_suggestion) {
+        complete.workflow_suggestion = body.workflow_suggestion
+      }
+      ws.send(JSON.stringify(complete))
+    })
+  })
+}
+
+/**
+ * 按调用次序返回不同 WS 回复（多轮对话测试），连接复用时 callIndex 递增。
+ */
+export async function mockWebSocketSequential(page: Page, replies: string[]) {
+  let callIndex = 0
+  await page.routeWebSocket(/\/ws\/[\w-]+\/chat/, (ws) => {
+    ws.onMessage((message) => {
+      let data: Record<string, unknown>
+      try {
+        data = JSON.parse(message.toString())
+      } catch {
+        return
+      }
+      if (data.type === 'ping') return
+
+      const answer = replies[callIndex] ?? replies[replies.length - 1]
+      callIndex++
+      ws.send(JSON.stringify({ type: 'chat_chunk', chunk: answer }))
+      ws.send(JSON.stringify({ type: 'chat_complete', confidence: 0.85 }))
+    })
+  })
+}
+
 /** 方案 → 启用 Tab 映射 */
 export const SOLUTION_TABS: Record<string, string[]> = {
   'labor-dispatch': ['chat', 'tools', 'documents', 'tasks', 'workflows', 'dashboard'],

@@ -7,7 +7,7 @@
  *   - 状态: mockFullState 通过 localStorage 注入登录 + 已选方案
  */
 import { test, expect, type Page, type Route } from '@playwright/test'
-import { mockFullState } from './helpers'
+import { mockFullState, mockWebSocket, mockWebSocketSequential } from './helpers'
 
 /* ── Mock 辅助 ── */
 
@@ -333,5 +333,92 @@ test.describe('Solution 对话 E2E', () => {
 
     // streaming 应该已停止
     await expect(area.locator(STREAMING_CURSOR)).toBeHidden({ timeout: 5_000 })
+  })
+
+  /* ── WebSocket mock 测试 ── */
+
+  test('WebSocket 流式回复正常渲染', async ({ page }) => {
+    await mockFullState(page, 'finance-tax-service')
+    await mockWebSocket(page, {
+      answer: '增值税小规模纳税人季度销售额不超过30万元免征增值税，这是国家税务总局明确的优惠政策。',
+      confidence: 0.92,
+      sources: [{ title: '增值税暂行条例', url: 'https://tax.example/vat', reliability: 'authoritative' }],
+    })
+
+    await page.goto('/')
+    await waitForChatReady(page)
+    await sendChat(page, '小规模纳税人免税额度是多少？')
+    await waitForReply(page)
+
+    const area = page.locator(MSG_AREA)
+    await expect(area.locator('.justify-start').getByText('30万元').first()).toBeVisible()
+    await expect(area.locator(STREAMING_CURSOR)).toBeHidden({ timeout: 5_000 })
+  })
+
+  test('WebSocket 多轮对话按顺序返回不同回复', async ({ page }) => {
+    await mockFullState(page, 'finance-tax-service')
+    await mockWebSocketSequential(page, [
+      '一般纳税人增值税税率分为13%、9%、6%三档。',
+      '小规模纳税人征收率为3%，疫情期间曾降至1%。',
+    ])
+
+    await page.goto('/')
+    await waitForChatReady(page)
+
+    await sendChat(page, '一般纳税人税率是多少？')
+    await waitForReply(page)
+    const area = page.locator(MSG_AREA)
+    await expect(area.locator('.justify-start').getByText('13%').first()).toBeVisible()
+
+    await sendChat(page, '小规模纳税人呢？')
+    await waitForReply(page, 2)
+    await expect(area.locator('.justify-start').getByText('3%').first()).toBeVisible()
+  })
+
+  test('WebSocket 回复携带 workflow_suggestion 渲染流程建议', async ({ page }) => {
+    await mockFullState(page, 'finance-tax-service')
+    await mockWebSocket(page, {
+      answer: '已为您生成记账凭证方案，请按以下步骤操作。',
+      confidence: 0.88,
+      workflow_suggestion: {
+        workflow_id: 'monthly-bookkeeping',
+        workflow_name: '月度记账',
+        steps: [
+          { step_id: 's1', name: '收集原始凭证', status: 'pending' },
+          { step_id: 's2', name: '录入会计分录', status: 'pending' },
+          { step_id: 's3', name: '审核过账', status: 'pending' },
+        ],
+      },
+    })
+
+    await page.goto('/')
+    await waitForChatReady(page)
+    await sendChat(page, '帮我做本月记账')
+    await waitForReply(page)
+
+    const area = page.locator(MSG_AREA)
+    await expect(area.locator('.justify-start').getByText('记账凭证方案').first()).toBeVisible()
+    await expect(area.locator('.justify-start').getByText('收集原始凭证').first()).toBeVisible()
+  })
+
+  test('点击回复中 workflow 链接跳转到流程面板', async ({ page }) => {
+    await mockFullState(page, 'finance-tax-service')
+    const linkText = '启动报税流程'
+    await mockWebSocket(page, {
+      answer: `请点击 [${linkText}](mbe://workflow/tax-filing) 开始操作。`,
+      confidence: 0.90,
+    })
+
+    await page.goto('/')
+    await waitForChatReady(page)
+    await sendChat(page, '怎么报税？')
+    await waitForReply(page)
+
+    const area = page.locator(MSG_AREA)
+    const link = area.locator('.justify-start').getByRole('button', { name: linkText }).first()
+    await expect(link).toBeVisible({ timeout: 10_000 })
+    await link.click()
+
+    await expect(page.getByText('业务流程')).toBeVisible({ timeout: 5_000 })
   })
 })
