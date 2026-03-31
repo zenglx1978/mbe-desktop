@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
-import { Copy, Download, Printer, Share2 } from 'lucide-react'
+import { Copy, Download, Printer, Share2, Presentation } from 'lucide-react'
+import { generateDesign, downloadBlob } from '@/lib/design-engine-service'
 
 export interface ExportToolbarProps {
   content: string
@@ -27,6 +28,7 @@ const btn =
 
 export default function ExportToolbar({ content, title = '对话导出', className = '' }: ExportToolbarProps) {
   const [copied, setCopied] = useState(false)
+  const [pptBusy, setPptBusy] = useState(false)
   const safeName = (title || '导出').replace(/[/\\?%*:|"<>]/g, '-').slice(0, 80)
 
   const copyMd = useCallback(async () => {
@@ -96,6 +98,18 @@ export default function ExportToolbar({ content, title = '对话导出', classNa
     }
   }, [content, title, safeName])
 
+  const exportPpt = useCallback(async () => {
+    setPptBusy(true)
+    try {
+      const blob = await generateDesign({ markdown: content, format: 'pptx' })
+      downloadBlob(blob, 'pptx', safeName)
+    } catch {
+      // Expected: Design Engine 不可用或渲染失败
+    } finally {
+      setPptBusy(false)
+    }
+  }, [content, safeName])
+
   const share = useCallback(async () => {
     try {
       if (navigator.share) {
@@ -116,6 +130,9 @@ export default function ExportToolbar({ content, title = '对话导出', classNa
       </button>
       <button type="button" className={btn} onClick={exportPdf} title="打印 / 导出 PDF" aria-label="打印或 PDF">
         <Printer className="h-4 w-4" />
+      </button>
+      <button type="button" className={btn} onClick={exportPpt} disabled={pptBusy} title={pptBusy ? '生成中…' : '渲染为 PPT'} aria-label="渲染为 PPT">
+        <Presentation className="h-4 w-4" />
       </button>
       <button
         type="button"

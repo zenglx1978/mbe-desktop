@@ -26,6 +26,7 @@ import ApprovalPanel from '@/components/workbench/ApprovalPanel'
 import CostPanel from '@/components/workbench/CostPanel'
 import SchedulerPanel from '@/components/workbench/SchedulerPanel'
 import DesignerPanel from '@/components/workbench/DesignerPanel'
+import DesignEnginePanel from '@/components/workbench/DesignEnginePanel'
 import EfficiencyPanel from '@/components/workbench/EfficiencyPanel'
 import ClientChatPanel from '@/components/workbench/ClientChatPanel'
 import ROIPanel from '@/components/workbench/ROIPanel'
@@ -412,6 +413,8 @@ function ActivePanel({ tab }: { tab: string }) {
       return <SchedulerPanel solution={solution} />
     case 'designer':
       return <DesignerPanel solution={solution} />
+    case 'design-engine':
+      return <DesignEnginePanel solution={solution} />
     case 'efficiency':
       return <EfficiencyPanel />
     case 'automation':

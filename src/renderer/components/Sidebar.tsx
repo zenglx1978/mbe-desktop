@@ -38,6 +38,7 @@ export default function Sidebar() {
   if (!baseTabs.includes('approvals')) baseTabs.push('approvals')
   if (!baseTabs.includes('costs')) baseTabs.push('costs')
   if (!baseTabs.includes('efficiency')) baseTabs.push('efficiency')
+  if (!baseTabs.includes('design-engine')) baseTabs.push('design-engine')
 
   // 根据使用频率自动重排（高频 tab 靠前）
   const recommended = getRecommendedTabOrder()
