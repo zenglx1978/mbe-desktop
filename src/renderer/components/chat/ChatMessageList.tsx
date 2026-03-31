@@ -123,6 +123,19 @@ function PlainMessages({
   const userScrolledUpRef = useRef(false)
   const prevCountRef = useRef(messages.length)
 
+  const lastMsg = messages[messages.length - 1]
+  const isStreaming = !!lastMsg?.streaming
+
+  const scrollToEnd = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    const el = containerRef.current
+    if (!el) return
+    if (behavior === 'auto') {
+      el.scrollTop = el.scrollHeight
+    } else {
+      el.scrollTo({ top: el.scrollHeight, behavior })
+    }
+  }, [])
+
   // 用户滚动时检测是否离开底部
   useEffect(() => {
     const el = containerRef.current
@@ -134,19 +147,30 @@ function PlainMessages({
     return () => el.removeEventListener('scroll', onScroll)
   }, [])
 
-  // 新消息到达或流式更新时，仅在用户未手动上滚时自动滚到底部
-  useEffect(() => {
-    if (userScrolledUpRef.current) return
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, messagesEndRef])
-
-  // 新增消息（用户发送/AI 回复开始）时重置滚动状态
+  // 新消息到达时滚到底部（仅在消息数量变化时触发，不受流式内容更新影响）
   useEffect(() => {
     if (messages.length > prevCountRef.current) {
       userScrolledUpRef.current = false
+      requestAnimationFrame(() => scrollToEnd('smooth'))
     }
     prevCountRef.current = messages.length
-  }, [messages.length])
+  }, [messages.length, scrollToEnd])
+
+  // 流式输出期间定时跟踪底部，用户上滚后停止
+  useEffect(() => {
+    if (!isStreaming) return
+    const timer = setInterval(() => {
+      if (!userScrolledUpRef.current) {
+        scrollToEnd('smooth')
+      }
+    }, 300)
+    return () => clearInterval(timer)
+  }, [isStreaming, scrollToEnd])
+
+  // 初始加载滚到底部
+  useEffect(() => {
+    requestAnimationFrame(() => scrollToEnd('auto'))
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div ref={containerRef} className="flex-1 overflow-y-auto px-6 py-4" role="log" aria-label="对话消息">

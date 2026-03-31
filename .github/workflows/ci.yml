@@ -3,6 +3,7 @@ name: Desktop CI
 on:
   push:
     branches: [master, develop]
+    tags: ['v*']
   pull_request:
     branches: [master]
 
@@ -69,3 +70,37 @@ jobs:
           name: test-screenshots
           path: test-results/
           retention-days: 7
+
+  build-macos:
+    name: Build macOS Installer
+    runs-on: macos-latest
+    needs: lint-typecheck-test
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build & Package macOS
+        run: npm run pack:mac
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload macOS DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg
+          path: release/*.dmg
+          retention-days: 30
+
+      - name: Upload macOS ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-zip
+          path: release/*.zip
+          retention-days: 30

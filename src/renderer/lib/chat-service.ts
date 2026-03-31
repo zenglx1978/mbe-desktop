@@ -575,12 +575,27 @@ async function streamViaHTTP(
           if (parsed.confidence != null) {
             chatStore.updateMessage(messageId, { confidence: parsed.confidence })
           }
+          if (parsed.workflow_suggestion) {
+            chatStore.updateMessage(messageId, { workflowSuggestion: parsed.workflow_suggestion as WorkflowSuggestion })
+          }
+          if (parsed.workflow_instance) {
+            chatStore.updateMessage(messageId, { workflowInstance: parsed.workflow_instance })
+          }
+          if (parsed.local_actions?.length) {
+            chatStore.updateMessage(messageId, { localActions: parsed.local_actions as LocalActionInfo[] })
+          }
         } catch {
           // Expected: SSE data 行非 JSON；按纯文本块追加
           if (data) chatStore.appendToMessage(messageId, data)
         }
       }
     }
+  }
+
+  // SSE 流结束后，检查是否有待自动执行的 local_actions
+  const finalMsg = useChatStore.getState().messages.find(m => m.id === messageId)
+  if (finalMsg?.localActions?.length && isElectronAvailable()) {
+    autoExecuteLocalActions(finalMsg.localActions as LocalAction[], messageId)
   }
 
   chatStore.updateMessage(messageId, { streaming: false })

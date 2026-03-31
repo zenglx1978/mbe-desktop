@@ -352,7 +352,7 @@ export default function Workspace() {
 
         {/* 内容区 + AI 助手侧面板 */}
         <div className="flex-1 flex overflow-hidden">
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden">
             <ActivePanel tab={activeTab} />
           </div>
           {/* P1-5: AI 助手侧面板（滑出式） */}
@@ -364,7 +364,7 @@ export default function Workspace() {
                   <X className="w-3.5 h-3.5 text-muted-foreground" />
                 </button>
               </div>
-              <div className="flex-1 overflow-hidden">
+              <div className="flex-1 flex flex-col overflow-hidden">
                 <ChatPanel />
               </div>
             </aside>

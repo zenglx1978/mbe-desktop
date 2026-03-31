@@ -310,6 +310,44 @@ function setupAutoUpdater() {
       }, 1500)
     } else {
       sendUpdateStatus('installing', { version: info.version })
+
+      // NSIS perMachine 静默安装可能不触发 --force-run，用后备脚本兜底重启
+      try {
+        const exePath = process.execPath
+        const batPath = path.join(app.getPath('temp'), 'mbe-desktop-restart.bat')
+        const exeName = 'MBE Desktop.exe'
+
+        const batContent = [
+          '@echo off',
+          'timeout /t 5 /nobreak >nul',
+          'set RETRIES=0',
+          ':check_loop',
+          `tasklist /FI "IMAGENAME eq ${exeName}" 2>nul | find /I "${exeName}" >nul`,
+          'if %ERRORLEVEL%==0 goto :done',
+          'set /a RETRIES+=1',
+          'if %RETRIES% GEQ 15 goto :launch',
+          'timeout /t 2 /nobreak >nul',
+          'goto :check_loop',
+          ':launch',
+          `start "" "${exePath}"`,
+          ':done',
+          'del "%~f0"',
+        ].join('\r\n')
+
+        fs.writeFileSync(batPath, batContent, 'utf-8')
+
+        const { spawn: spawnCmd } = require('child_process')
+        const proc = spawnCmd('cmd.exe', ['/c', batPath], {
+          detached: true,
+          stdio: 'ignore',
+          windowsHide: true,
+        })
+        proc.unref()
+        console.log('[AutoUpdater] 后备重启脚本已启动:', batPath)
+      } catch (err) {
+        console.error('[AutoUpdater] 后备重启脚本创建失败:', err)
+      }
+
       setTimeout(() => autoUpdater.quitAndInstall(true, true), 2000)
     }
   })

@@ -182,6 +182,11 @@ export default function SolutionPicker() {
   const [intakeError, setIntakeError] = useState('')
   const intakeInputRef = useRef<HTMLInputElement>(null)
 
+  const filteredIntakeResults = useMemo(
+    () => intakeResults.filter(rec => getEffectiveStatus(rec.id) === 'available'),
+    [intakeResults, statusSynced],
+  )
+
   useEffect(() => {
     fetchSolutionStatuses().then(() => setStatusSynced(true))
   }, [])
@@ -431,7 +436,7 @@ export default function SolutionPicker() {
                   <div className="flex flex-wrap gap-2">
                     {industryGuesses.map((guess) => {
                       const sol = findSolution(guess.suggestedSolution)
-                      if (!sol) return null
+                      if (!sol || getEffectiveStatus(guess.suggestedSolution) !== 'available') return null
                       return (
                         <button
                           key={guess.suggestedSolution}
@@ -465,17 +470,17 @@ export default function SolutionPicker() {
       )}
 
       {/* ── Intake 推荐结果 ── */}
-      {intakeResults.length > 0 && (
+      {filteredIntakeResults.length > 0 && (
         <div className="max-w-6xl mx-auto px-6 md:px-8 mb-8 animate-fade-in-up">
           <div className="flex items-center gap-2 mb-4">
             <Sparkles className="w-4 h-4 text-primary" />
             <h2 className="text-sm font-semibold text-foreground">
               为「{intakeQuery}」推荐的方案
             </h2>
-            <span className="text-xs text-muted-foreground/50">({intakeResults.length} 个匹配)</span>
+            <span className="text-xs text-muted-foreground/50">({filteredIntakeResults.length} 个匹配)</span>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {intakeResults.map((rec, i) => {
+            {filteredIntakeResults.map((rec, i) => {
               const localSol = findSolution(rec.id)
               const Icon = localSol ? getSolutionIcon(localSol.id) : Briefcase
               const color = rec.color || localSol?.color || '#6366f1'
