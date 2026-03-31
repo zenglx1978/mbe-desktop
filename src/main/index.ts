@@ -282,10 +282,21 @@ function setupAutoUpdater() {
   autoUpdater.autoInstallOnAppQuit = false
 
   autoUpdater.on('update-available', (info) => {
+    console.log('[AutoUpdater] Update available:', info.version)
     sendUpdateStatus('available', { version: info.version })
   })
 
+  autoUpdater.on('download-progress', (progress) => {
+    sendUpdateStatus('downloading', {
+      progress: Math.round(progress.percent),
+      bytesPerSecond: progress.bytesPerSecond,
+      transferred: progress.transferred,
+      total: progress.total,
+    })
+  })
+
   autoUpdater.on('update-downloaded', (info: any) => {
+    console.log('[AutoUpdater] Update downloaded:', info.version)
     const downloadedFile: string = info.downloadedFile || ''
 
     if (downloadedFile.endsWith('.msi')) {
@@ -296,6 +307,7 @@ function setupAutoUpdater() {
 
       if (!inSafeDir || /[;&|`$]/.test(resolved)) {
         console.error('[AutoUpdater] 安全校验失败，跳过 MSI 安装:', resolved)
+        sendUpdateStatus('error', { error: '安装包安全校验失败' })
         return
       }
 
@@ -310,57 +322,31 @@ function setupAutoUpdater() {
       }, 1500)
     } else {
       sendUpdateStatus('installing', { version: info.version })
-
-      // NSIS perMachine 静默安装可能不触发 --force-run，用后备脚本兜底重启
-      try {
-        const exePath = process.execPath
-        const batPath = path.join(app.getPath('temp'), 'mbe-desktop-restart.bat')
-        const exeName = 'MBE Desktop.exe'
-
-        const batContent = [
-          '@echo off',
-          'timeout /t 5 /nobreak >nul',
-          'set RETRIES=0',
-          ':check_loop',
-          `tasklist /FI "IMAGENAME eq ${exeName}" 2>nul | find /I "${exeName}" >nul`,
-          'if %ERRORLEVEL%==0 goto :done',
-          'set /a RETRIES+=1',
-          'if %RETRIES% GEQ 15 goto :launch',
-          'timeout /t 2 /nobreak >nul',
-          'goto :check_loop',
-          ':launch',
-          `start "" "${exePath}"`,
-          ':done',
-          'del "%~f0"',
-        ].join('\r\n')
-
-        fs.writeFileSync(batPath, batContent, 'utf-8')
-
-        const proc = spawn('cmd.exe', ['/c', batPath], {
-          detached: true,
-          stdio: 'ignore',
-          windowsHide: true,
-        })
-        proc.unref()
-        console.log('[AutoUpdater] 后备重启脚本已启动:', batPath)
-      } catch (err) {
-        console.error('[AutoUpdater] 后备重启脚本创建失败:', err)
-      }
-
-      setTimeout(() => autoUpdater.quitAndInstall(true, true), 2000)
+      // isSilent=false: 让 NSIS 显示安装界面并正确处理 UAC 提权（perMachine 必须）
+      // forceRunAfter=true: 配合 package.json runAfterFinish 确保安装后重启
+      setTimeout(() => autoUpdater.quitAndInstall(false, true), 2000)
     }
+  })
+
+  autoUpdater.on('update-not-available', () => {
+    console.log('[AutoUpdater] No update available')
   })
 
   autoUpdater.on('error', (err) => {
     console.error('[AutoUpdater] Error:', err.message)
+    sendUpdateStatus('error', { error: err.message })
   })
 
   autoUpdateInterval = setInterval(() => {
-    autoUpdater.checkForUpdates().catch(() => {})
+    autoUpdater.checkForUpdates().catch((err) => {
+      console.error('[AutoUpdater] Periodic check failed:', err?.message)
+    })
   }, 30 * 60 * 1000)
 
   autoUpdateInitTimer = setTimeout(() => {
-    autoUpdater.checkForUpdates().catch(() => {})
+    autoUpdater.checkForUpdates().catch((err) => {
+      console.error('[AutoUpdater] Initial check failed:', err?.message)
+    })
     autoUpdateInitTimer = null
   }, 10 * 1000)
 }
@@ -377,10 +363,16 @@ function sendUpdateStatus(status: string, data?: Record<string, unknown>) {
 }
 
 ipcMain.on('update:check', () => {
-  autoUpdater.checkForUpdates().catch(() => {})
+  autoUpdater.checkForUpdates().catch((err) => {
+    console.error('[AutoUpdater] Manual check failed:', err?.message)
+    sendUpdateStatus('error', { error: err?.message || '检查更新失败' })
+  })
 })
 ipcMain.on('update:download', () => {
-  autoUpdater.downloadUpdate().catch(() => {})
+  autoUpdater.downloadUpdate().catch((err) => {
+    console.error('[AutoUpdater] Download failed:', err?.message)
+    sendUpdateStatus('error', { error: err?.message || '下载更新失败' })
+  })
 })
 
 // ==================== App 生命周期 ====================

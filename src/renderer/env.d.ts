@@ -222,7 +222,15 @@ interface ElectronAPI {
   updater: {
     check: () => void
     download: () => void
-    onStatus: (callback: (data: any) => void) => () => void
+    onStatus: (callback: (data: {
+      status: 'available' | 'downloading' | 'installing' | 'error'
+      version?: string
+      progress?: number
+      error?: string
+      bytesPerSecond?: number
+      transferred?: number
+      total?: number
+    }) => void) => () => void
   }
   platform: string
 }

@@ -18,6 +18,7 @@ import {
   getWorkflowIcon, STATUS_ICONS, ORCHESTRATION_META, PROFIT_DIM_META,
   DELIVERABLE_ICON, SUCCESS_ICON, EXPECTED_ICON,
 } from '@/lib/workflow-icons'
+import { useToolStore } from '@/stores/tool-store'
 
 /** Markdown 渲染器，统一样式 */
 function MarkdownContent({ content, className = '' }: { content: string; className?: string }) {
@@ -95,6 +96,27 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
   useEffect(() => () => {
     runAbortRef.current?.abort()
   }, [])
+
+  const consumePendingWorkflowId = useToolStore((s) => s.consumePendingWorkflowId)
+  const consumePendingScenarioId = useToolStore((s) => s.consumePendingScenarioId)
+  const pendingWorkflowId = useToolStore((s) => s.pendingWorkflowId)
+  const pendingScenarioId = useToolStore((s) => s.pendingScenarioId)
+
+  useEffect(() => {
+    if (pendingWorkflowId) {
+      const wf = solution.workflows.find((w) => w.id === pendingWorkflowId)
+      consumePendingWorkflowId()
+      if (wf) selectWorkflow(wf)
+    }
+  }, [pendingWorkflowId, solution.workflows, consumePendingWorkflowId, selectWorkflow])
+
+  useEffect(() => {
+    if (pendingScenarioId) {
+      const sc = solution.scenarios.find((s) => s.id === pendingScenarioId)
+      consumePendingScenarioId()
+      if (sc) selectScenario(sc)
+    }
+  }, [pendingScenarioId, solution.scenarios, consumePendingScenarioId, selectScenario])
 
   const onProgress = useCallback((stepId: string, status: StepStatus, partial?: string) => {
     setStepStatuses(prev => ({ ...prev, [stepId]: status }))

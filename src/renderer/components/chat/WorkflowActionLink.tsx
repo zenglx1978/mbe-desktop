@@ -52,13 +52,15 @@ interface WorkflowActionLinkProps {
 }
 
 export function WorkflowActionLink({ link, children }: WorkflowActionLinkProps) {
-  const { setActiveTab } = useToolStore()
+  const { setActiveTab, navigateToWorkflow, navigateToScenario } = useToolStore()
 
   const handleClick = useCallback(() => {
     switch (link.protocol) {
       case 'workflow':
+        navigateToWorkflow(link.id)
+        break
       case 'scenario':
-        setActiveTab('workflows')
+        navigateToScenario(link.id)
         break
       case 'tab':
         setActiveTab(link.id as WorkbenchTab)
@@ -67,7 +69,7 @@ export function WorkflowActionLink({ link, children }: WorkflowActionLinkProps) 
         setActiveTab('tools')
         break
     }
-  }, [link, setActiveTab])
+  }, [link, setActiveTab, navigateToWorkflow, navigateToScenario])
 
   const Icon = ICON_MAP[link.protocol]
 

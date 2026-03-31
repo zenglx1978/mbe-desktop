@@ -147,10 +147,9 @@ function PlainMessages({
     return () => el.removeEventListener('scroll', onScroll)
   }, [])
 
-  // 新消息到达时滚到底部（仅在消息数量变化时触发，不受流式内容更新影响）
+  // 新消息到达时滚到底部（仅在用户未手动上滚时触发）
   useEffect(() => {
-    if (messages.length > prevCountRef.current) {
-      userScrolledUpRef.current = false
+    if (messages.length > prevCountRef.current && !userScrolledUpRef.current) {
       requestAnimationFrame(() => scrollToEnd('smooth'))
     }
     prevCountRef.current = messages.length
