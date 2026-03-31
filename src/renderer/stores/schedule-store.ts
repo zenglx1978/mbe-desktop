@@ -520,7 +520,6 @@ export function startScheduleNotificationPolling(
   intervalMs = 60_000,
 ): () => void {
   const seen = new Set<string>()
-  let timer: ReturnType<typeof setInterval>
 
   async function poll() {
     try {
@@ -545,6 +544,6 @@ export function startScheduleNotificationPolling(
   }
 
   poll()
-  timer = setInterval(poll, intervalMs)
+  const timer = setInterval(poll, intervalMs)
   return () => clearInterval(timer)
 }

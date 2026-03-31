@@ -1,6 +1,7 @@
 import { app, BrowserWindow, shell, ipcMain, dialog, safeStorage } from 'electron'
 import path from 'path'
 import fs from 'fs'
+import { spawn } from 'child_process'
 import { autoUpdater } from 'electron-updater'
 import { isReadPathAllowed, isWritePathAllowed, isSafeUrl } from './safe-path'
 import { initDatabase, setupDatabaseIPC, closeDatabase, getDb, checkAutoBackup } from './database'
@@ -300,7 +301,6 @@ function setupAutoUpdater() {
 
       sendUpdateStatus('installing', { version: info.version })
       setTimeout(() => {
-        const { spawn } = require('child_process')
         const proc = spawn('msiexec', ['/passive', '/norestart', '/i', resolved], {
           detached: true,
           stdio: 'ignore',
@@ -336,8 +336,7 @@ function setupAutoUpdater() {
 
         fs.writeFileSync(batPath, batContent, 'utf-8')
 
-        const { spawn: spawnCmd } = require('child_process')
-        const proc = spawnCmd('cmd.exe', ['/c', batPath], {
+        const proc = spawn('cmd.exe', ['/c', batPath], {
           detached: true,
           stdio: 'ignore',
           windowsHide: true,

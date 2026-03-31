@@ -5,7 +5,7 @@
  * 包含：品牌表、结算表、审计日志表。
  * 后续可迁移到 Electron 主进程通过 IPC 操作。
  */
-// @ts-ignore — sql.js 无 TS 声明，运行时由 WASM 提供
+// @ts-expect-error — sql.js 无 TS 声明，运行时由 WASM 提供
 import initSqlJs, { type Database } from 'sql.js'
 
 let db: Database | null = null

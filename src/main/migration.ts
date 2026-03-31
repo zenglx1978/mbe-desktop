@@ -51,7 +51,7 @@ function detectLegacyAgent(agent: typeof LEGACY_AGENTS[0]): LegacyAgentInfo {
   const hasSession = fs.existsSync(sessionPath)
 
   let sessionFields: string[] = []
-  let chatHistoryCount = 0
+  const chatHistoryCount = 0
 
   if (hasSession) {
     try {

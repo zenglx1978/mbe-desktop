@@ -11,7 +11,7 @@
 // AI 步骤通过 HTTP POST 调用 Agent 后端的 /consult 或 /chat 端点，
 // 不走 WebSocket（管道需要同步等待每条结果）。
 
-import { ipcMain, BrowserWindow, shell } from 'electron'
+import { app, ipcMain, BrowserWindow, shell } from 'electron'
 import * as fs from 'fs'
 import * as path from 'path'
 import { net } from 'electron'
@@ -90,7 +90,7 @@ function emitProgress(data: PipelineStepResult): void {
 // ────────────────────── 工具函数 ──────────────────────
 
 function getExportsDir(): string {
-  const docs = require('electron').app.getPath('documents')
+  const docs = app.getPath('documents')
   const dir = path.join(docs, 'MBE Desktop', 'exports')
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
   return dir

@@ -108,7 +108,7 @@ function validateArgs(args: string[]): boolean {
 // ────────────────────── 路径工具 ──────────────────────
 
 function getExportsDir(): string {
-  const docs = require('electron').app.getPath('documents')
+  const docs = app.getPath('documents')
   const dir = path.join(docs, 'MBE Desktop', 'exports')
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true })

@@ -7,7 +7,8 @@
 
 import path from 'path'
 import fs from 'fs'
-import { app, ipcMain } from 'electron'
+import { app, dialog, ipcMain } from 'electron'
+import crypto from 'crypto'
 import { isReadPathAllowed } from './safe-path'
 
 // ────────────────────── sql.js 状态 ──────────────────────
@@ -118,7 +119,7 @@ function getDbPath(): string {
 
 export async function initDatabase(): Promise<void> {
   try {
-    const initSqlJs = require('sql.js')
+    const initSqlJs = (await import('sql.js')).default
     SQL = await initSqlJs({ wasmBinary: loadWasmBinary() })
 
     dbFilePath = getDbPath()
@@ -626,9 +627,6 @@ export function setupDatabaseIPC(): void {
  * 加密备份/恢复（AES-256 加密的 .mbebackup 文件）
  */
 function registerBackupHandlers() {
-  const crypto = require('crypto')
-  const { dialog } = require('electron')
-
   ipcMain.handle('db:backup:create', async () => {
     if (!db) throw new Error('数据库未初始化')
     const { filePath } = await dialog.showSaveDialog({
@@ -748,7 +746,6 @@ function registerDataManagementHandlers() {
     if (!db) throw new Error('数据库未初始化')
     if (typeof filePath !== 'string' || typeof password !== 'string') throw new Error('参数类型错误')
     if (!isReadPathAllowed(filePath)) throw new Error('路径不在允许的目录中')
-    const crypto = require('crypto')
 
     const raw = fs.readFileSync(filePath)
     const newlineIdx = raw.indexOf(0x0a)
@@ -793,7 +790,6 @@ function registerDataManagementHandlers() {
 export function checkAutoBackup(): void {
   if (!db) return
   try {
-    const crypto = require('crypto')
     const docs = app.getPath('documents')
     const backupDir = path.join(docs, 'MBE Desktop', 'backups')
     if (!fs.existsSync(backupDir)) {

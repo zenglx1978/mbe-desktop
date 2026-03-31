@@ -47,13 +47,6 @@ export function ChatLocalActionCards({ actions, messageId, actionStatus }: ChatL
   const allDone = actions.every((_a, i) =>
     actionStatus?.[i] === 'auto_done' || actionStatus?.[i] === 'user_done')
 
-  if (manualActions.length === 0 && autoCompleted.length === 0) return null
-
-  const completedCount = Object.values(actionStatus ?? {}).filter(
-    s => s === 'auto_done' || s === 'user_done',
-  ).length
-  const progressPercent = actions.length > 0 ? Math.round((completedCount / actions.length) * 100) : 0
-
   const handleExecute = useCallback(async (action: LocalAction, index: number) => {
     if (executing !== null || runningAll) return
     setExecuting(index)
@@ -100,6 +93,13 @@ export function ChatLocalActionCards({ actions, messageId, actionStatus }: ChatL
     }
     setRunningAll(false)
   }, [runningAll, manualActions, actions, messageId, updateMessage])
+
+  if (manualActions.length === 0 && autoCompleted.length === 0) return null
+
+  const completedCount = Object.values(actionStatus ?? {}).filter(
+    s => s === 'auto_done' || s === 'user_done',
+  ).length
+  const progressPercent = actions.length > 0 ? Math.round((completedCount / actions.length) * 100) : 0
 
   return (
     <div className="mt-3 rounded-lg border border-violet-200 dark:border-violet-800 bg-violet-50/50 dark:bg-violet-950/30 p-3">

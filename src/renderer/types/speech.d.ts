@@ -33,9 +33,9 @@ interface SpeechRecognition extends EventTarget {
   onend: ((this: SpeechRecognition, ev: Event) => void) | null
 }
 
-declare var SpeechRecognition: {
+declare const SpeechRecognition: {
   new (): SpeechRecognition
 }
-declare var webkitSpeechRecognition: {
+declare let webkitSpeechRecognition: {
   new (): SpeechRecognition
 }

@@ -85,13 +85,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const api = (window as WindowWithElectron).electronAPI
       if (api?.session) {
-        t ? api.session.set(TOKEN_KEY, t) : api.session.remove(TOKEN_KEY)
+        if (t) { api.session.set(TOKEN_KEY, t) } else { api.session.remove(TOKEN_KEY) }
       } else {
-        t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY)
+        if (t) { localStorage.setItem(TOKEN_KEY, t) } else { localStorage.removeItem(TOKEN_KEY) }
       }
     } catch {
-      // Expected: Electron session API 不可用或抛错；降级到 localStorage
-      t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY)
+      if (t) { localStorage.setItem(TOKEN_KEY, t) } else { localStorage.removeItem(TOKEN_KEY) }
     }
   },
 
@@ -100,13 +99,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const api = (window as WindowWithElectron).electronAPI
       if (api?.session) {
-        u ? api.session.set(USER_KEY, u) : api.session.remove(USER_KEY)
+        if (u) { api.session.set(USER_KEY, u) } else { api.session.remove(USER_KEY) }
       } else {
-        u ? localStorage.setItem(USER_KEY, JSON.stringify(u)) : localStorage.removeItem(USER_KEY)
+        if (u) { localStorage.setItem(USER_KEY, JSON.stringify(u)) } else { localStorage.removeItem(USER_KEY) }
       }
     } catch {
-      // Expected: Electron session API 不可用或抛错；降级到 localStorage
-      u ? localStorage.setItem(USER_KEY, JSON.stringify(u)) : localStorage.removeItem(USER_KEY)
+      if (u) { localStorage.setItem(USER_KEY, JSON.stringify(u)) } else { localStorage.removeItem(USER_KEY) }
     }
   },
 

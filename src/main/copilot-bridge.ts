@@ -14,12 +14,13 @@ import {
 } from 'electron'
 import path from 'path'
 import fs from 'fs'
+import { execSync } from 'child_process'
 
 // ────────────────────── 状态 ──────────────────────
 
 let mainWindowRef: BrowserWindow | null = null
 let copilotWindow: BrowserWindow | null = null
-let lastClipboardText = ''
+const lastClipboardText = ''
 let isEnabled = true
 
 const COPILOT_WIDTH = 420
@@ -199,7 +200,6 @@ interface ActiveWindowInfo {
 async function getActiveWindow(): Promise<ActiveWindowInfo | null> {
   // Windows: 使用 PowerShell 获取当前活跃窗口信息
   if (process.platform === 'win32') {
-    const { execSync } = require('child_process')
     try {
       const ps = `
         Add-Type @"
@@ -233,7 +233,6 @@ async function getActiveWindow(): Promise<ActiveWindowInfo | null> {
 
   // macOS: 使用 AppleScript
   if (process.platform === 'darwin') {
-    const { execSync } = require('child_process')
     try {
       const script = `
         tell application "System Events"

@@ -20,6 +20,7 @@
 import { ipcMain, Notification, BrowserWindow, app } from 'electron'
 import { randomUUID } from 'crypto'
 import { isSafeUrl } from './safe-path'
+import { hostname } from 'os'
 
 // ────────────────────── 类型定义 ──────────────────────
 
@@ -74,7 +75,7 @@ let ws: WebSocket | null = null
 let connectionStatus: ConnectionStatus = 'disconnected'
 let reconnectAttempts = 0
 let pollTimer: ReturnType<typeof setInterval> | null = null
-let pendingResults = new Map<string, DispatchResult>()
+const pendingResults = new Map<string, DispatchResult>()
 
 const DEFAULT_CONFIG: DispatchConfig = {
   wsUrl: 'wss://mbe.hi-maker.com/ws/dispatch',
@@ -87,7 +88,7 @@ const DEFAULT_CONFIG: DispatchConfig = {
 
 function getDeviceName(): string {
   const os = process.platform === 'win32' ? 'Win' : process.platform === 'darwin' ? 'Mac' : 'Linux'
-  return `MBE-Desktop-${os}-${require('os').hostname()}`
+  return `MBE-Desktop-${os}-${hostname()}`
 }
 
 // ────────────────────── 初始化 ──────────────────────

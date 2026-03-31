@@ -17,7 +17,7 @@ export default function ClientQuickReply() {
     showCreateQR, setShowCreateQR,
     newQRTitle, setNewQRTitle, newQRContent, setNewQRContent,
     newQRCat, setNewQRCat, resetQuickReplyForm,
-    createQuickReply, deleteQuickReply, useQuickReply,
+    createQuickReply, deleteQuickReply, applyQuickReply,
     setInputText,
   } = useClientChatStore()
 
@@ -76,7 +76,7 @@ export default function ClientQuickReply() {
             ) : quickReplies.map(qr => (
               <div key={qr.reply_id} className="group flex items-start gap-2 p-1.5 rounded-md hover:bg-muted/50 cursor-pointer"
                 onClick={async () => {
-                  const content = await useQuickReply(qr.reply_id)
+                  const content = await applyQuickReply(qr.reply_id)
                   if (content) { setInputText(content); setShowQuickReplies(false) }
                 }}
               >

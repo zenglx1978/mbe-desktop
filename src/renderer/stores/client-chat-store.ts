@@ -58,7 +58,7 @@ export interface ClientChatMessagesState {
   fetchQuickReplies: (category?: string) => Promise<void>
   createQuickReply: (title: string, content: string, category?: string, shortcut?: string) => Promise<boolean>
   deleteQuickReply: (replyId: string) => Promise<boolean>
-  useQuickReply: (replyId: string) => Promise<string | null>
+  applyQuickReply: (replyId: string) => Promise<string | null>
   fetchChannelAnalytics: (channelId: string, days?: number) => Promise<void>
   fetchGlobalDashboard: (days?: number) => Promise<void>
   fetchMessages: (channelId?: string) => Promise<void>
@@ -156,7 +156,7 @@ export const useClientChatMessagesStore = create<ClientChatMessagesState>((set, 
     return false
   },
 
-  useQuickReply: async (replyId) => {
+  applyQuickReply: async (replyId) => {
     try {
       const res = await fetch(`${API}/quick-replies/${replyId}/use`, {
         method: 'POST',

@@ -77,6 +77,18 @@ function formatTime(iso: string | null) {
 }
 
 function StatePanel({ stateData, color }: { stateData: Record<string, unknown> | null; color: string }) {
+  const snapshots = useMemo(
+    () => (stateData ? ((stateData as StateData).snapshots || []) as Snapshot[] : []),
+    [stateData],
+  )
+
+  const snapshotKeys = useMemo(() => {
+    if (snapshots.length < 2) return []
+    const allKeys = new Set<string>()
+    snapshots.forEach((s) => { Object.keys(s.m || {}).forEach((k) => allKeys.add(k)) })
+    return Array.from(allKeys)
+  }, [snapshots])
+
   if (!stateData) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -89,7 +101,6 @@ function StatePanel({ stateData, color }: { stateData: Record<string, unknown> |
 
   const state = stateData as StateData
   const widgets = detectWidgets(state)
-  const snapshots = (state.snapshots || []) as Snapshot[]
   const pendingActions = (state.pending_actions || []) as Array<Record<string, unknown>>
   const lastSummary = state.last_result_summary as string | undefined
 
@@ -97,13 +108,6 @@ function StatePanel({ stateData, color }: { stateData: Record<string, unknown> |
   const countdownWidgets = widgets.filter((w) => w.type === 'countdown')
   const progressWidgets = widgets.filter((w) => w.type === 'progress')
   const textWidgets = widgets.filter((w) => w.type === 'text' || w.type === 'list')
-
-  const snapshotKeys = useMemo(() => {
-    if (snapshots.length < 2) return []
-    const allKeys = new Set<string>()
-    snapshots.forEach((s) => { Object.keys(s.m || {}).forEach((k) => allKeys.add(k)) })
-    return Array.from(allKeys)
-  }, [snapshots])
 
   const hasContent = widgets.length > 0 || snapshots.length > 0 || pendingActions.length > 0 || lastSummary
 

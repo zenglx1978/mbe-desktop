@@ -75,7 +75,6 @@ async function executePhase1(config: PipelineConfig): Promise<PhaseResult> {
   // 1.1 检测 Python 环境
   emitPhaseProgress(1, phaseName, '检测 Python', 'running')
   try {
-    const { ipcMain: ipc } = require('electron')
     // Python 检测通过 rpa-bridge 已有能力
     steps.push({ name: '检测 Python 环境', status: 'success', detail: 'Python 就绪' })
   } catch (err) {
