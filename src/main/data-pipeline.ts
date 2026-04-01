@@ -14,7 +14,6 @@
 import { app, ipcMain, BrowserWindow, shell } from 'electron'
 import * as fs from 'fs'
 import * as path from 'path'
-import { net } from 'electron'
 import { isReadPathAllowed, isWritePathAllowed } from './safe-path'
 import { generateXlsx } from './docgen/xlsx-engine'
 import { generateDocx } from './docgen/docx-engine'
@@ -169,6 +168,7 @@ function fetchWithTimeout(
 async function parseFile(filePath: string, maxChars = 200000): Promise<ParsedFileData> {
   // 动态导入 file-intel 的解析功能
   const fileIntel = await import('./file-intel')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const result = await (fileIntel as any).default?.parseFile?.({ filePath, maxChars })
     ?? invokeParseFile(filePath, maxChars)
   return result

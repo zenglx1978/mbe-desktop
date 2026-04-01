@@ -284,7 +284,7 @@ interface CountdownCardProps {
   color?: string
 }
 
-export function CountdownCard({ label, targetDate, color = '#f59e0b' }: CountdownCardProps) {
+export function CountdownCard({ label, targetDate }: CountdownCardProps) {
   const diff = useMemo(() => {
     const target = new Date(targetDate)
     const now = new Date()

@@ -4,7 +4,6 @@
 
 import { ipcMain, BrowserWindow } from 'electron'
 import { execFile } from 'child_process'
-import path from 'path'
 
 // ────────────────────── 类型 ──────────────────────
 

@@ -9,18 +9,15 @@ import {
   ipcMain,
   BrowserWindow,
   desktopCapturer,
-  nativeImage,
   Notification,
 } from 'electron'
 import path from 'path'
-import fs from 'fs'
 import { execSync } from 'child_process'
 
 // ────────────────────── 状态 ──────────────────────
 
 let mainWindowRef: BrowserWindow | null = null
 let copilotWindow: BrowserWindow | null = null
-const lastClipboardText = ''
 let isEnabled = true
 
 const COPILOT_WIDTH = 420

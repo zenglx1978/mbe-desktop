@@ -19,6 +19,7 @@ import UpdateBanner from '@/components/UpdateBanner'
 import WorkbenchTabs from '@/components/workbench/WorkbenchTabs'
 import ToolPanel from '@/components/workbench/ToolPanel'
 import DocumentsPanel from '@/components/workbench/DocumentsPanel'
+import CaseDocumentsPanel from '@/components/workbench/CaseDocumentsPanel'
 import TasksPanel from '@/components/workbench/TasksPanel'
 import DashboardPanel from '@/components/workbench/DashboardPanel'
 import WorkflowPanel from '@/components/workbench/WorkflowPanel'
@@ -398,6 +399,7 @@ function ActivePanel({ tab }: { tab: string }) {
     case 'tools':
       return <ToolPanel solution={solution} />
     case 'documents':
+      if (solution.id === 'law-firm') return <CaseDocumentsPanel solution={solution} />
       return <DocumentsPanel solution={solution} />
     case 'tasks':
       return <TasksPanel solution={solution} />

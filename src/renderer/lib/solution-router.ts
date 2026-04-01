@@ -35,10 +35,21 @@ export interface ToolField {
   default?: string | number
 }
 
+/** 快捷操作（方案首页卡片） */
+export interface QuickAction {
+  id: string
+  label: string
+  icon: string
+  workflowId?: string
+  toolId?: string
+  description?: string
+  cta?: string
+}
+
 /** 工具配置 — 配置驱动，不硬编码 */
 export interface ToolConfig {
   id: string
-  type: 'calculator' | 'document-ai' | 'doc-generator' | 'task-board' | 'batch-processor'
+  type: 'calculator' | 'document-ai' | 'doc-generator' | 'task-board' | 'batch-processor' | 'automation' | 'setup-wizard' | 'access-control' | 'report'
   name: string
   icon: string
   /** 对应的 Agent ID（用于 API 调用） */
@@ -186,6 +197,8 @@ export interface SolutionConfig {
   scenarios: ScenarioConfig[]
   /** 安全规则（AI 输出合规保障） */
   safetyRules?: SafetyRule[]
+  /** 快捷操作（方案首页卡片） */
+  quickActions?: QuickAction[]
   /** P2-10: 首次进入引导配置（QuickBooks 风格） */
   onboarding?: {
     questions: { key: string; label: string; options: string[] }[]

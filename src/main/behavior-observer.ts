@@ -6,7 +6,7 @@
 //   - 设置页可一键关闭
 //   - 超过 90 天的数据自动清理
 
-import { ipcMain, BrowserWindow, app } from 'electron'
+import { ipcMain, BrowserWindow } from 'electron'
 import { execSync } from 'child_process'
 
 // ────────────────────── 类型定义 ──────────────────────
@@ -40,6 +40,7 @@ export interface DailyAppSummary {
 
 // ────────────────────── Module State ──────────────────────
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 let mainWindow: BrowserWindow | null = null
 let dbAdapter: {
   exec: (sql: string) => void
@@ -90,7 +91,7 @@ function ensureTable(): void {
       CREATE INDEX IF NOT EXISTS idx_behavior_time ON behavior_events(created_at);
     `)
   } catch (err) {
-    console.error('[BehaviorObserver] 建表失败:', err)
+    console.error('[BehaviorObserver] 建表失败:', err) // eslint-disable-line no-console
   }
 }
 
@@ -152,7 +153,7 @@ function recordEvent(event: BehaviorEvent): void {
       event.timestamp,
     )
   } catch (err) {
-    console.error('[BehaviorObserver] 记录失败:', err)
+    console.error('[BehaviorObserver] 记录失败:', err) // eslint-disable-line no-console
   }
 }
 
@@ -307,7 +308,7 @@ export function startBehaviorObserver(): void {
   lastSwitchTime = Date.now()
   pollInterval = setInterval(pollActiveWindow, POLL_INTERVAL_MS)
   cleanOldEvents()
-  console.log('[BehaviorObserver] 已启动（每 5s 采样）')
+  console.log('[BehaviorObserver] 已启动（每 5s 采样）') // eslint-disable-line no-console
 }
 
 export function stopBehaviorObserver(): void {
@@ -324,7 +325,7 @@ export function stopBehaviorObserver(): void {
       timestamp: new Date(lastSwitchTime).toISOString(),
     })
   }
-  console.log('[BehaviorObserver] 已停止')
+  console.log('[BehaviorObserver] 已停止') // eslint-disable-line no-console
 }
 
 // ────────────────────── IPC 注册 ──────────────────────
