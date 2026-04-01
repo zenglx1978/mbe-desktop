@@ -409,23 +409,6 @@ export const usePipelineStore = create<PipelineState>((set) => ({
 
 // ─── 系统通知 ───
 
-declare global {
-  interface Window {
-    electronAPI?: {
-      scheduler?: {
-        notify: (req: {
-          title: string
-          body: string
-          urgency?: 'normal' | 'critical' | 'low'
-          onClick?: { type: string; target: string }
-          alsoToast?: boolean
-        }) => Promise<{ success: boolean }>
-        onToast: (callback: (data: { title: string; body: string; urgency?: string }) => void) => () => void
-      }
-    }
-  }
-}
-
 function sendScheduleNotification(
   title: string,
   body: string,

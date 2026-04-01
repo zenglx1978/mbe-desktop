@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import {
   useDispatchStore,
-  type HubDesktopInfo, type HubStatus, type DispatchHistoryItem,
+  type HubDesktopInfo,
 } from '@/stores/dispatch-store'
 import { useAppStore } from '@/stores/app-store'
 
@@ -29,7 +29,7 @@ export default function DispatchDashboard() {
   const navigate = useNavigate()
   const { hubStatus, dispatchHistory, fetchHubStatus, fetchDispatchHistory, connectionStatus } = useDispatchStore()
   const { currentSolution } = useAppStore()
-  const color = currentSolution?.color || '#6366f1'
+  const color = currentSolution()?.color || '#6366f1'
 
   const [refreshing, setRefreshing] = useState(false)
 

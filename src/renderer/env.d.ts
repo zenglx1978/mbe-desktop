@@ -232,6 +232,16 @@ interface ElectronAPI {
       total?: number
     }) => void) => () => void
   }
+  scheduler?: {
+    notify: (req: {
+      title: string
+      body: string
+      urgency?: 'normal' | 'critical' | 'low'
+      onClick?: { type: string; target: string }
+      alsoToast?: boolean
+    }) => Promise<{ success: boolean }>
+    onToast: (callback: (data: { title: string; body: string; urgency?: string }) => void) => () => void
+  }
   platform: string
 }
 

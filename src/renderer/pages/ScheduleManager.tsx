@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 import {
   useScheduleStore, usePipelineStore, useTemplateMarketStore,
-  type ScheduleItem, type ExecutionRecord, type CreateScheduleData,
+  type ScheduleItem, type CreateScheduleData,
   type PipelineItem, type PipelineRunItem, type MarketTemplate,
 } from '@/stores/schedule-store'
 import { useDispatchStore } from '@/stores/dispatch-store'
@@ -236,7 +236,7 @@ function StatePanel({ stateData, color }: { stateData: Record<string, unknown> |
 export default function ScheduleManager() {
   const navigate = useNavigate()
   const solution = useAppStore((s) => s.currentSolution())
-  const agentName = solution?.agents?.[0]?.backendId || 'finance'
+  const agentName = solution?.agents?.[0]?.id || 'finance'
 
   const {
     schedules, presets, history, stateData, loading, error,
@@ -456,7 +456,6 @@ export default function ScheduleManager() {
             loading={marketLoading}
             error={marketError}
             color={color}
-            agentName={agentName}
             onInstall={async (tid) => {
               const result = await installMarketTemplate(agentName, tid)
               if (result) {
@@ -883,7 +882,7 @@ export default function ScheduleManager() {
                   {/* P19: 时间线竖线 */}
                   <div className="absolute left-[11px] top-6 bottom-0 w-px bg-border/30" />
 
-                {history.map((rec, idx) => {
+                {history.map((rec) => {
                   const st = EXEC_STATUS[rec.status] || EXEC_STATUS.pending
                   return (
                     <div key={rec.execution_id} className="relative flex gap-3 pb-4">
@@ -994,7 +993,7 @@ interface DraftStep {
 function PipelinePanel({
   pipelines, presets, runs, loading, error,
   selectedId, color,
-  onSelect, onRun, onDelete, onCreateFromPreset,
+  onSelect, onRun, onDelete, onCreateFromPreset, onCreatePipeline,
 }: {
   pipelines: PipelineItem[]
   presets: Array<{ id: string; name: string; description: string; steps: Array<Record<string, unknown>> }>
@@ -1448,14 +1447,13 @@ function PipelinePanel({
 // ═══════════ P22: 模板市场面板 ═══════════
 
 function TemplateMarketPanel({
-  templates, loading, error, color, agentName,
+  templates, loading, error, color,
   onInstall, onRefresh,
 }: {
   templates: MarketTemplate[]
   loading: boolean
   error: string | null
   color: string
-  agentName: string
   onInstall: (templateId: string) => Promise<void>
   onRefresh: () => void
 }) {

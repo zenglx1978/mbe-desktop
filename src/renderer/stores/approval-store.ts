@@ -168,14 +168,14 @@ export function connectApprovalWs() {
   }
 }
 
-function startPolling() {
+export function startPolling() {
   if (_pollTimer || _backendUnavailable) return
   _pollTimer = setInterval(() => {
     useApprovalStore.getState().refresh()
   }, 30000)
 }
 
-function stopPolling() {
+export function stopPolling() {
   if (_pollTimer) {
     clearInterval(_pollTimer)
     _pollTimer = null

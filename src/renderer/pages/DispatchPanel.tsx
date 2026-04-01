@@ -15,7 +15,7 @@ const STATUS_CONFIG: Record<DispatchConnectionStatus, { icon: typeof Wifi; label
 
 export default function DispatchPanel() {
   const { connectionStatus, results, error, connect, disconnect, listResults } = useDispatchStore()
-  const color = useAppStore((s) => s.solutionColor) || '#6366f1'
+  const color = useAppStore((s) => s.currentSolution()?.color) || '#6366f1'
 
   const [sending, setSending] = useState(false)
   const [agentName, setAgentName] = useState('finance')
