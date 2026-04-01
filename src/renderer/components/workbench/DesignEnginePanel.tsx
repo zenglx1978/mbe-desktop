@@ -82,7 +82,7 @@ export default function DesignEnginePanel({ solution }: Props) {
       const blob = await generateDesign({
         markdown,
         format: targetFormat,
-        page: preview ? 1 : page,
+        page: preview ? 0 : (page !== undefined ? page - 1 : undefined),
         theme,
         agent: agentName || undefined,
       })
