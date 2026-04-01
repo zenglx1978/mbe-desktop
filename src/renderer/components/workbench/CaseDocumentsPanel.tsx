@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { Search, Upload, Download, FileText, ChevronDown, ChevronRight, Briefcase, RefreshCw, X } from 'lucide-react'
+import { Search, Upload, Download, ChevronDown, ChevronRight, Briefcase, RefreshCw } from 'lucide-react'
 import type { SolutionConfig } from '@/lib/solution-router'
 import { API_BASE, authFetch, authHeaders } from '@/lib/api-client'
 

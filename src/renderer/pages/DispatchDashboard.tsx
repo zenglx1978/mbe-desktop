@@ -6,8 +6,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  ArrowLeft, RefreshCw, Monitor, Wifi, WifiOff, Clock, Zap,
-  Activity, CheckCircle2, AlertCircle, Loader2, Radio,
+  ArrowLeft, RefreshCw, Monitor, WifiOff, Clock, Zap,
+  Activity, Radio,
 } from 'lucide-react'
 import {
   useDispatchStore,

@@ -122,8 +122,8 @@ export interface WorkflowConfig {
   name: string
   icon: string
   description: string
-  /** sequential = 流水线（步骤间传递结果）, parallel = 并行合并 */
-  mode: 'sequential' | 'parallel'
+  /** sequential = 流水线（步骤间传递结果）, parallel = 并行合并, single = 单步执行 */
+  mode: 'sequential' | 'parallel' | 'single'
   /** 工作流的最终交付物（用户能拿到什么） */
   deliverable: string
   /** 整体成功标准（如何判定工作流完成） */
