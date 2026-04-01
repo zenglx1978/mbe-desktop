@@ -102,22 +102,6 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
   const pendingWorkflowId = useToolStore((s) => s.pendingWorkflowId)
   const pendingScenarioId = useToolStore((s) => s.pendingScenarioId)
 
-  useEffect(() => {
-    if (pendingWorkflowId) {
-      const wf = solution.workflows.find((w) => w.id === pendingWorkflowId)
-      consumePendingWorkflowId()
-      if (wf) selectWorkflow(wf)
-    }
-  }, [pendingWorkflowId, solution.workflows, consumePendingWorkflowId, selectWorkflow])
-
-  useEffect(() => {
-    if (pendingScenarioId) {
-      const sc = solution.scenarios.find((s) => s.id === pendingScenarioId)
-      consumePendingScenarioId()
-      if (sc) selectScenario(sc)
-    }
-  }, [pendingScenarioId, solution.scenarios, consumePendingScenarioId, selectScenario])
-
   const onProgress = useCallback((stepId: string, status: StepStatus, partial?: string) => {
     setStepStatuses(prev => ({ ...prev, [stepId]: status }))
     if (partial) setStepPartials(prev => ({ ...prev, [stepId]: partial }))
@@ -145,6 +129,22 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
     setView('input')
     resetState()
   }, [resetState])
+
+  useEffect(() => {
+    if (pendingWorkflowId) {
+      const wf = solution.workflows.find((w) => w.id === pendingWorkflowId)
+      consumePendingWorkflowId()
+      if (wf) selectWorkflow(wf)
+    }
+  }, [pendingWorkflowId, solution.workflows, consumePendingWorkflowId, selectWorkflow])
+
+  useEffect(() => {
+    if (pendingScenarioId) {
+      const sc = solution.scenarios.find((s) => s.id === pendingScenarioId)
+      consumePendingScenarioId()
+      if (sc) selectScenario(sc)
+    }
+  }, [pendingScenarioId, solution.scenarios, consumePendingScenarioId, selectScenario])
 
   const goToList = useCallback(() => {
     setView('list')

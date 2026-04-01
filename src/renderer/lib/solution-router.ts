@@ -80,7 +80,7 @@ export type WorkbenchTab = 'chat' | 'tools' | 'documents' | 'tasks' | 'dashboard
   | 'cases' | 'contracts' | 'legal-docs' | 'billing'
   | 'employees' | 'payroll' | 'compliance' | 'disputes'
   | 'research' | 'portfolio' | 'macro' | 'compliance-pub'
-  | 'design-engine'
+  | 'design-engine' | 'dispatch-dashboard'
 
 /** 利润影响标注 — 米塞斯 P2：企业的目的是获取利润 */
 export interface ProfitImpact {
@@ -143,6 +143,13 @@ export interface ScenarioConfig {
   profitImpact?: ProfitImpact
 }
 
+export interface SafetyRule {
+  id: string
+  label: string
+  trigger: string
+  action: string
+}
+
 export interface SolutionConfig {
   id: string
   name: string
@@ -177,6 +184,8 @@ export interface SolutionConfig {
   workflows: WorkflowConfig[]
   /** 快捷场景（一键提问） */
   scenarios: ScenarioConfig[]
+  /** 安全规则（AI 输出合规保障） */
+  safetyRules?: SafetyRule[]
   /** P2-10: 首次进入引导配置（QuickBooks 风格） */
   onboarding?: {
     questions: { key: string; label: string; options: string[] }[]

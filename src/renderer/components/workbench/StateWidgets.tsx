@@ -335,7 +335,7 @@ export function ActionList({ actions, color = '#6366f1' }: ActionListProps) {
           <div className="w-4 h-4 mt-0.5 rounded-full border-2 shrink-0" style={{ borderColor: color }} />
           <div className="flex-1 min-w-0">
             <p className="text-xs leading-relaxed">{String(a.description || a.action || a.title || '待办')}</p>
-            {a.created_at && (
+            {!!a.created_at && (
               <p className="text-[10px] text-muted-foreground">{String(a.created_at).slice(0, 10)}</p>
             )}
           </div>

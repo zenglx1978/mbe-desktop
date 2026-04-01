@@ -15,6 +15,7 @@ import {
   type OrchestrationExpert,
   type OrchestrationState,
   type SourceCitation,
+  type WorkflowInstanceInfo,
   type WorkflowSuggestion,
 } from '@/stores/chat-store'
 import { useConversationStore } from '@/stores/conversation-store'
@@ -404,7 +405,7 @@ async function streamViaWebSocket(
           if (data.source_citation) updates.sources = data.source_citation
           if (data.confidence != null) updates.confidence = data.confidence
           if (data.workflow_suggestion) updates.workflowSuggestion = data.workflow_suggestion
-          if (data.workflow_instance) updates.workflowInstance = data.workflow_instance
+          if (data.workflow_instance) updates.workflowInstance = data.workflow_instance as WorkflowInstanceInfo
           if (data.local_actions?.length) updates.localActions = data.local_actions
           chatStore.updateMessage(messageId, updates)
 
@@ -528,7 +529,7 @@ async function streamViaHTTP(
         chatStore.updateMessage(messageId, { workflowSuggestion: data.workflow_suggestion as WorkflowSuggestion })
       }
       if (data.workflow_instance) {
-        chatStore.updateMessage(messageId, { workflowInstance: data.workflow_instance })
+        chatStore.updateMessage(messageId, { workflowInstance: data.workflow_instance as WorkflowInstanceInfo })
       }
       if (data.local_actions?.length) {
         chatStore.updateMessage(messageId, { localActions: data.local_actions as LocalActionInfo[] })
@@ -579,7 +580,7 @@ async function streamViaHTTP(
             chatStore.updateMessage(messageId, { workflowSuggestion: parsed.workflow_suggestion as WorkflowSuggestion })
           }
           if (parsed.workflow_instance) {
-            chatStore.updateMessage(messageId, { workflowInstance: parsed.workflow_instance })
+            chatStore.updateMessage(messageId, { workflowInstance: parsed.workflow_instance as WorkflowInstanceInfo })
           }
           if (parsed.local_actions?.length) {
             chatStore.updateMessage(messageId, { localActions: parsed.local_actions as LocalActionInfo[] })
