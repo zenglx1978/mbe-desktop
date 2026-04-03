@@ -214,13 +214,21 @@ export { SOLUTION_REGISTRY }
 /**
  * 后端同步的方案状态缓存
  * Admin 后台修改 status 后，Desktop 前端通过此缓存感知变更。
+ *
+ * 用户级可见性：后端 /api/v1/solutions（不带 include_disabled）
+ * 会根据 user_solution_roles 表过滤，只返回当前用户被授权的方案。
+ * _returnedIds 记录本次后端实际返回的方案 ID 白名单：
+ *   - 已拉取过后端数据 && 方案不在白名单 → 视为 'disabled'（用户无权）
+ *   - 离线 / 未拉取（_statusFetchedAt === 0）→ 回退本地注册表状态
  */
 const _remoteStatuses = new Map<string, SolutionConfig['status']>()
+const _returnedIds = new Set<string>()
 let _statusFetchedAt = 0
 
 export async function fetchSolutionStatuses(): Promise<Map<string, SolutionConfig['status']>> {
   try {
-    const res = await fetch(`${API_BASE}/api/v1/solutions?include_disabled=true`, {
+    // 不传 include_disabled=true，后端将应用用户级可见性过滤
+    const res = await fetch(`${API_BASE}/api/v1/solutions`, {
       headers: authHeaders(),
       signal: AbortSignal.timeout(10_000),
     })
@@ -228,7 +236,9 @@ export async function fetchSolutionStatuses(): Promise<Map<string, SolutionConfi
       const data = await res.json()
       const solutions: { id: string; status?: string }[] = data.solutions || []
       _remoteStatuses.clear()
+      _returnedIds.clear()
       for (const sol of solutions) {
+        _returnedIds.add(sol.id)
         if (sol.status && sol.status !== 'available') {
           _remoteStatuses.set(sol.id, sol.status as SolutionConfig['status'])
         }
@@ -241,8 +251,12 @@ export async function fetchSolutionStatuses(): Promise<Map<string, SolutionConfi
   return _remoteStatuses
 }
 
-/** 获取指定方案的有效状态（远端覆盖本地） */
+/** 获取指定方案的有效状态（远端覆盖本地；未在白名单中则视为 disabled） */
 export function getEffectiveStatus(id: string): NonNullable<SolutionConfig['status']> {
+  // 已成功从后端拉取过数据，且该方案不在返回白名单中 → 用户无权访问
+  if (_statusFetchedAt > 0 && !_returnedIds.has(id)) {
+    return 'disabled'
+  }
   return _remoteStatuses.get(id) ?? SOLUTION_REGISTRY.find(s => s.id === id)?.status ?? 'available'
 }
 
