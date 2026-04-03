@@ -68,6 +68,8 @@ export type SendMessageOptions = {
   signal?: AbortSignal
   /** 附件文件列表（发票/单据 PDF/图片），上传后 OCR 结果注入对话上下文 */
   files?: Array<{ file: File; name: string; type: string }>
+  /** 会话恢复标志（由 conversation-store.consumeResumeFlag 自动注入） */
+  isResume?: boolean
 }
 
 /**
@@ -124,6 +126,8 @@ export async function sendMessage(
   if (!convId) {
     convId = await convStore.createConversation(solution.id, agent.role)
   }
+
+  const isResume = options?.isResume || convStore.consumeResumeFlag()
 
   // 持久化用户消息
   convStore.persistMessage({
@@ -185,13 +189,13 @@ export async function sendMessage(
 
   let aborted = false
   try {
-    await streamViaWebSocket(text, agent, assistantId, convId, memoryContext, billing, signal)
+    await streamViaWebSocket(text, agent, assistantId, convId, memoryContext, billing, signal, isResume)
   } catch (e) {
     if (isAbortError(e)) {
       aborted = true
     } else {
       try {
-        await streamViaHTTP(text, agent, assistantId, convId, memoryContext, billing, signal)
+        await streamViaHTTP(text, agent, assistantId, convId, memoryContext, billing, signal, isResume)
       } catch (err) {
         if (isAbortError(err)) {
           aborted = true
@@ -253,10 +257,11 @@ async function streamViaWebSocket(
   text: string,
   agent: AgentEndpoint,
   messageId: string,
-  _convId: string,
+  convId: string,
   memoryContext?: string,
   billing?: BillingContext | null,
   signal?: AbortSignal,
+  isResume?: boolean,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     if (signal?.aborted) {
@@ -317,6 +322,8 @@ async function streamViaWebSocket(
       ...(billing?.solutionId ? { solution_id: billing.solutionId } : {}),
       ...(billing?.solutionRole ? { solution_role: billing.solutionRole } : {}),
       ...(billing?.subAccountId ? { sub_account_id: billing.subAccountId } : {}),
+      ...(convId ? { conversation_id: convId } : {}),
+      ...(isResume ? { is_resume: true } : {}),
     })
 
     // 防止双发：新建连接走 onopen，复用连接直接 send
@@ -460,10 +467,11 @@ async function streamViaHTTP(
   text: string,
   agent: AgentEndpoint,
   messageId: string,
-  _convId: string,
+  convId: string,
   memoryContext?: string,
   billing?: BillingContext | null,
   signal?: AbortSignal,
+  isResume?: boolean,
 ): Promise<void> {
   const chatStore = useChatStore.getState()
 
@@ -478,6 +486,8 @@ async function streamViaHTTP(
     ...(billing?.solutionId ? { solution_id: billing.solutionId } : {}),
     ...(billing?.solutionRole ? { solution_role: billing.solutionRole } : {}),
     ...(billing?.subAccountId ? { sub_account_id: billing.subAccountId } : {}),
+    ...(convId ? { conversation_id: convId } : {}),
+    ...(isResume ? { is_resume: true } : {}),
   })
   const headers = authHeaders()
 

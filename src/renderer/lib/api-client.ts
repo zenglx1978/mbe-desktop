@@ -13,6 +13,9 @@ const PROD_BASE = import.meta.env.VITE_API_BASE || 'https://mbe.hi-maker.com'
 /** HTTP API 基地址：dev 走 Vite proxy，prod 直连（可通过 VITE_API_BASE 覆盖） */
 export const API_BASE = import.meta.env.DEV ? '' : PROD_BASE
 
+/** 线上站点根地址：openExternal / 拼接相对跳转 URL 时使用（dev 下 API_BASE 为空，不能用于外链） */
+export const EXTERNAL_SITE_BASE = PROD_BASE.replace(/\/$/, '')
+
 /** 检测当前是否运行在 Electron 桌面端（非浏览器 Web 模式） */
 export function isElectron(): boolean {
   return typeof window !== 'undefined' &&

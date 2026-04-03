@@ -37,3 +37,7 @@ playwright-report/
 # Logs
 *.log
 npm-debug.log*
+
+# ESLint output
+eslint-out.json
+eslint-sidebar.json

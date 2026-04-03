@@ -6,13 +6,14 @@
 import {
   HardHat, Scale, Calculator, Building2, Stethoscope,
   Briefcase, Plane, GraduationCap, ShoppingBag, ShieldCheck,
-  TrendingUp, type LucideIcon,
+  TrendingUp, Landmark, type LucideIcon,
 } from 'lucide-react'
 
 export const SOLUTION_ICON_MAP: Record<string, LucideIcon> = {
   'labor-dispatch': HardHat,
   'law-firm': Scale,
   'finance-tax-service': Calculator,
+  'hk-finance-tax': Landmark,
   'construction-cost': Building2,
   'clinic-respiratory': Stethoscope,
   'smb-operations': Briefcase,

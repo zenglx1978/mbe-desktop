@@ -29,7 +29,7 @@ interface IntakeResult {
 }
 
 const CATEGORIES: { label: string; ids: string[] }[] = [
-  { label: '专业服务', ids: ['labor-dispatch', 'law-firm', 'finance-tax-service'] },
+  { label: '专业服务', ids: ['labor-dispatch', 'law-firm', 'finance-tax-service', 'hk-finance-tax'] },
   { label: '工程 · 医疗', ids: ['construction-cost', 'clinic-respiratory'] },
   { label: '企业经营', ids: ['smb-operations', 'ecommerce-brand-service'] },
   { label: '教育培训', ids: ['study-abroad-consulting', 'education-training'] },

@@ -20,6 +20,10 @@ export default defineConfig({
   server: {
     port: 5180,
     proxy: {
+      '/api/design': {
+        target: 'http://localhost:8100',
+        changeOrigin: true,
+      },
       '/api': {
         target: 'https://mbe.hi-maker.com',
         changeOrigin: true,

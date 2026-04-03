@@ -89,6 +89,7 @@ interface Profile {
 
 const SOLUTIONS = [
   { id: 'finance-tax-service', label: '财税服务' },
+  { id: 'hk-finance-tax', label: '香港财税' },
   { id: 'law-firm', label: '律所运营' },
   { id: 'labor-dispatch', label: '劳务派遣' },
   { id: 'construction-cost', label: '工程造价' },
