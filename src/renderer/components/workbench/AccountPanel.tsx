@@ -2,8 +2,10 @@
  * 账户面板 — 合同签约 + 订阅管理 + 发票记录
  */
 import { useState, useEffect, useCallback } from 'react'
-import { FileSignature, CreditCard, Receipt, RefreshCw, ExternalLink, Clock, CheckCircle, AlertCircle, XCircle } from 'lucide-react'
+import { FileSignature, CreditCard, Receipt, RefreshCw, ExternalLink, Clock, CheckCircle, AlertCircle, XCircle, ArrowUpCircle } from 'lucide-react'
 import { API_BASE, authHeaders, isElectron } from '@/lib/api-client'
+import { useTokenQuota } from '@/hooks/useTokenQuota'
+import type { TokenQuota } from '@/stores/token-quota-store'
 
 type SubTab = 'contracts' | 'subscription' | 'invoices'
 
@@ -65,6 +67,7 @@ export default function AccountPanel() {
   const [subscription, setSubscription] = useState<Subscription | null>(null)
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(false)
+  const { quota } = useTokenQuota()
 
   const fetchContracts = useCallback(async () => {
     if (!isElectron()) return
@@ -158,7 +161,7 @@ export default function AccountPanel() {
           <ContractList contracts={contracts} loading={loading} fmt={fmt} fmtDate={fmtDate} />
         )}
         {tab === 'subscription' && (
-          <SubscriptionView sub={subscription} loading={loading} fmt={fmt} fmtDate={fmtDate} />
+          <SubscriptionView sub={subscription} loading={loading} fmt={fmt} fmtDate={fmtDate} quota={quota} />
         )}
         {tab === 'invoices' && (
           <InvoiceList invoices={invoices} loading={loading} fmt={fmt} fmtDate={fmtDate} />
@@ -205,19 +208,36 @@ function ContractList({ contracts, loading, fmt, fmtDate }: {
   )
 }
 
-function SubscriptionView({ sub, loading, fmt: _fmt, fmtDate }: {
-  sub: Subscription | null; loading: boolean; fmt: (v: number) => string; fmtDate: (s: string) => string
+function fmtTokens(n: number): string {
+  if (n < 0) return '∞'
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`
+  return n.toLocaleString()
+}
+
+function SubscriptionView({ sub, loading, fmt: _fmt, fmtDate, quota }: {
+  sub: Subscription | null; loading: boolean; fmt: (v: number) => string; fmtDate: (s: string) => string; quota: TokenQuota | null
 }) {
   if (loading && !sub) return <LoadingState />
   if (!sub) return <EmptyState icon={CreditCard} text="暂无订阅" sub="开通订阅后将在此显示" />
 
-  const usagePercent = sub.monthly_quota > 0 ? Math.round((sub.used_quota / sub.monthly_quota) * 100) : 0
+  const used = quota?.monthlyUsed ?? sub.used_quota
+  const limit = quota?.monthlyLimit ?? sub.monthly_quota
+  const isUnlimited = quota?.isUnlimited ?? false
+  const pct = isUnlimited ? 0 : (limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0)
+
+  const barColor =
+    pct >= 90 ? 'bg-red-500' :
+    pct >= 70 ? 'bg-amber-500' :
+    'bg-emerald-500'
+
+  const planLabel = quota?.planName || sub.plan_name
 
   return (
     <div className="space-y-4">
       <div className="rounded-lg border p-4">
         <div className="flex items-center justify-between mb-3">
-          <span className="font-medium">{sub.plan_name}</span>
+          <span className="font-medium">{planLabel}</span>
           <StatusBadge status={sub.status} />
         </div>
         <div className="grid grid-cols-2 gap-3 text-sm">
@@ -233,25 +253,51 @@ function SubscriptionView({ sub, loading, fmt: _fmt, fmtDate }: {
             <p className="text-xs text-muted-foreground">自动续费</p>
             <p>{sub.auto_renew ? '已开启' : '未开启'}</p>
           </div>
+          {quota?.resetAt && (
+            <div>
+              <p className="text-xs text-muted-foreground">额度重置</p>
+              <p>{fmtDate(quota.resetAt)}</p>
+            </div>
+          )}
         </div>
       </div>
 
       <div className="rounded-lg border p-4">
-        <h4 className="text-sm font-medium mb-3">本月用量</h4>
+        <h4 className="text-sm font-medium mb-3">本月 Token 用量</h4>
         <div className="flex items-center justify-between text-sm mb-2">
-          <span>{sub.used_quota.toLocaleString()} / {sub.monthly_quota.toLocaleString()} Token</span>
-          <span className={usagePercent > 80 ? 'text-red-600 font-medium' : 'text-muted-foreground'}>
-            {usagePercent}%
+          <span>
+            {fmtTokens(used)} / {fmtTokens(limit)}
           </span>
+          {!isUnlimited && (
+            <span className={pct >= 80 ? 'text-red-600 font-medium' : 'text-muted-foreground'}>
+              {pct}%
+            </span>
+          )}
+          {isUnlimited && (
+            <span className="text-blue-500 text-xs font-medium">不限额</span>
+          )}
         </div>
-        <div className="h-2 bg-muted rounded-full overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all ${
-              usagePercent > 80 ? 'bg-red-500' : usagePercent > 50 ? 'bg-yellow-500' : 'bg-green-500'
-            }`}
-            style={{ width: `${Math.min(usagePercent, 100)}%` }}
-          />
-        </div>
+        {!isUnlimited && (
+          <div className="h-2 bg-muted rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${barColor}`}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        )}
+
+        {quota && quota.overageTokens > 0 && quota.allowOverage && (
+          <p className="text-xs text-amber-600 mt-2">
+            超额使用 {fmtTokens(quota.overageTokens)}，费用 ¥{quota.overageCostYuan.toFixed(2)}
+          </p>
+        )}
+
+        {!isUnlimited && pct >= 90 && !(quota?.allowOverage) && (
+          <div className="flex items-center gap-1.5 mt-2 text-xs text-red-600">
+            <ArrowUpCircle className="w-3.5 h-3.5" />
+            <span>额度即将用完，建议升级套餐</span>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -7,6 +7,7 @@ import { useAdaptiveUIStore } from '@/stores/adaptive-ui-store'
 import { getTabMeta, SIDEBAR_ACTIONS } from '@/lib/tab-icons'
 import { Sparkles, Power } from 'lucide-react'
 import type { WorkbenchTab } from '@/lib/solution-router'
+import TokenQuotaWidget from './TokenQuotaWidget'
 
 const api = (window as any).electronAPI
 
@@ -96,6 +97,8 @@ export default function Sidebar() {
           </div>
         )}
       </div>
+
+      <TokenQuotaWidget expanded={sidebarExpanded} />
 
       <div className="flex-1 overflow-y-auto py-3">
         {enabledTabs.map((tab) => {
