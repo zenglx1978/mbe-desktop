@@ -28,22 +28,6 @@ interface TokenQuotaState {
   clear: () => void
 }
 
-const EMPTY: TokenQuota = {
-  dailyUsed: 0,
-  dailyLimit: -1,
-  dailyRemaining: -1,
-  monthlyUsed: 0,
-  monthlyLimit: 0,
-  monthlyRemaining: 0,
-  resetAt: '',
-  planCode: null,
-  planName: null,
-  usagePercent: 0,
-  overageTokens: 0,
-  overageCostYuan: 0,
-  allowOverage: false,
-  isUnlimited: false,
-}
 
 export const useTokenQuotaStore = create<TokenQuotaState>((set, get) => ({
   quota: null,

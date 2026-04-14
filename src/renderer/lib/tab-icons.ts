@@ -114,7 +114,7 @@ const HK_TAB_LABEL_MAP: Record<string, string> = {
  * 取得 Tab 元資料，香港財稅方案使用繁體中文標籤。
  * 其他方案退回通用 getTabMeta()。
  */
-export function getTabMetaForSolution(tab: string, solutionId?: string): TabMeta {
+export function getTabMetaForSolution(tab: string, solutionId?: string | null): TabMeta {
   const base = TAB_ICON_MAP[tab] ?? { icon: MessageSquare, label: tab }
   if (solutionId === 'hk-finance-tax') {
     return { icon: base.icon, label: HK_TAB_LABEL_MAP[tab] ?? base.label }
