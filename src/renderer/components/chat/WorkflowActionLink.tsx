@@ -8,11 +8,13 @@
  *   mbe://calc/<type>      → 打开计算器工具
  *
  * 普通 URL 走默认浏览器打开。
+ * HK 繁體方案：ACTION_LABEL_HK 提供繁體中文 tooltip。
  */
 
 import { useCallback, type ReactNode } from 'react'
 import { ArrowRight, Play, Calculator, LayoutGrid } from 'lucide-react'
 import { useToolStore } from '@/stores/tool-store'
+import { useAppStore } from '@/stores/app-store'
 import type { WorkbenchTab } from '@/lib/solution-router'
 
 export interface MbeLink {
@@ -46,6 +48,13 @@ const ACTION_LABEL: Record<MbeLink['protocol'], string> = {
   calc: '打开计算器',
 }
 
+const ACTION_LABEL_HK: Record<MbeLink['protocol'], string> = {
+  workflow: '執行流程',
+  tab: '前往',
+  scenario: '快捷場景',
+  calc: '開啟計算器',
+}
+
 interface WorkflowActionLinkProps {
   link: MbeLink
   children: ReactNode
@@ -53,6 +62,9 @@ interface WorkflowActionLinkProps {
 
 export function WorkflowActionLink({ link, children }: WorkflowActionLinkProps) {
   const { setActiveTab, navigateToWorkflow, navigateToScenario } = useToolStore()
+  const { currentSolution } = useAppStore()
+  const isHkSolution = currentSolution()?.id === 'hk-finance-tax'
+  const labels = isHkSolution ? ACTION_LABEL_HK : ACTION_LABEL
 
   const handleClick = useCallback(() => {
     switch (link.protocol) {
@@ -82,7 +94,7 @@ export function WorkflowActionLink({ link, children }: WorkflowActionLinkProps) 
         border border-primary/20 hover:border-primary/30
         text-xs font-medium transition-colors cursor-pointer
         no-underline align-baseline leading-normal"
-      title={`${ACTION_LABEL[link.protocol]}：${link.id}`}
+      title={`${labels[link.protocol]}：${link.id}`}
     >
       <Icon className="w-3 h-3 shrink-0" />
       <span>{children}</span>

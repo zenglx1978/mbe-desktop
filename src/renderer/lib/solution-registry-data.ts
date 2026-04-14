@@ -491,7 +491,7 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
           { key: 'deduction', label: '专项附加扣除（元）', type: 'currency', default: 0 },
         ],
       },
-      { id: 'vat', type: 'calculator', name: '增值税计算器', icon: '📊',
+      { id: 'vat', type: 'calculator', name: 'VAT 計算器', icon: '📊',
         agent: 'finance', apiPath: '/api/finance/calc/vat', localScript: 'calc_vat',
         fields: [
           { key: 'amount', label: '含税金额（元）', type: 'currency', required: true },
@@ -645,7 +645,7 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
     ],
     slashCommands: [
       { cmd: '/个税', label: '个税计算', icon: '🧾', toolId: 'iit' },
-      { cmd: '/增值税', label: '增值税计算', icon: '📊', toolId: 'vat' },
+      { cmd: '/VAT', label: 'VAT 計算', icon: '📊', toolId: 'vat' },
       { cmd: '/印花税', label: '印花税计算', icon: '📌', toolId: 'stamp-tax' },
       { cmd: '/企业所得税', label: '企业所得税预缴', icon: '🏢', toolId: 'cit-quarterly' },
       { cmd: '/凭证', label: '智能凭证生成', icon: '📒', toolId: 'voucher-gen' },
@@ -708,7 +708,7 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
             goal: '编制三张主要报表并校验勾稽', successCriteria: ['资产=负债+所有者权益', '利润表与现金流量表交叉验证'],
             profitImpact: { dimension: 'cost_saving', amount: '报表自动编制，月省编表时间 2 天' } },
           { id: 'tax_filing', agent: 'finance', expert: 'tax_consultant', label: '纳税申报',
-            goal: '确定各税种申报金额和截止日期', successCriteria: ['增值税/企业所得税/附加税各项金额明确', '标注申报截止日和注意事项'],
+            goal: '确定各税种申报金额和截止日期', successCriteria: ['各稅種申報金額明確', '标注申报截止日和注意事项'],
             profitImpact: { dimension: 'loss_avoidance', amount: '按时准确申报，避免滞纳金和罚款' } },
         ],
         triggerPhrases: ['月度记账', '记账报税', '月末结账'],
@@ -943,7 +943,7 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
       '首個覆蓋香港三套 HKFRS 準則 + 轉移定價 + 全球最低稅的 AI 方案。' +
       '以 Finance Agent + Legal Agent 為基礎，注入香港 IRO / AFRC / OECD 知識庫，' +
       '讓每位會計師服務 3 倍客戶，年創收翻倍。' +
-      '灯塔客户：Cheng & Cheng Limited（PrimeGlobal 亞太區主席，140+ 國家網絡）。',
+      '燈塔客戶：Cheng & Cheng Limited（PrimeGlobal 亞太區主席，140+ 國家網絡）。',
     entrepreneurPurpose: '讓每位會計師服務 3 倍客戶，年創收翻倍，無需增加人手',
     profitMetrics: [
       '利得稅計算表 4h→25min，每月多服務 15-20 新客戶',
@@ -951,35 +951,16 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
       '轉移定價本地文件 5天→1天，一個稅務合夥人年省 60 工作日',
       'AML 客戶盡調 3h→10min，降低 AMLO 違規罰款風險',
     ],
-    valueEquivalent: { humanHours: 40, mbeMinutes: 3, acceleration: '800x' },
+    valueEquivalent: { humanHours: 40, mbeMinutes: 180, acceleration: '800x' },
     agents: [
       agent('finance', 8002, '香港稅務顧問', '利得稅申報、轉移定價、FSIE豁免、暫繳稅計算'),
       agent('finance', 8002, '香港審計專家', 'HKFRS/HKPBE/HKSMEFRS三準則、AFRC質檢、審計底稿'),
-      agent('legal', 8003, '跨境合規專家', '全球最低稅(GMT)、DTA雙重課稅協定、AML/KYC合規'),
+      agent('legal', 8003, '香港法律顧問', '公司法(Cap.622)、僱傭條例(Cap.57)、合同法、私隱條例、商業糾紛'),
     ],
     localScripts: ['calc_hk_profits_tax', 'calc_hk_stamp_duty'],
     knowledgeCache: ['hk_tax_law', 'hk_transfer_pricing', 'hk_aml_kyc'],
     theme: { primary: '217 91% 60%', accent: '217 91% 60%', sidebarBg: '220 20% 7%' },
-    enabledTabs: ['today', 'tax-filing', 'reports', 'tools', 'documents', 'chat', 'dashboard'],
-    onboarding: {
-      questions: [
-        {
-          key: 'firm_size',
-          label: '事務所規模',
-          options: ['1-5人', '5-20人', '20-50人', '50人以上'],
-        },
-        {
-          key: 'service_type',
-          label: '主要業務類型',
-          options: ['稅務為主', '審計為主', '稅務+審計', '跨境財稅（含TP/GMT）'],
-        },
-        {
-          key: 'client_type',
-          label: '主要客戶類型',
-          options: ['香港本地中小企', '跨境企業（港資/外資）', '兩地上市公司', '多元混合'],
-        },
-      ],
-    },
+    enabledTabs: ['today', 'tax-filing', 'reports', 'tools', 'documents', 'chat'],
     tools: [
       {
         id: 'hk-profits-tax',
@@ -1246,7 +1227,7 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
       { cmd: '/離岸', label: '離岸豁免評估', icon: '🌏', description: '啟動離岸豁免申請全流程' },
       { cmd: '/轉移定價', label: '轉移定價文件', icon: '📋', description: '生成 TP 本地文件草稿' },
     ],
-    status: 'active',
+    status: 'available',
   },
   {
     id: 'construction-cost',
@@ -2151,7 +2132,7 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
         description: '确保月度服务费核算准确、双方确认无争议',
         mode: 'sequential',
         deliverable: '月度结算对账单（含服务费明细 + 税务处理）',
-        successCriteria: ['数据源与品牌方可交叉验证', '佣金计算引用合同费率条款', '税务处理符合增值税规定'],
+        successCriteria: ['数据源与品牌方可交叉验证', '佣金计算引用合同费率条款', '税务处理符合适用税规'],
         steps: [
           { id: 'cs_data', agent: 'cs', expert: 'cs_consultant', label: '客服数据汇总',
             goal: '输出客服工作量和质量指标', successCriteria: ['含工单量/响应时长/解决率等 KPI', '数据源可追溯'],
@@ -3109,7 +3090,7 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
           { key: 'insurance', label: '五险一金（元）', type: 'currency', default: 0 },
         ],
       },
-      { id: 'vat', type: 'calculator', name: '增值税计算器', icon: '📊',
+      { id: 'vat', type: 'calculator', name: 'VAT 計算器', icon: '📊',
         agent: 'finance', apiPath: '/api/finance/calc/vat', localScript: 'calc_vat',
         fields: [
           { key: 'amount', label: '含税金额（元）', type: 'currency', required: true },
@@ -3123,7 +3104,7 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
     ],
     slashCommands: [
       { cmd: '/个税', label: '个税计算', icon: '🧾', toolId: 'iit' },
-      { cmd: '/增值税', label: '增值税计算', icon: '📊', toolId: 'vat' },
+      { cmd: '/VAT', label: 'VAT 計算', icon: '📊', toolId: 'vat' },
     ],
     workflows: [],
     scenarios: [

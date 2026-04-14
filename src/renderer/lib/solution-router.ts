@@ -225,16 +225,29 @@ const _remoteStatuses = new Map<string, SolutionConfig['status']>()
 const _returnedIds = new Set<string>()
 let _statusFetchedAt = 0
 
+/**
+ * 重置方案状态缓存。
+ * 在用户登出或切换账号时调用，防止上一用户的数据污染新用户的视图。
+ */
+export function resetSolutionStatuses(): void {
+  _remoteStatuses.clear()
+  _returnedIds.clear()
+  _statusFetchedAt = 0
+}
+
 export async function fetchSolutionStatuses(): Promise<Map<string, SolutionConfig['status']>> {
   try {
-    // 不传 include_disabled=true，后端将应用用户级可见性过滤
-    const res = await fetch(`${API_BASE}/api/v1/solutions`, {
+    const url = `${API_BASE}/api/v1/solutions`
+    console.log(`[SolutionRouter] fetching ${url}`)
+    const res = await fetch(url, {
       headers: authHeaders(),
       signal: AbortSignal.timeout(10_000),
     })
+    console.log(`[SolutionRouter] response status=${res.status} ok=${res.ok} type=${res.headers.get('content-type')}`)
     if (res.ok) {
       const data = await res.json()
       const solutions: { id: string; status?: string }[] = data.solutions || []
+      console.log(`[SolutionRouter] received ${solutions.length} solutions:`, solutions.map(s => s.id))
       _remoteStatuses.clear()
       _returnedIds.clear()
       for (const sol of solutions) {
@@ -244,10 +257,14 @@ export async function fetchSolutionStatuses(): Promise<Map<string, SolutionConfi
         }
       }
       _statusFetchedAt = Date.now()
+    } else {
+      const body = await res.text().catch(() => '<unreadable>')
+      console.error(`[SolutionRouter] non-ok response body (first 500 chars):`, body.slice(0, 500))
     }
-  } catch {
-    // Expected: 离线或方案状态 API 不可达；保留本地注册表状态
+  } catch (err) {
+    console.warn('[SolutionRouter] fetchSolutionStatuses failed – user may see unfiltered solutions:', err)
   }
+  console.log(`[SolutionRouter] final state: returnedIds=${[..._returnedIds]}, fetchedAt=${_statusFetchedAt}`)
   return _remoteStatuses
 }
 

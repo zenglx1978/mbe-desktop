@@ -69,7 +69,7 @@ const INTENT_RULES: Record<string, { keywords: [string, number][]; subIntents?: 
   finance: {
     keywords: [
       ['个税', 3], ['个人所得税', 3], ['年终奖', 2.5], ['工资扣税', 2.5],
-      ['增值税', 3], ['企业所得税', 2.5], ['税率', 2], ['发票', 2],
+      ['VAT', 3], ['企业所得税', 2.5], ['税率', 2], ['发票', 2],
       ['记账', 2], ['会计分录', 2.5], ['借贷', 1.5], ['资产负债', 2],
       ['利润表', 2], ['现金流', 2], ['财务报表', 2.5], ['审计', 2],
       ['折旧', 2], ['摊销', 2], ['应收', 1.5], ['应付', 1.5],
@@ -79,7 +79,7 @@ const INTENT_RULES: Record<string, { keywords: [string, number][]; subIntents?: 
     ],
     subIntents: {
       calc_iit: ['个税', '个人所得税', '工资扣税', '年终奖', '月薪', '税后'],
-      calc_vat: ['增值税', '进项', '销项', '抵扣'],
+      calc_vat: ['VAT', '进项', '销项', '抵扣'],
       accounting: ['分录', '记账', '借贷', '科目'],
       report: ['报表', '利润表', '资产负债', '现金流'],
     },
@@ -113,7 +113,7 @@ const INTENT_RULES: Record<string, { keywords: [string, number][]; subIntents?: 
     ],
     subIntents: {
       calc_cost_fee: ['取费', '费率', '管理费', '利润率', '规费'],
-      calc_cost_tax: ['税金', '建安税金', '增值税'],
+      calc_cost_tax: ['税金', '建安税金', 'VAT'],
       calc_cost_estimate: ['估算', '单方造价', '每平米', '概算'],
     },
   },
@@ -296,8 +296,8 @@ const BUILTIN_SNIPPETS: KnowledgeSnippet[] = [
   // 税率
   {
     id: 'vat_rate_general',
-    patterns: [/增值税.*(税率|多少|几个点)/, /一般纳税人.*税率/],
-    answer: '中国增值税税率（一般纳税人）：\n- 13%：销售货物、加工修理修配、有形动产租赁\n- 9%：交通运输、建筑、基础电信、不动产租赁、农产品\n- 6%：现代服务、生活服务、金融、增值电信\n- 0%：出口货物\n\n小规模纳税人征收率：3%（2023 年后恢复），减按 1% 优惠政策请查询最新文件。',
+    patterns: [/VAT.*(rate|多少|几个点)/, /一般纳税人.*税率/],
+    answer: '香港無增值稅制度。如查詢內地 VAT 稅率：一般納稅人 13%/9%/6%/0%；小規模納稅人 3%。',
     category: 'finance',
     confidence: 0.95,
   },
@@ -451,10 +451,10 @@ async function tryLocalCalc(
 /** meta intent 的固定回复 */
 function metaResponse(intent: string): string {
   const responses: Record<string, string> = {
-    greeting: '你好！我是 MBE AI 专家助手。当前处于离线模式，部分功能仍然可用：\n\n- 税费计算（个税、增值税、企业所得税）\n- 法律费用计算（诉讼费、经济补偿金）\n- 造价计算（取费、税金、估算）\n- 临床评分（CURB-65、CAT、PFT）\n- 常用知识查询（税率、法规要点）\n\n试试问我："增值税税率是多少？"或"帮我算一下诉讼费"',
+    greeting: '你好！我是 MBE AI 专家助手。当前处于离线模式，部分功能仍然可用：\n\n- 税费计算（个税、VAT、企业所得税）\n- 法律费用计算（诉讼费、经济补偿金）\n- 造价计算（取费、税金、估算）\n- 临床评分（CURB-65、CAT、PFT）\n- 常用知识查询（税率、法规要点）\n\n试试问我："VAT 税率是多少？"或"帮我算一下诉讼费"',
     farewell: '再见！连接网络后可以获得完整的 AI 专家服务。',
     thanks: '不客气！如果还有其他问题，随时问我。',
-    help: '**离线可用功能：**\n\n1. **确定性计算** — 个税、增值税、诉讼费、补偿金、造价取费、临床评分\n2. **知识查询** — 税率表、补偿标准、诉讼时效、费用构成\n3. **意图识别** — 自动判断你的问题属于哪个领域\n4. **文本分析** — 关键词提取、实体识别、分类\n\n连接网络后可获得：AI 深度分析、多轮对话、文档生成、知识库检索等完整功能。',
+    help: '**离线可用功能：**\n\n1. **确定性计算** — 个税、VAT、诉讼费、补偿金、造价取费、临床评分\n2. **知识查询** — 税率表、补偿标准、诉讼时效、费用构成\n3. **意图识别** — 自动判断你的问题属于哪个领域\n4. **文本分析** — 关键词提取、实体识别、分类\n\n连接网络后可获得：AI 深度分析、多轮对话、文档生成、知识库检索等完整功能。',
     status: '当前状态：**离线模式**\n\n- 网络连接：❌ 不可用\n- 本地计算：✅ 可用\n- 知识查询：✅ 内置知识可用\n- AI 对话：❌ 需联网\n\n连接网络后将自动恢复完整功能。',
   }
   return responses[intent] ?? '你好，我是 MBE AI 助手。当前处于离线模式。'
@@ -565,7 +565,7 @@ export async function generateOfflineAnswer(
 function formatCalcResult(scriptName: string, parsed: Record<string, unknown>): string {
   const labels: Record<string, string> = {
     calc_iit: '个人所得税计算结果',
-    calc_vat: '增值税计算结果',
+    calc_vat: 'VAT 計算結果',
     calc_litigation_fee: '诉讼费计算结果',
     calc_labor_compensation: '经济补偿金计算结果',
     calc_statute: '诉讼时效查询结果',

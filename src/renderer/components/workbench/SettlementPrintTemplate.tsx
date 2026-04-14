@@ -152,7 +152,7 @@ export default function SettlementPrintTemplate({
                 <td className="text-right py-2 font-mono">{total.toLocaleString()}</td>
               </tr>
               <tr className="border-b border-gray-200 text-gray-500">
-                <td className="py-2">增值税 (6%)</td>
+                <td className="py-2">服務稅 (6%)</td>
                 <td className="text-right py-2" colSpan={2}></td>
                 <td className="text-right py-2 font-mono">{tax.toLocaleString()}</td>
               </tr>

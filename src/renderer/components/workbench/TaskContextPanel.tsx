@@ -73,7 +73,7 @@ const TASK_CONTEXTS: Record<string, TaskContext> = {
     workflowIds: ['monthly_bookkeeping'],
     scenarioIds: [],
     quickActions: [
-      { label: '本月增值税申报', prompt: '帮我计算本月增值税申报金额', icon: <Calculator className="w-4 h-4" /> },
+      { label: '本月税务申报', prompt: '帮我计算本月税务申报金额', icon: <Calculator className="w-4 h-4" /> },
       { label: '个税代扣代缴', prompt: '帮我计算本月员工个税代扣代缴金额', icon: <Calculator className="w-4 h-4" /> },
       { label: '企业所得税预缴', prompt: '帮我计算本季度企业所得税预缴金额', icon: <Calculator className="w-4 h-4" /> },
       { label: '附加税计算', prompt: '帮我计算本月城建税和教育费附加', icon: <Calculator className="w-4 h-4" /> },
@@ -283,6 +283,77 @@ const TASK_CONTEXTS: Record<string, TaskContext> = {
   },
 }
 
+// ── 香港財稅方案任務上下文（HK-specific，無增值稅/個稅/企業所得稅）──
+const HK_TASK_CONTEXTS: Record<string, TaskContext> = {
+  bookkeeping: {
+    title: '帳務處理',
+    description: '銀行月結單歸集 → 會計分錄生成 → 科目校驗，AI 替您完成 90% 的記帳工作',
+    icon: <Receipt className="w-5 h-5" />,
+    workflowIds: ['monthly_bookkeeping'],
+    scenarioIds: [],
+    quickActions: [
+      { label: '上傳銀行月結單生成分錄', prompt: '幫我根據銀行月結單生成會計分錄', icon: <Receipt className="w-4 h-4" /> },
+      { label: '核對應收應付款項', prompt: '幫我核對本月應收款項和應付款項餘額', icon: <FileText className="w-4 h-4" /> },
+      { label: '校驗科目餘額', prompt: '檢查本月科目餘額是否平衡，有無異常', icon: <CheckCircle2 className="w-4 h-4" /> },
+    ],
+    toolIds: [],
+  },
+  invoices: {
+    title: '單據管理',
+    description: '商業收據、採購單據歸集與合規審查，確保每份憑證真實可用，符合 IRD 要求',
+    icon: <Receipt className="w-5 h-5" />,
+    workflowIds: [],
+    scenarioIds: [],
+    quickActions: [
+      { label: '上傳並整理商業收據', prompt: '幫我整理和歸類這批商業收據', icon: <CheckCircle2 className="w-4 h-4" /> },
+      { label: '核對採購單據完整性', prompt: '核對本月採購單據是否完整，有無缺漏', icon: <AlertTriangle className="w-4 h-4" /> },
+      { label: '單據合規審查（IRD 要求）', prompt: '檢查這批單據是否符合 IRD 要求，金額、日期、供應商資料是否齊全', icon: <FileText className="w-4 h-4" /> },
+    ],
+    toolIds: [],
+  },
+  'tax-filing': {
+    title: '報稅',
+    description: '利得稅、薪俸稅、物業稅 — 自動計算應繳稅款，生成 IRD 申報數據，提醒截止日',
+    icon: <Calculator className="w-5 h-5" />,
+    workflowIds: [],
+    scenarioIds: [],
+    quickActions: [
+      { label: '利得稅計算（Profits Tax 16.5%）', prompt: '幫我計算本年度公司應繳利得稅，適用稅率 16.5%', icon: <Calculator className="w-4 h-4" /> },
+      { label: '薪俸稅代扣核算', prompt: '幫我核算員工薪俸稅代扣款項及月末申報', icon: <Calculator className="w-4 h-4" /> },
+      { label: '物業稅申報準備', prompt: '幫我準備物業稅申報所需材料和計算稅額', icon: <FileText className="w-4 h-4" /> },
+      { label: '稅務豁免資格查詢', prompt: '查詢我的公司是否符合離岸收入豁免或其他利得稅豁免條件', icon: <Sparkles className="w-4 h-4" /> },
+    ],
+    toolIds: [],
+  },
+  reports: {
+    title: '財務報告',
+    description: 'HKFRS 合規財務報告 — 資產負債表、損益表、現金流量表，AI 自動編制與勾稽校驗',
+    icon: <FileText className="w-5 h-5" />,
+    workflowIds: ['monthly_bookkeeping'],
+    scenarioIds: ['annual_audit'],
+    quickActions: [
+      { label: '編制 HKFRS 三大報表', prompt: '按 HKFRS 標準幫我編制資產負債表、損益表和現金流量表', icon: <FileText className="w-4 h-4" /> },
+      { label: '報表勾稽校驗', prompt: '檢查三大報表的勾稽關係是否正確，有無差異', icon: <CheckCircle2 className="w-4 h-4" /> },
+      { label: '年度審計材料準備', prompt: '準備年度審計所需的材料清單和注意事項（AFRC 要求）', icon: <AlertTriangle className="w-4 h-4" /> },
+    ],
+    toolIds: [],
+  },
+  'tax-planning': {
+    title: '稅務規劃',
+    description: '在合法合規前提下降低香港及跨境綜合稅負，利用 HK/內地 DTA 及全球最低稅規劃節稅',
+    icon: <Sparkles className="w-5 h-5" />,
+    workflowIds: [],
+    scenarioIds: [],
+    quickActions: [
+      { label: '稅負率測算與行業對標', prompt: '測算當前企業整體稅負率，與香港同行業平均水平對標', icon: <Calculator className="w-4 h-4" /> },
+      { label: 'HK/內地 DTA 稅務規劃', prompt: '分析香港與內地稅務協定（DTA）的節稅機會和最優架構', icon: <Sparkles className="w-4 h-4" /> },
+      { label: '轉移定價合規評估', prompt: '評估關聯交易轉移定價的合規風險和文件要求', icon: <FileText className="w-4 h-4" /> },
+      { label: 'OECD 全球最低稅評估', prompt: '評估我的企業是否受 OECD Pillar Two 全球最低稅（15%）影響', icon: <Calculator className="w-4 h-4" /> },
+    ],
+    toolIds: [],
+  },
+}
+
 // ── 投研方案宏观信号 mock 数据 ──
 const MACRO_SIGNALS = [
   { name: '美股(SPX)', signal: 'BUY', score: 78, color: 'text-green-500' },
@@ -305,13 +376,16 @@ const COMPLIANCE_CHECKLIST = [
 
 export default function TaskContextPanel({ solution, taskId }: Props) {
   const { setActiveTab, navigateToChat } = useToolStore()
-  const ctx = TASK_CONTEXTS[taskId]
+  const isHkSolution = solution.id === 'hk-finance-tax'
+  const ctx = isHkSolution
+    ? (HK_TASK_CONTEXTS[taskId] ?? TASK_CONTEXTS[taskId])
+    : TASK_CONTEXTS[taskId]
   const [expandedWorkflow, setExpandedWorkflow] = useState<string | null>(null)
 
   if (!ctx) {
     return (
       <div className="flex-1 flex items-center justify-center text-muted-foreground">
-        未知任务类型: {taskId}
+        未知任務類型: {taskId}
       </div>
     )
   }
@@ -504,6 +578,7 @@ export default function TaskContextPanel({ solution, taskId }: Props) {
                   expanded={expandedWorkflow === wf.id}
                   onToggle={() => setExpandedWorkflow(expandedWorkflow === wf.id ? null : wf.id)}
                   onStart={() => setActiveTab('workflows')}
+                  locale={isHkSolution ? 'hk' : undefined}
                 />
               ))}
             </div>
@@ -513,7 +588,7 @@ export default function TaskContextPanel({ solution, taskId }: Props) {
         {/* 内联计算器 */}
         {relatedTools.length > 0 && (
           <section>
-            <h3 className="text-sm font-semibold text-foreground mb-3">计算器</h3>
+            <h3 className="text-sm font-semibold text-foreground mb-3">{isHkSolution ? '計算器' : '计算器'}</h3>
             <div className="flex flex-wrap gap-2">
               {relatedTools.map((tool) => (
                 <button
@@ -533,7 +608,7 @@ export default function TaskContextPanel({ solution, taskId }: Props) {
         {/* 相关场景 */}
         {relatedScenarios.length > 0 && (
           <section>
-            <h3 className="text-sm font-semibold text-foreground mb-3">常用场景</h3>
+            <h3 className="text-sm font-semibold text-foreground mb-3">{isHkSolution ? '常用場景' : '常用场景'}</h3>
             <div className="space-y-2">
               {relatedScenarios.map((sc) => (
                 <button
@@ -580,10 +655,11 @@ function QuickActionCard({ icon, label, onClick }: {
 }
 
 /** P1-4: Workflow 卡片 — 默认折叠，只显示名称+开始按钮 */
-function WorkflowCard({ workflow, expanded, onToggle, onStart }: {
+function WorkflowCard({ workflow, expanded, onToggle, onStart, locale }: {
   workflow: WorkflowConfig; expanded: boolean
-  onToggle: () => void; onStart: () => void
+  onToggle: () => void; onStart: () => void; locale?: 'hk'
 }) {
+  const isHk = locale === 'hk'
   return (
     <div className="rounded-xl border border-border/50 bg-card overflow-hidden">
       <div className="flex items-center gap-3 p-4">
@@ -598,12 +674,12 @@ function WorkflowCard({ workflow, expanded, onToggle, onStart }: {
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity"
           >
             <Play className="w-3 h-3" />
-            开始
+            {isHk ? '開始' : '开始'}
           </button>
           <button
             onClick={onToggle}
             className="p-1.5 rounded-md hover:bg-muted/50 transition-colors"
-            title={expanded ? '收起步骤' : '查看步骤'}
+            title={expanded ? (isHk ? '收起步驟' : '收起步骤') : (isHk ? '查看步驟' : '查看步骤')}
           >
             {expanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
           </button>
@@ -614,7 +690,7 @@ function WorkflowCard({ workflow, expanded, onToggle, onStart }: {
       {expanded && (
         <div className="border-t border-border/30 px-4 py-3 bg-muted/20">
           <div className="text-xs text-muted-foreground mb-2">
-            {workflow.steps.length} 个步骤 · {workflow.mode === 'sequential' ? '按顺序执行' : '并行执行'}
+            {workflow.steps.length} {isHk ? '個步驟' : '个步骤'} · {workflow.mode === 'sequential' ? (isHk ? '按順序執行' : '按顺序执行') : (isHk ? '並行執行' : '并行执行')}
           </div>
           <div className="space-y-2">
             {workflow.steps.map((step, i) => (

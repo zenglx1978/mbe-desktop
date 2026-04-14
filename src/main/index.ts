@@ -211,6 +211,14 @@ function createWindow(): void {
     autoHideMenuBar: true,
   })
 
+  // Cloudflare WAF 会拦截包含 "Electron" 的默认 User-Agent（error 1010），
+  // 用标准浏览器 UA 替换，确保 API 请求正常到达后端
+  const appVer = app.getVersion()
+  const chromeVer = process.versions.chrome || '128.0.0.0'
+  const browserUA = `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${chromeVer} Safari/537.36 MBEDesktop/${appVer}`
+  mainWindow.webContents.session.setUserAgent(browserUA)
+  console.log(`[App] User-Agent set: ${browserUA}`)
+
   mainWindow.on('ready-to-show', () => {
     mainWindow?.show()
     if (isDev) {

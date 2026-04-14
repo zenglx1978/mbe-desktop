@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { SOLUTION_REGISTRY, type SolutionConfig, fetchSolutionStatuses, getEffectiveStatus } from '@/lib/solution-router'
+import { SOLUTION_REGISTRY, type SolutionConfig, fetchSolutionStatuses, getEffectiveStatus, resetSolutionStatuses } from '@/lib/solution-router'
 import { useAppStore } from '@/stores/app-store'
 import { useAuthStore } from '@/stores/auth-store'
 import { LogOut, Zap, Briefcase, Search, Users, Sparkles, Scan, ArrowRight, ChevronDown } from 'lucide-react'
@@ -29,11 +29,11 @@ interface IntakeResult {
 }
 
 const CATEGORIES: { label: string; ids: string[] }[] = [
-  { label: '专业服务', ids: ['labor-dispatch', 'law-firm', 'finance-tax-service', 'hk-finance-tax'] },
-  { label: '工程 · 医疗', ids: ['construction-cost', 'clinic-respiratory'] },
-  { label: '企业经营', ids: ['smb-operations', 'ecommerce-brand-service'] },
-  { label: '教育培训', ids: ['study-abroad-consulting', 'education-training'] },
-  { label: '金融保险', ids: ['insurance-operations', 'investment-research'] },
+  { label: '專業服務', ids: ['labor-dispatch', 'law-firm', 'finance-tax-service', 'hk-finance-tax'] },
+  { label: '工程 · 醫療', ids: ['construction-cost', 'clinic-respiratory'] },
+  { label: '企業經營', ids: ['smb-operations', 'ecommerce-brand-service'] },
+  { label: '教育培訓', ids: ['study-abroad-consulting', 'education-training'] },
+  { label: '金融保險', ids: ['insurance-operations', 'investment-research'] },
 ]
 
 function findSolution(id: string): SolutionConfig | undefined {
@@ -41,8 +41,8 @@ function findSolution(id: string): SolutionConfig | undefined {
 }
 
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
-  coming_soon: { label: '即将上线', className: 'bg-amber-500/15 text-amber-500 border-amber-500/20' },
-  draft: { label: '开发中', className: 'bg-slate-500/15 text-slate-400 border-slate-500/20' },
+  coming_soon: { label: '即將上線', className: 'bg-amber-500/15 text-amber-500 border-amber-500/20' },
+  draft: { label: '開發中', className: 'bg-slate-500/15 text-slate-400 border-slate-500/20' },
 }
 
 function SolutionCard({ solution, index, onPick, onLearnMore }: {
@@ -77,7 +77,7 @@ function SolutionCard({ solution, index, onPick, onLearnMore }: {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* 顶部渐变高光 — hover 时显现，强化方案色彩身份 */}
+      {/* 頂部漸變高光 — hover 時顯現，強化方案色彩身份 */}
       {isClickable && (
         <div
           className="absolute top-0 left-5 right-5 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-300"
@@ -100,11 +100,11 @@ function SolutionCard({ solution, index, onPick, onLearnMore }: {
           <span
             className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full"
             style={{ backgroundColor: color + '12', color }}
-            title={`人工 ${solution.valueEquivalent.humanHours} 小时 → MBE ${solution.valueEquivalent.mbeMinutes} 分钟`}
-            aria-label={`效率提升：${solution.valueEquivalent.humanHours}小时→${solution.valueEquivalent.mbeMinutes}分钟`}
+            title={`人工 ${solution.valueEquivalent.humanHours} 小時 → MBE ${solution.valueEquivalent.mbeMinutes} 分鐘`}
+            aria-label={`效率提升：${solution.valueEquivalent.humanHours}小時→${solution.valueEquivalent.mbeMinutes}分鐘`}
           >
             <Zap className="w-3 h-3 shrink-0" />
-            {solution.valueEquivalent.humanHours}小时→{solution.valueEquivalent.mbeMinutes}分钟
+            {solution.valueEquivalent.humanHours}小時→{solution.valueEquivalent.mbeMinutes}分鐘
           </span>
         ) : null}
       </div>
@@ -123,7 +123,7 @@ function SolutionCard({ solution, index, onPick, onLearnMore }: {
         </span>
       )}
 
-      {/* P2-8: 去掉技术计数（专家数/工具数/流程数），改为利润导向标签 */}
+      {/* P2-8: 去掉技術計數（專家數/工具數/流程數），改為利潤導向標籤 */}
       <div className="flex items-center gap-2 mt-3 text-[11px] text-muted-foreground/50 group-hover:text-muted-foreground/70 transition-colors">
         {solution.valueEquivalent && (
           <span className="flex items-center gap-1">
@@ -133,14 +133,14 @@ function SolutionCard({ solution, index, onPick, onLearnMore }: {
         )}
       </div>
 
-      {/* 操作按钮 — 两个独立交互元素，不嵌套 */}
+      {/* 操作按鈕 — 兩個獨立交互元素，不嵌套 */}
       {isClickable && (
         <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/20">
           <button
             onClick={() => onPick(solution.id)}
             className="flex-1 py-1.5 text-xs font-medium rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            选用方案
+            選用方案
           </button>
           <button
             onClick={() => onLearnMore(solution.id)}
@@ -155,21 +155,22 @@ function SolutionCard({ solution, index, onPick, onLearnMore }: {
 }
 
 const POPULAR_TAGS = [
-  { label: '劳务派遣', query: '我是劳务派遣公司' },
-  { label: '律所', query: '我是律师事务所' },
-  { label: '财税服务', query: '我需要记账报税' },
-  { label: '电商品牌', query: '我做电商' },
-  { label: '中小企业', query: '我是中小企业老板' },
-  { label: '保险', query: '我做保险' },
-  { label: '工程造价', query: '我做工程造价' },
-  { label: '投资研究', query: '我做投资分析' },
-  { label: '留学', query: '我要出国留学' },
+  { label: '勞務派遣', query: '我是勞務派遣公司' },
+  { label: '律所', query: '我是律師事務所' },
+  { label: '財稅服務', query: '我需要記賬報稅' },
+  { label: '電商品牌', query: '我做電商' },
+  { label: '中小企業', query: '我是中小企業老板' },
+  { label: '保險', query: '我做保險' },
+  { label: '工程造價', query: '我做工程造價' },
+  { label: '投資研究', query: '我做投資分析' },
+  { label: '留學', query: '我要出國留學' },
 ]
 
 export default function SolutionPicker() {
   const navigate = useNavigate()
   const setSolution = useAppStore((s) => s.setSolution)
   const user = useAuthStore((s) => s.user)
+  const allowedSolutions = user?.allowedSolutions
   const [search, setSearch] = useState('')
   const [industryGuesses, setIndustryGuesses] = useState<IndustryGuess[]>([])
   const [scanning, setScanning] = useState(false)
@@ -183,13 +184,27 @@ export default function SolutionPicker() {
   const intakeInputRef = useRef<HTMLInputElement>(null)
 
   const filteredIntakeResults = useMemo(
-    () => intakeResults.filter(rec => getEffectiveStatus(rec.id) === 'available'),
-    [intakeResults, statusSynced],
+    () => intakeResults.filter(rec => {
+      if (getEffectiveStatus(rec.id) !== 'available') return false
+      if (allowedSolutions?.length && !allowedSolutions.includes(rec.id)) return false
+      return true
+    }),
+    [intakeResults, statusSynced, allowedSolutions],
   )
 
+  // 每次用戶切換（含登出再登入）時，重置模組級緩存並重新拉取方案列表。
+  // 這樣能避免上一個用戶的無限制方案列表污染新用戶的視圖。
+  const userId = user?.userId ?? user?.email ?? null
   useEffect(() => {
-    fetchSolutionStatuses().then(() => setStatusSynced(true))
-  }, [])
+    console.debug('[SolutionPicker] user changed, resetting statuses. userId=', userId, 'allowedSolutions=', user?.allowedSolutions)
+    setStatusSynced(false)
+    resetSolutionStatuses()
+    fetchSolutionStatuses().then(() => {
+      console.debug('[SolutionPicker] fetchSolutionStatuses done. allowedSolutions=', user?.allowedSolutions)
+      setStatusSynced(true)
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId])
 
   useEffect(() => {
     const api = (window as any).electronAPI
@@ -231,12 +246,12 @@ export default function SolutionPicker() {
         }
       } else {
         setIntakeResults([])
-        setIntakeError('匹配服务暂时不可用，请从下方浏览全部方案')
+        setIntakeError('匹配服務暫時不可用，請從下方瀏覽全部方案')
         setShowAllSolutions(true)
       }
     } catch {
       setIntakeResults([])
-      setIntakeError('网络连接失败，请从下方浏览全部方案')
+      setIntakeError('網絡連接失敗，請從下方瀏覽全部方案')
       setShowAllSolutions(true)
     } finally {
       setIntakeLoading(false)
@@ -255,17 +270,21 @@ export default function SolutionPicker() {
   const topRecommendation = industryGuesses[0]
 
   const filteredCategories = useMemo(() => {
-    // Intake API 成功时不需要本地过滤（结果单独展示）
-    // Intake API 失败时展示全部方案，不做本地过滤（中文子串匹配不可靠）
+    // Intake API 成功時不需要本地過濾（結果單獨展示）
+    // Intake API 失敗時展示全部方案，不做本地過濾（中文子串匹配不可靠）
     const base = CATEGORIES
 
     return base.map((cat) => ({
       ...cat,
-      ids: cat.ids.filter((id) => getEffectiveStatus(id) !== 'disabled'),
+      ids: cat.ids.filter((id) => {
+        if (getEffectiveStatus(id) === 'disabled') return false
+        if (allowedSolutions?.length && !allowedSolutions.includes(id)) return false
+        return true
+      }),
     })).filter((cat) => cat.ids.length > 0)
-  }, [statusSynced])
+  }, [statusSynced, allowedSolutions])
 
-  // P2-10: 首次进入引导状态
+  // P2-10: 首次進入引導狀態
   const [onboardingFor, setOnboardingFor] = useState<string | null>(null)
   const [onboardingAnswers, setOnboardingAnswers] = useState<Record<string, string>>({})
 
@@ -299,8 +318,12 @@ export default function SolutionPicker() {
   }, [navigate])
 
   const availableRegistry = useMemo(
-    () => SOLUTION_REGISTRY.filter(s => getEffectiveStatus(s.id) === 'available'),
-    [statusSynced],
+    () => SOLUTION_REGISTRY.filter(s => {
+      if (getEffectiveStatus(s.id) !== 'available') return false
+      if (allowedSolutions?.length && !allowedSolutions.includes(s.id)) return false
+      return true
+    }),
+    [statusSynced, allowedSolutions],
   )
 
   let cardIndex = 0
@@ -309,18 +332,18 @@ export default function SolutionPicker() {
     <div className="min-h-screen bg-background">
       <UpdateBanner />
 
-      {/* ── Hero 区域 ── 渐变背景 + 粒子 + 标题 + 搜索 */}
+      {/* ── Hero 區域 ── 漸變背景 + 粒子 + 標題 + 搜索 */}
       <div className="relative overflow-hidden">
-        {/* 顶部渐变光晕 — 视觉深度暗示 */}
+        {/* 頂部漸變光暈 — 視覺深度暗示 */}
         <div className="absolute inset-0 bg-gradient-to-b from-primary/[0.04] via-transparent to-transparent pointer-events-none" />
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-primary/[0.03] rounded-full blur-3xl pointer-events-none" />
-        {/* 粒子动效 — AI 专家在工作的感觉 */}
+        {/* 粒子動效 — AI 專家在工作的感覺 */}
         <div className="absolute inset-0 pointer-events-none">
           <ParticleField accentColor="hsl(var(--primary))" nodeCount={6} particleDensity={35} className="absolute inset-0" />
         </div>
 
         <div className="relative max-w-6xl mx-auto px-6 md:px-8 pt-8 pb-6">
-          {/* 顶栏 — 品牌标识 + 用户信息 */}
+          {/* 頂欄 — 品牌標識 + 用戶信息 */}
           <div className="flex items-center justify-between mb-8 animate-fade-in">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
@@ -337,7 +360,7 @@ export default function SolutionPicker() {
                 <button
                   onClick={handleLogout}
                   className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-red-400 transition-colors px-3 py-1.5 rounded-md border border-border/50 hover:border-red-400/30 hover:bg-red-500/10"
-                  aria-label="退出登录"
+                  aria-label="退出登錄"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                   退出
@@ -346,17 +369,17 @@ export default function SolutionPicker() {
             )}
           </div>
 
-          {/* 标题 + 副标题 — 先问再选 */}
+          {/* 標題 + 副標題 — 先問再選 */}
           <div className="max-w-2xl mb-6 animate-fade-in-up">
             <h1 className="text-3xl font-bold text-foreground mb-2 tracking-tight">
-              告诉我们你的行业
+              告訴我們你的行業
             </h1>
             <p className="text-muted-foreground text-[15px] leading-relaxed">
-              一句话描述你做什么，AI 立刻为你匹配最合适的专家团队
+              一句話描述你做什麼，AI 立刻為你匹配最合適的專家團隊
             </p>
           </div>
 
-          {/* Intake 输入框 + 发送按钮 */}
+          {/* Intake 輸入框 + 發送按鈕 */}
           <div className="flex flex-col gap-3 animate-fade-in-up" style={{ animationDelay: '80ms' }}>
             <div className="relative flex-1 max-w-xl">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-muted-foreground/50 pointer-events-none" />
@@ -366,8 +389,8 @@ export default function SolutionPicker() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleIntakeSubmit()}
-                placeholder="例如：我是律师事务所 / 我需要记账报税 / 我做电商..."
-                aria-label="描述你的行业，AI 为你匹配方案"
+                placeholder="例如：我是律師事務所 / 我需要記賬報稅 / 我做電商..."
+                aria-label="描述你的行業，AI 為你匹配方案"
                 className="w-full pl-11 pr-24 py-3.5 text-sm bg-card border border-border/40 rounded-xl text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition-all"
               />
               <button
@@ -384,7 +407,7 @@ export default function SolutionPicker() {
               </button>
             </div>
 
-            {/* 热门标签 */}
+            {/* 熱門標籤 */}
             <div className="flex flex-wrap gap-2 max-w-xl">
               {POPULAR_TAGS.map((tag) => (
                 <button
@@ -397,24 +420,24 @@ export default function SolutionPicker() {
               ))}
             </div>
 
-            {/* P2-8: 简化统计，去掉技术计数 */}
+            {/* P2-8: 簡化統計，去掉技術計數 */}
             <div className="flex items-center gap-5 text-xs text-muted-foreground/60 mt-1">
               <span className="flex items-center gap-1.5">
                 <Briefcase className="w-3.5 h-3.5" />
-                {availableRegistry.length} 个行业方案
+                {availableRegistry.length} 個行業方案
               </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── 智能推荐横幅（基于已安装软件的行业推断） ── */}
+      {/* ── 智能推薦橫幅（基於已安裝軟件的行業推斷） ── */}
       {(scanning || topRecommendation) && (
         <div className="max-w-6xl mx-auto px-6 md:px-8 mb-6">
           {scanning && !scanDone ? (
             <div className="flex items-center gap-3 px-5 py-4 rounded-xl border border-primary/20 bg-primary/5 animate-pulse">
               <Scan className="w-5 h-5 text-primary animate-spin" />
-              <span className="text-sm text-primary/80">正在分析您的电脑环境，智能推荐最适合的方案...</span>
+              <span className="text-sm text-primary/80">正在分析您的電腦環境，智能推薦最適合的方案...</span>
             </div>
           ) : topRecommendation ? (
             <div className="rounded-xl border border-primary/25 bg-gradient-to-r from-primary/[0.06] to-transparent p-5 animate-fade-in-up">
@@ -424,19 +447,20 @@ export default function SolutionPicker() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-sm font-semibold text-foreground">为您智能推荐</h3>
+                    <h3 className="text-sm font-semibold text-foreground">為您智能推薦</h3>
                     <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/15 text-primary font-medium">
                       {Math.round(topRecommendation.confidence * 100)}% 匹配
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground mb-3">
-                    检测到您的电脑安装了 <span className="text-foreground font-medium">{topRecommendation.matchedApps.slice(0, 3).join('、')}</span> 等软件，
-                    您可能从事 <span className="text-primary font-medium">{topRecommendation.industry}</span> 相关工作
+                    檢測到您的電腦安裝了 <span className="text-foreground font-medium">{topRecommendation.matchedApps.slice(0, 3).join('、')}</span> 等軟件，
+                    您可能從事 <span className="text-primary font-medium">{topRecommendation.industry}</span> 相關工作
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {industryGuesses.map((guess) => {
                       const sol = findSolution(guess.suggestedSolution)
                       if (!sol || getEffectiveStatus(guess.suggestedSolution) !== 'available') return null
+                      if (allowedSolutions?.length && !allowedSolutions.includes(guess.suggestedSolution)) return null
                       return (
                         <button
                           key={guess.suggestedSolution}
@@ -459,7 +483,7 @@ export default function SolutionPicker() {
         </div>
       )}
 
-      {/* ── Intake 错误提示 ── */}
+      {/* ── Intake 錯誤提示 ── */}
       {intakeError && (
         <div className="max-w-6xl mx-auto px-6 md:px-8 mb-4" role="alert">
           <div className="flex items-center gap-2 px-4 py-3 rounded-lg border border-amber-500/20 bg-amber-500/5 text-sm text-amber-400">
@@ -469,15 +493,15 @@ export default function SolutionPicker() {
         </div>
       )}
 
-      {/* ── Intake 推荐结果 ── */}
+      {/* ── Intake 推薦結果 ── */}
       {filteredIntakeResults.length > 0 && (
         <div className="max-w-6xl mx-auto px-6 md:px-8 mb-8 animate-fade-in-up">
           <div className="flex items-center gap-2 mb-4">
             <Sparkles className="w-4 h-4 text-primary" />
             <h2 className="text-sm font-semibold text-foreground">
-              为「{intakeQuery}」推荐的方案
+              為「{intakeQuery}」推薦的方案
             </h2>
-            <span className="text-xs text-muted-foreground/50">({filteredIntakeResults.length} 个匹配)</span>
+            <span className="text-xs text-muted-foreground/50">({filteredIntakeResults.length} 個匹配)</span>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filteredIntakeResults.map((rec, i) => {
@@ -539,7 +563,7 @@ export default function SolutionPicker() {
                       className="mt-2 text-xs px-2.5 py-1.5 rounded-lg"
                       style={{ backgroundColor: color + '08', color: color + 'cc' }}
                     >
-                      试试问：{rec.top_scenario.question}
+                      試試問：{rec.top_scenario.question}
                     </div>
                   )}
                 </button>
@@ -549,7 +573,7 @@ export default function SolutionPicker() {
         </div>
       )}
 
-      {/* L3: 全部方案（默认折叠，需要用户主动展开） */}
+      {/* L3: 全部方案（預設摺疊，需要用戶主動展開） */}
       {!showAllSolutions && (
         <div className="text-center mb-6">
           <button
@@ -557,7 +581,7 @@ export default function SolutionPicker() {
             className="inline-flex items-center gap-1.5 px-5 py-2.5 text-sm text-muted-foreground hover:text-foreground border border-border/40 rounded-xl hover:border-border transition-all"
           >
             <ChevronDown className="w-4 h-4" />
-            {intakeResults.length > 0 ? `不满意？浏览全部 ${SOLUTION_REGISTRY.length} 个方案` : `或者，浏览全部行业方案`}
+            {intakeResults.length > 0 ? `不滿意？瀏覽全部 ${availableRegistry.length} 個方案` : `或者，瀏覽全部行業方案`}
           </button>
         </div>
       )}
@@ -565,14 +589,14 @@ export default function SolutionPicker() {
         {filteredCategories.length === 0 && !search.trim() ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <Briefcase className="w-12 h-12 text-muted-foreground/20 mb-4" />
-            <p className="text-muted-foreground font-medium">暂无可用方案</p>
-            <p className="text-muted-foreground/50 text-sm mt-1">请联系管理员配置行业方案</p>
+            <p className="text-muted-foreground font-medium">暫無可用方案</p>
+            <p className="text-muted-foreground/50 text-sm mt-1">請聯絡管理員配置行業方案</p>
           </div>
         ) : filteredCategories.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in">
             <Search className="w-12 h-12 text-muted-foreground/20 mb-4" />
             <p className="text-muted-foreground font-medium">未找到匹配方案</p>
-            <p className="text-muted-foreground/50 text-sm mt-1">试试其他关键词</p>
+            <p className="text-muted-foreground/50 text-sm mt-1">試試其他關鍵詞</p>
           </div>
         ) : (
           <div className="space-y-10">
@@ -583,13 +607,13 @@ export default function SolutionPicker() {
               if (solutions.length === 0) return null
               return (
                 <section key={cat.label} aria-label={cat.label}>
-                  {/* 分类标题 + 分隔线 — 清晰的视觉分组 */}
+                  {/* 分類標題 + 分隔線 — 清晰的視覺分組 */}
                   <div className="flex items-center gap-3 mb-4">
                     <h2 className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider whitespace-nowrap">
                       {cat.label}
                     </h2>
                     <div className="flex-1 h-px bg-border/20" />
-                    <span className="text-[11px] text-muted-foreground/40">{solutions.length} 个</span>
+                    <span className="text-[11px] text-muted-foreground/40">{solutions.length} 個</span>
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {solutions.map((s) => {
@@ -612,7 +636,7 @@ export default function SolutionPicker() {
         )}
       </div>
 
-      {/* P2-10: 首次进入引导模态框 */}
+      {/* P2-10: 首次進入引導模態框 */}
       {onboardingFor && (() => {
         const sol = findSolution(onboardingFor)
         const questions = sol?.onboarding?.questions
@@ -620,8 +644,8 @@ export default function SolutionPicker() {
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-fade-in">
             <div className="w-full max-w-md mx-4 rounded-2xl bg-card border border-border p-6 shadow-2xl animate-fade-in-up">
-              <h3 className="text-lg font-bold text-foreground mb-1">快速设置</h3>
-              <p className="text-sm text-muted-foreground mb-6">帮我们了解你的情况，AI 专家会更准确地服务你</p>
+              <h3 className="text-lg font-bold text-foreground mb-1">快速設置</h3>
+              <p className="text-sm text-muted-foreground mb-6">幫我們了解你的情況，AI 專家會更準確地服務你</p>
               <div className="space-y-5">
                 {questions.map((q) => (
                   <div key={q.key}>
@@ -645,7 +669,7 @@ export default function SolutionPicker() {
                   onClick={completeOnboarding}
                   className="flex-1 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity"
                 >
-                  开始使用
+                  開始使用
                 </button>
                 <button
                   onClick={() => {
@@ -656,7 +680,7 @@ export default function SolutionPicker() {
                   }}
                   className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  跳过
+                  跳過
                 </button>
               </div>
             </div>

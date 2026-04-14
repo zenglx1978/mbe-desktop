@@ -145,7 +145,7 @@ const KEY_LABELS: Record<string, string> = {
   total: '合计',
   result: '计算结果',
   amount: '金额',
-  vat_amount: '增值税额',
+  vat_amount: 'VAT 稅額',
   price_without_tax: '不含税金额',
   surcharge: '附加税额',
   score: '评分结果',

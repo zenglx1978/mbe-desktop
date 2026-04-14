@@ -75,7 +75,7 @@ export function calcIIT(annualIncome: number, specialDeduction = 0, additionalDe
   ])
 }
 
-/** 计算增值税（一般纳税人） */
+/** Calculate VAT (general taxpayer) */
 export function calcVATGeneral(outputAmount: number, inputAmount: number, rate = 0.13) {
   return runLocalCalc('calc_vat', [
     '--type', 'general',

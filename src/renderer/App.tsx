@@ -5,6 +5,7 @@ import { useAppStore } from '@/stores/app-store'
 import { useAuthStore } from '@/stores/auth-store'
 
 const OfflineBanner = lazy(() => import('@/components/OfflineBanner'))
+const UpdateBanner = lazy(() => import('@/components/UpdateBanner'))
 const AuthPage = lazy(() => import('@/pages/AuthPage'))
 const SolutionPicker = lazy(() => import('@/pages/SolutionPicker'))
 const Workspace = lazy(() => import('@/pages/Workspace'))
@@ -242,6 +243,7 @@ export default function App() {
       <HashRouter>
         <Suspense fallback={null}>
           <OfflineBanner />
+          <UpdateBanner />
         </Suspense>
         <AppRoutes />
       </HashRouter>

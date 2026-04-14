@@ -695,7 +695,7 @@ export default function BrandsPanel({ solution }: Props) {
                   <span>应收合计</span><span style={{ color: solution.color }}>{fmt(Math.round(total))}</span>
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>增值税 (6%)</span><span>{fmt(Math.round(tax))}</span>
+                  <span>服務稅 (6%)</span><span>{fmt(Math.round(tax))}</span>
                 </div>
               </div>
             </div>

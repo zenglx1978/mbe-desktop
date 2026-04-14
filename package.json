@@ -1,6 +1,6 @@
 {
   "name": "mbe-desktop",
-  "version": "0.6.11",
+  "version": "0.6.18",
   "description": "MBE Desktop — AI 专业服务统一桌面端",
   "main": "dist/main/index.js",
   "author": "MBE Team",
@@ -37,6 +37,7 @@
     "node-cron": "^4.2.1",
     "pdf-parse": "^2.4.5",
     "pptxgenjs": "^4.0.1",
+    "qrcode.react": "^4.2.0",
     "sql.js": "^1.14.1"
   },
   "devDependencies": {
@@ -81,7 +82,7 @@
     "copyright": "Copyright (c) 2026 MBE Team",
     "asar": true,
     "directories": {
-      "output": "release",
+      "output": "release-v0618",
       "buildResources": "build"
     },
     "files": [

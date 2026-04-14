@@ -215,7 +215,7 @@ function formatKey(key: string): string {
     taxable_income: '应纳税所得额',
     monthly_tax: '月应纳税额',
     net_salary: '税后月薪',
-    vat_amount: '增值税额',
+    vat_amount: 'VAT 稅額',
     price_without_tax: '不含税金额',
     surcharge: '附加税额',
     score: '评分结果',

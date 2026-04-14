@@ -12,6 +12,7 @@ import {
   Copy,
   Loader2,
 } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts'
@@ -98,14 +99,22 @@ function WechatNativeModal({
           微信扫码支付
         </h3>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          请使用微信「扫一扫」完成支付。若本机无法直接展示二维码，可复制下方链接，在另一设备或在线二维码生成页中打开后扫码。
+          请使用微信「扫一扫」扫描下方二维码完成支付。
         </p>
         {orderId ? (
           <p className="text-[11px] text-muted-foreground">订单号：{orderId}</p>
         ) : null}
-        <div className="rounded-lg bg-secondary/40 p-2 text-[10px] font-mono break-all max-h-28 overflow-y-auto border border-border/50 select-all">
-          {codeUrl}
+        <div className="flex justify-center py-2">
+          <div className="bg-white p-3 rounded-lg">
+            <QRCodeSVG value={codeUrl} size={200} level="M" />
+          </div>
         </div>
+        <details className="text-[10px] text-muted-foreground">
+          <summary className="cursor-pointer hover:text-foreground">无法扫码？复制支付链接</summary>
+          <div className="mt-1 rounded-lg bg-secondary/40 p-2 font-mono break-all max-h-20 overflow-y-auto border border-border/50 select-all">
+            {codeUrl}
+          </div>
+        </details>
         {copyErr ? <p className="text-[11px] text-destructive">{copyErr}</p> : null}
         <div className="flex flex-wrap gap-2 justify-end">
           <button

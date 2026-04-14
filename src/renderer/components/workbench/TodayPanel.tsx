@@ -37,7 +37,7 @@ function getUpcomingDeadlines(): TaxDeadline[] {
   const vatDate = new Date(year, month, 15)
   if (vatDate <= now) vatDate.setMonth(vatDate.getMonth() + 1)
   const vatDays = Math.ceil((vatDate.getTime() - now.getTime()) / 86400000)
-  deadlines.push({ name: '增值税申报', date: `${vatDate.getMonth() + 1}月${vatDate.getDate()}日`, daysLeft: vatDays, urgent: vatDays <= 3 })
+  deadlines.push({ name: '稅務申報', date: `${vatDate.getMonth() + 1}月${vatDate.getDate()}日`, daysLeft: vatDays, urgent: vatDays <= 3 })
 
   const citDate = new Date(year, month + 1 - (month % 3 === 0 ? 0 : month % 3), 15)
   if (citDate <= now) citDate.setMonth(citDate.getMonth() + 3)
@@ -188,7 +188,7 @@ export default function TodayPanel({ solution }: Props) {
             <QuickAction
               icon={<Calculator className="w-5 h-5" />}
               title="算税"
-              desc="个税 / 增值税 / 印花税 / 企业所得税"
+              desc="個稅 / 薪俸稅 / 印花稅 / 利得稅"
               onClick={() => goToTab('tools')}
               color="text-emerald-500"
             />

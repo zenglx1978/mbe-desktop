@@ -30,6 +30,20 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* 繁體中文優先字體棧：
+       - macOS/iOS: 蘋方-繁 (PingFang TC)
+       - Windows:   Microsoft JhengHei (微軟正黑體)
+       - Android:   Noto Sans TC
+       - 英文/數字: system-ui / -apple-system 走系統字體
+    */
+    font-family:
+      ui-sans-serif,
+      -apple-system,
+      "PingFang TC",
+      "Microsoft JhengHei",
+      "Noto Sans TC",
+      "Source Han Sans TC",
+      sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

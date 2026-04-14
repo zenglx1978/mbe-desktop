@@ -119,7 +119,7 @@ function handleCalcIIT(args: string[]): object {
   return calcAnnualIIT(num(p['annual-income']), num(p['special-deduction']), num(p['special-additional']), num(p['other-deduction']))
 }
 
-// ────────────────────── 增值税 ──────────────────────
+// ────────────────────── VAT ──────────────────────
 
 const SURCHARGE_CITY_RATES: Record<string, number> = { city: 0.07, county: 0.05, other: 0.01 }
 const EDUCATION_RATE = 0.03
@@ -138,7 +138,7 @@ function calcVATGeneral(outputAmount: number, inputAmount: number, rate: number,
     vat_payable: String(R(payable)), carried_forward_credit: String(R(carriedForward)),
     effective_rate: pct(effectiveRate), tax_rate: String(rate),
     formula: `销项(${outputTax}) - 进项(${inputTax}) - 上期留抵(${priorCredit})`,
-    legal_basis: '《增值税法》第4条、第11条',
+    legal_basis: 'VAT Law Art. 4 & 11',
   }
 }
 
@@ -148,8 +148,8 @@ function calcVATSmall(revenue: number, rate: number, period: string) {
     return {
       taxpayer_type: '小规模纳税人', revenue: String(revenue), period,
       exempt_threshold: String(exemptThreshold), vat_payable: '0',
-      note: `${period}销售额≤${exemptThreshold}元，免征增值税`,
-      legal_basis: '《增值税法》第5条、国家税务总局公告',
+      note: `${period}销售额≤${exemptThreshold}元，免征VAT`,
+      legal_basis: 'VAT Law Art. 5, STA Notice',
     }
   }
   const revenueExcl = R(revenue / (1 + rate))
@@ -158,7 +158,7 @@ function calcVATSmall(revenue: number, rate: number, period: string) {
     taxpayer_type: '小规模纳税人', revenue_incl_tax: String(revenue),
     revenue_excl_tax: String(revenueExcl), tax_rate: String(rate),
     vat_payable: String(vat), formula: `${revenue} ÷ (1+${rate}) × ${rate}`,
-    legal_basis: '《增值税法》第5条',
+    legal_basis: 'VAT Law Art. 5',
   }
 }
 

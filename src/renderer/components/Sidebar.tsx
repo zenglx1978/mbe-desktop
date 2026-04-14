@@ -4,7 +4,7 @@ import { useAppStore } from '@/stores/app-store'
 import { useToolStore } from '@/stores/tool-store'
 import { useAuthStore } from '@/stores/auth-store'
 import { useAdaptiveUIStore } from '@/stores/adaptive-ui-store'
-import { getTabMeta, SIDEBAR_ACTIONS } from '@/lib/tab-icons'
+import { getTabMetaForSolution, SIDEBAR_ACTIONS, getSidebarLabels } from '@/lib/tab-icons'
 import { Sparkles, Power } from 'lucide-react'
 import type { WorkbenchTab } from '@/lib/solution-router'
 import TokenQuotaWidget from './TokenQuotaWidget'
@@ -60,10 +60,12 @@ export default function Sidebar() {
   const LogoutIcon = SIDEBAR_ACTIONS.logout.icon
   const CollapseIcon = sidebarExpanded ? SIDEBAR_ACTIONS.collapse.icon : SIDEBAR_ACTIONS.expand.icon
 
+  const labels = getSidebarLabels(solutionId)
+
   return (
     <aside
       role="navigation"
-      aria-label="主导航"
+      aria-label={labels.navLabel}
       className={`fixed left-0 top-0 h-full bg-[hsl(var(--background))] border-r border-border/50 flex flex-col transition-all duration-200 z-20 ${
         sidebarExpanded ? 'w-64' : 'w-16'
       }`}
@@ -80,7 +82,7 @@ export default function Sidebar() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-foreground truncate">
-                {user?.name || '未登录'}
+                {user?.name || labels.notLoggedIn}
               </p>
               <p className="text-xs text-muted-foreground truncate">
                 {user?.email || ''}
@@ -91,7 +93,7 @@ export default function Sidebar() {
           <div
             className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white cursor-default"
             style={{ backgroundColor: color }}
-            title={user?.email || '未登录'}
+            title={user?.email || labels.notLoggedIn}
           >
             {initials}
           </div>
@@ -102,7 +104,7 @@ export default function Sidebar() {
 
       <div className="flex-1 overflow-y-auto py-3">
         {enabledTabs.map((tab) => {
-          const meta = getTabMeta(tab)
+          const meta = getTabMetaForSolution(tab, solutionId)
           const Icon = meta.icon
           const isActive = activeTab === tab
           return (
@@ -147,10 +149,10 @@ export default function Sidebar() {
           className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition-colors ${
             sidebarExpanded ? '' : 'justify-center px-2'
           }`}
-          title={sidebarExpanded ? undefined : 'AI 副驾驶 (Ctrl+Shift+Space)'}
+          title={sidebarExpanded ? undefined : labels.copilotTitle}
         >
           <Sparkles className="w-4 h-4 shrink-0" />
-          {sidebarExpanded && <span>AI 副驾驶</span>}
+          {sidebarExpanded && <span>{labels.copilot}</span>}
         </button>
         <button
           onClick={() => {
@@ -160,20 +162,20 @@ export default function Sidebar() {
           className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/30 transition-colors ${
             sidebarExpanded ? '' : 'justify-center px-2'
           }`}
-          title={sidebarExpanded ? undefined : '切换方案'}
+          title={sidebarExpanded ? undefined : labels.switchSolution}
         >
           <SwitchIcon className="w-4 h-4 shrink-0" />
-          {sidebarExpanded && <span>切换方案</span>}
+          {sidebarExpanded && <span>{labels.switchSolution}</span>}
         </button>
         <button
           onClick={() => navigate('/settings')}
           className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/30 transition-colors ${
             sidebarExpanded ? '' : 'justify-center px-2'
           }`}
-          title={sidebarExpanded ? undefined : '设置'}
+          title={sidebarExpanded ? undefined : labels.settings}
         >
           <SettingsIcon className="w-4 h-4 shrink-0" />
-          {sidebarExpanded && <span>设置</span>}
+          {sidebarExpanded && <span>{labels.settings}</span>}
         </button>
         <button
           onClick={() => {
@@ -183,30 +185,30 @@ export default function Sidebar() {
           className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-muted-foreground hover:text-orange-400 hover:bg-orange-500/10 transition-colors ${
             sidebarExpanded ? '' : 'justify-center px-2'
           }`}
-          title={sidebarExpanded ? undefined : '退出登录'}
+          title={sidebarExpanded ? undefined : labels.logout}
         >
           <LogoutIcon className="w-4 h-4 shrink-0" />
-          {sidebarExpanded && <span>退出登录</span>}
+          {sidebarExpanded && <span>{labels.logout}</span>}
         </button>
         <button
           onClick={() => api?.close()}
           className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors ${
             sidebarExpanded ? '' : 'justify-center px-2'
           }`}
-          title={sidebarExpanded ? undefined : '退出应用'}
+          title={sidebarExpanded ? undefined : labels.quit}
         >
           <Power className="w-4 h-4 shrink-0" />
-          {sidebarExpanded && <span>退出应用</span>}
+          {sidebarExpanded && <span>{labels.quit}</span>}
         </button>
         <button
           onClick={toggleSidebar}
           className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/30 transition-colors ${
             sidebarExpanded ? '' : 'justify-center px-2'
           }`}
-          title={sidebarExpanded ? '收起' : '展开'}
+          title={sidebarExpanded ? labels.collapse : labels.expand}
         >
           <CollapseIcon className="w-4 h-4 shrink-0" />
-          {sidebarExpanded && <span>{sidebarExpanded ? '收起' : '展开'}</span>}
+          {sidebarExpanded && <span>{sidebarExpanded ? labels.collapse : labels.expand}</span>}
         </button>
       </div>
     </aside>

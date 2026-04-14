@@ -4,10 +4,11 @@
  * - 前 N 个 tab 直接显示（窄屏自适应）
  * - 溢出部分折叠到「更多」下拉菜单
  * - 未读/数字角标支持
+ * - HK 繁體方案透過 solutionId 取得本地化標籤
  */
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { MoreHorizontal } from 'lucide-react'
-import { getTabMeta } from '@/lib/tab-icons'
+import { getTabMetaForSolution } from '@/lib/tab-icons'
 import type { WorkbenchTab } from '@/lib/solution-router'
 
 interface Props {
@@ -15,11 +16,12 @@ interface Props {
   enabledTabs: WorkbenchTab[]
   color: string
   onTabChange: (tab: string) => void
+  solutionId?: string
 }
 
 const MAX_VISIBLE = 6
 
-export default function WorkbenchTabs({ activeTab, enabledTabs, color, onTabChange }: Props) {
+export default function WorkbenchTabs({ activeTab, enabledTabs, color, onTabChange, solutionId }: Props) {
   const [overflowOpen, setOverflowOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -46,7 +48,7 @@ export default function WorkbenchTabs({ activeTab, enabledTabs, color, onTabChan
   return (
     <div className="flex items-center gap-0.5 py-1">
       {visible.map((tab) => {
-        const meta = getTabMeta(tab)
+        const meta = getTabMetaForSolution(tab, solutionId)
         const Icon = meta.icon
         const isActive = activeTab === tab
         return (
@@ -69,7 +71,7 @@ export default function WorkbenchTabs({ activeTab, enabledTabs, color, onTabChan
         )
       })}
 
-      {/* 溢出菜单 */}
+      {/* 溢出菜單 */}
       {overflow.length > 0 && (
         <div className="relative" ref={menuRef}>
           <button
@@ -86,14 +88,14 @@ export default function WorkbenchTabs({ activeTab, enabledTabs, color, onTabChan
           >
             <MoreHorizontal className="w-3.5 h-3.5" />
             {activeInOverflow && (
-              <span>{getTabMeta(activeTab).label}</span>
+              <span>{getTabMetaForSolution(activeTab, solutionId).label}</span>
             )}
           </button>
 
           {overflowOpen && (
             <div className="absolute top-full left-0 mt-1 py-1 min-w-[140px] bg-popover border border-border rounded-lg shadow-lg z-50">
               {overflow.map((tab) => {
-                const meta = getTabMeta(tab)
+                const meta = getTabMetaForSolution(tab, solutionId)
                 const Icon = meta.icon
                 const isActive = activeTab === tab
                 return (

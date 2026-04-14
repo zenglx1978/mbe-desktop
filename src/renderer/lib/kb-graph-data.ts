@@ -66,7 +66,7 @@ const AGENT_KB_REGISTRY: AgentKBInfo[] = [
   {
     id: 'finance', name: '财务', color: '#3b82f6',
     mdCount: 103, ruleCount: 19, solutionCount: 2,
-    categories: ['增值税', '企业所得税', '个税', '会计准则', '审计', '税务筹划', '社保', '发票'],
+    categories: ['VAT', '企业所得税', '个税', '会计准则', '审计', '税务筹划', '社保', '发票'],
     ruleKnowledgeLinks: [
       { rule: 'finance_tax_rates', knowledgeFiles: ['01_vat_rules', '02_corporate_income_tax', '04_iit_rules', '09_tax_planning_part1'] },
       { rule: 'finance_deduction_limits', knowledgeFiles: ['02_corporate_income_tax', '09_tax_planning_part1', '10_tax_planning_part2'] },
@@ -251,7 +251,7 @@ export function buildGraphFromRegistry(): KGGraphData {
 function findBestCategory(filename: string, categories: string[]): string | null {
   const lower = filename.toLowerCase()
   const KEYWORD_MAP: Record<string, string[]> = {
-    'vat': ['增值税'], 'tax': ['增值税', '企业所得税', '个税', '税务筹划'],
+    'vat': ['VAT'], 'tax': ['VAT', '企业所得税', '个税', '税务筹划'],
     'corporate': ['企业所得税'], 'iit': ['个税'], 'social_insurance': ['社保'],
     'accounting': ['会计准则'], 'financial': ['会计准则', '审计'], 'audit': ['审计'],
     'invoice': ['发票'], 'housing': ['社保'],

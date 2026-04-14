@@ -41,6 +41,7 @@ import TodayPanel from '@/components/workbench/TodayPanel'
 import LawTodayPanel from '@/components/workbench/LawTodayPanel'
 import LaborTodayPanel from '@/components/workbench/LaborTodayPanel'
 import InvestTodayPanel from '@/components/workbench/InvestTodayPanel'
+import HkFinanceTodayPanel from '@/components/workbench/HkFinanceTodayPanel'
 import TaskContextPanel from '@/components/workbench/TaskContextPanel'
 import NotificationBell from '@/components/NotificationBell'
 import OfflineBanner from '@/components/OfflineBanner'
@@ -60,6 +61,7 @@ function OnboardingDialog({ solution, onComplete }: { solution: SolutionConfig; 
   const questions = solution.onboarding?.questions || []
   if (questions.length === 0) return null
 
+  const isHk = solution.id === 'hk-finance-tax'
   const current = questions[step]
   const isLast = step === questions.length - 1
 
@@ -82,8 +84,8 @@ function OnboardingDialog({ solution, onComplete }: { solution: SolutionConfig; 
             <Sparkles className="w-5 h-5" style={{ color: solution.color }} />
           </div>
           <div>
-            <h2 className="text-base font-bold">快速了解你的业务</h2>
-            <p className="text-xs text-muted-foreground">AI 专家会根据你的回答优化建议（{step + 1}/{questions.length}）</p>
+            <h2 className="text-base font-bold">{isHk ? '快速瞭解您的業務' : '快速了解你的业务'}</h2>
+            <p className="text-xs text-muted-foreground">{isHk ? 'AI 專家會根據您的回答優化建議' : 'AI 专家会根据你的回答优化建议'}（{step + 1}/{questions.length}）</p>
           </div>
         </div>
 
@@ -112,7 +114,7 @@ function OnboardingDialog({ solution, onComplete }: { solution: SolutionConfig; 
             ))}
           </div>
           <button type="button" onClick={onComplete} className="text-xs text-muted-foreground hover:text-foreground">
-            跳过
+            {isHk ? '跳過' : '跳过'}
           </button>
         </div>
       </div>
@@ -257,6 +259,7 @@ export default function Workspace() {
 
   const isFinance = solution.id === 'finance-tax-service'
   const isLawFirm = solution.id === 'law-firm'
+  const isHkSolution = solution.id === 'hk-finance-tax'
   const showAssistantButton = supportsAssistant(activeTab)
 
   return (
@@ -278,7 +281,7 @@ export default function Workspace() {
               navigate('/pick', { replace: true })
             }}
             className="flex items-center gap-2 shrink-0 px-2 py-1 -ml-2 rounded-md hover:bg-secondary/40 transition-colors group"
-            title="切换行业方案"
+            title={isHkSolution ? '切換行業方案' : '切换行业方案'}
           >
             <SolutionIcon className="w-5 h-5 text-primary" />
             <span className="font-medium text-sm hidden sm:inline">{solution.name}</span>
@@ -324,6 +327,7 @@ export default function Workspace() {
                 enabledTabs={allTabs}
                 color={solution.color}
                 onTabChange={setActiveTab as (tab: string) => void}
+                solutionId={solution.id}
               />
             </div>
           )}
@@ -341,10 +345,10 @@ export default function Workspace() {
               <button
                 onClick={() => setAssistantOpen(!assistantOpen)}
                 className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md transition-colors ${assistantOpen ? 'bg-primary/15 text-primary' : 'bg-muted/40 hover:bg-muted/70 text-muted-foreground'}`}
-                title="打开 AI 助手"
+                title={isHkSolution ? '開啟 AI 助手' : '打开 AI 助手'}
               >
                 <MessageSquare className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{isLawFirm ? '问律师' : solution?.id === 'investment-research' ? '问分析师' : '问专家'}</span>
+                <span className="hidden sm:inline">{isLawFirm ? '问律师' : solution?.id === 'investment-research' ? '问分析师' : isHkSolution ? '問專家' : '问专家'}</span>
               </button>
             )}
             <NotificationBell />
@@ -361,7 +365,7 @@ export default function Workspace() {
           {assistantOpen && showAssistantButton && (
             <aside className="w-80 border-l border-border/50 flex flex-col bg-card shrink-0 animate-slide-in-right">
               <div className="flex items-center justify-between px-3 py-2 border-b border-border/30">
-                <span className="text-xs font-medium text-foreground">AI 助手</span>
+                <span className="text-xs font-medium text-foreground">{isHkSolution ? 'AI 助手' : 'AI 助手'}</span>
                 <button onClick={() => setAssistantOpen(false)} className="p-1 hover:bg-muted/50 rounded">
                   <X className="w-3.5 h-3.5 text-muted-foreground" />
                 </button>
@@ -440,6 +444,7 @@ function ActivePanel({ tab }: { tab: string }) {
       if (solution.id === 'law-firm') return <LawTodayPanel solution={solution} />
       if (solution.id === 'labor-dispatch') return <LaborTodayPanel solution={solution} />
       if (solution.id === 'investment-research') return <InvestTodayPanel solution={solution} />
+      if (solution.id === 'hk-finance-tax') return <HkFinanceTodayPanel solution={solution} />
       return <TodayPanel solution={solution} />
     case 'bookkeeping':
       return <TaskContextPanel solution={solution} taskId="bookkeeping" />

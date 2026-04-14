@@ -6,11 +6,13 @@ dist/
 
 # Electron-builder output
 release/
+release-v*/
 *.exe
 *.dmg
 *.AppImage
 *.deb
 *.snap
+*.blockmap
 
 # Vite cache
 .vite/

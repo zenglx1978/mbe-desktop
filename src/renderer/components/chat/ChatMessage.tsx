@@ -27,6 +27,8 @@ function extractUpgradeHint(content: string): { body: string; hint: string | nul
 }
 
 function UpgradeBanner({ hint }: { hint: string }) {
+  const { currentSolution } = useAppStore()
+  const isHkSolution = currentSolution()?.id === 'hk-finance-tax'
   const handleClick = () => {
     window.open('https://mbe.hi-maker.com/pricing', '_blank')
   }
@@ -38,7 +40,7 @@ function UpgradeBanner({ hint }: { hint: string }) {
         onClick={handleClick}
         className="shrink-0 flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
       >
-        升级套餐
+        {isHkSolution ? '升級套餐' : '升级套餐'}
         <ArrowUpRight className="w-3.5 h-3.5" />
       </button>
     </div>
