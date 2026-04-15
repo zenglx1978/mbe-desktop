@@ -66,6 +66,7 @@ export const TAB_ICON_MAP: Record<string, TabMeta> = {
   'compliance-pub': { icon: FileCheck,    label: '合规发布' },
   'dispatch-dashboard': { icon: Radio,  label: 'Dispatch 控制台' },
   'design-engine':      { icon: FileImage, label: 'Design Engine' },
+  'knowledge-graph':    { icon: Network,   label: '知识图谱' },
 }
 
 export const SIDEBAR_ACTIONS = {

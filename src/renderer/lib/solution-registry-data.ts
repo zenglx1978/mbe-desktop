@@ -26,7 +26,7 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
     localScripts: ['calc_labor_compensation', 'calc_litigation_fee', 'calc_hr_overtime', 'calc_hr_annual_leave'],
     knowledgeCache: ['labor_law_basics', 'dispatch_regulations'],
     theme: { primary: '38 92% 50%', accent: '38 92% 50%' },
-    enabledTabs: ['today', 'employees', 'payroll', 'compliance', 'disputes', 'tools', 'documents', 'chat'],
+    enabledTabs: ['today', 'employees', 'payroll', 'compliance', 'disputes', 'tools', 'documents', 'chat', 'knowledge-graph'],
     onboarding: {
       questions: [
         { key: 'company_size', label: '公司规模', options: ['1-20人', '20-50人', '50-200人', '200人以上'] },
@@ -253,7 +253,7 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
     localScripts: ['calc_litigation_fee', 'calc_labor_compensation', 'calc_statute'],
     knowledgeCache: ['civil_law_basics', 'contract_law'],
     theme: { primary: '220 65% 50%', accent: '220 65% 50%', sidebarBg: '220 15% 7%' },
-    enabledTabs: ['today', 'cases', 'contracts', 'legal-docs', 'billing', 'tools', 'documents', 'chat'],
+    enabledTabs: ['today', 'cases', 'contracts', 'legal-docs', 'billing', 'tools', 'documents', 'chat', 'knowledge-graph'],
     onboarding: {
       questions: [
         { key: 'firm_size', label: '律所规模', options: ['1-5人', '5-20人', '20-50人', '50人以上'] },
@@ -474,7 +474,7 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
     localScripts: ['calc_iit', 'calc_vat'],
     knowledgeCache: ['tax_law_basics', 'accounting_standards'],
     theme: { primary: '164 100% 42%', accent: '164 100% 42%' },
-    enabledTabs: ['today', 'bookkeeping', 'invoices', 'tax-filing', 'reports', 'tax-planning', 'tools', 'documents', 'chat', 'dashboard'],
+    enabledTabs: ['today', 'bookkeeping', 'invoices', 'tax-filing', 'reports', 'tax-planning', 'tools', 'documents', 'chat', 'dashboard', 'knowledge-graph'],
     onboarding: {
       questions: [
         { key: 'taxpayer_type', label: '纳税人类型', options: ['一般纳税人', '小规模纳税人'] },
@@ -960,7 +960,7 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
     localScripts: ['calc_hk_profits_tax', 'calc_hk_stamp_duty'],
     knowledgeCache: ['hk_tax_law', 'hk_transfer_pricing', 'hk_aml_kyc'],
     theme: { primary: '217 91% 60%', accent: '217 91% 60%', sidebarBg: '220 20% 7%' },
-    enabledTabs: ['today', 'tax-filing', 'reports', 'tools', 'documents', 'chat'],
+    enabledTabs: ['today', 'tax-filing', 'reports', 'tools', 'documents', 'chat', 'knowledge-graph'],
     tools: [
       {
         id: 'hk-profits-tax',
@@ -1247,7 +1247,7 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
     localScripts: ['calc_cost_estimate', 'calc_cost_fee', 'calc_cost_tax'],
     knowledgeCache: ['cost_standards'],
     theme: { primary: '21 90% 48%', accent: '21 90% 48%', sidebarBg: '20 15% 6%' },
-    enabledTabs: ['chat', 'tools', 'workflows', 'dashboard'],
+    enabledTabs: ['chat', 'tools', 'workflows', 'dashboard', 'knowledge-graph'],
     tools: [
       { id: 'cost-fee', type: 'calculator', name: '取费计算器', icon: '🧮',
         agent: 'cost', apiPath: '/api/cost/calc/fee', localScript: 'calc_cost_fee',
@@ -1363,7 +1363,7 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
     localScripts: ['calc_clinical_score', 'calc_pft', 'calc_ventilator'],
     knowledgeCache: ['copd_guidelines', 'pneumonia_guidelines'],
     theme: { primary: '168 82% 32%', accent: '168 82% 32%' },
-    enabledTabs: ['chat', 'tools', 'workflows', 'dashboard'],
+    enabledTabs: ['chat', 'tools', 'workflows', 'dashboard', 'knowledge-graph'],
     tools: [
       { id: 'clinical-score', type: 'calculator', name: '临床评分', icon: '🩺',
         agent: 'pulmonary', apiPath: '/api/pulmonary/calc/score', localScript: 'calc_clinical_score',
@@ -1499,7 +1499,7 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
     localScripts: ['calc_iit', 'calc_vat', 'calc_litigation_fee'],
     knowledgeCache: ['labor_law_basics', 'tax_law_basics'],
     theme: { primary: '263 70% 66%', accent: '263 70% 66%', sidebarBg: '263 15% 7%' },
-    enabledTabs: ['chat', 'tools', 'workflows', 'dashboard'],
+    enabledTabs: ['chat', 'tools', 'workflows', 'dashboard', 'knowledge-graph'],
     tools: [
       { id: 'iit', type: 'calculator', name: '个税计算器', icon: '🧾',
         agent: 'finance', apiPath: '/api/finance/calc/iit', localScript: 'calc_iit',
@@ -1614,7 +1614,7 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
     localScripts: [],
     knowledgeCache: ['study_abroad_rules'],
     theme: { primary: '187 86% 53%', accent: '187 86% 53%' },
-    enabledTabs: ['today', 'chat', 'tools', 'workflows'],
+    enabledTabs: ['today', 'chat', 'tools', 'workflows', 'knowledge-graph'],
     tools: [
       {
         id: 'study-cost', type: 'calculator', name: '留学费用估算', icon: '💰',
@@ -1792,7 +1792,7 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
     localScripts: [],
     knowledgeCache: [],
     theme: { primary: '239 84% 67%', accent: '239 84% 67%' },
-    enabledTabs: ['chat', 'tools', 'workflows', 'dashboard'],
+    enabledTabs: ['chat', 'tools', 'workflows', 'dashboard', 'knowledge-graph'],
     tools: [
       {
         id: 'tuition-refund', type: 'calculator', name: '退费计算器', icon: '💸',
@@ -1933,7 +1933,7 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
     localScripts: ['calc_iit', 'calc_vat'],
     knowledgeCache: [],
     theme: { primary: '347 77% 50%', accent: '347 77% 50%', sidebarBg: '347 15% 7%' },
-    enabledTabs: ['brands', 'chat', 'workflows', 'tools', 'erp-sync', 'dashboard', 'costs', 'efficiency', 'scheduler'],
+    enabledTabs: ['brands', 'chat', 'workflows', 'tools', 'erp-sync', 'dashboard', 'costs', 'efficiency', 'scheduler', 'knowledge-graph'],
     onboarding: {
       questions: [
         { key: 'brand_count', label: '目前服务品牌数量', options: ['1-3个', '4-10个', '10个以上'] },
@@ -2242,7 +2242,7 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
     localScripts: ['calc_iit', 'calc_vat', 'calc_litigation_fee'],
     knowledgeCache: ['insurance_product_rates'],
     theme: { primary: '192 91% 37%', accent: '192 91% 37%', sidebarBg: '192 15% 6%' },
-    enabledTabs: ['chat', 'tools', 'workflows', 'dashboard'],
+    enabledTabs: ['chat', 'tools', 'workflows', 'dashboard', 'knowledge-graph'],
     tools: [
       { id: 'litigation-fee', type: 'calculator', name: '诉讼费计算器', icon: '⚖️',
         agent: 'legal', apiPath: '/api/legal/calc/litigation-fee', localScript: 'calc_litigation_fee',
@@ -2502,7 +2502,7 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
     localScripts: ['calc_iit', 'calc_vat'],
     knowledgeCache: ['invest_mises_framework'],
     theme: { primary: '38 92% 43%', accent: '38 92% 43%' },
-    enabledTabs: ['today', 'research', 'portfolio', 'macro', 'compliance-pub', 'tools', 'documents', 'chat'],
+    enabledTabs: ['today', 'research', 'portfolio', 'macro', 'compliance-pub', 'tools', 'documents', 'chat', 'knowledge-graph'],
     onboarding: {
       questions: [
         { key: 'institution_type', label: '机构类型', options: ['私募基金', '家族办公室', '独立投研工作室', '券商/资管', '个人投资者'] },
@@ -2744,7 +2744,7 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
     localScripts: [],
     knowledgeCache: [],
     theme: { primary: '263 70% 50%', accent: '263 70% 50%' },
-    enabledTabs: ['chat', 'tools', 'workflows', 'dashboard'],
+    enabledTabs: ['chat', 'tools', 'workflows', 'dashboard', 'knowledge-graph'],
     tools: [
       {
         id: 'content-calendar', type: 'doc-generator', name: '内容排期生成', icon: '📅',
@@ -2873,7 +2873,7 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
     localScripts: ['calc_iit', 'calc_vat', 'calc_litigation_fee'],
     knowledgeCache: [],
     theme: { primary: '224 70% 53%', accent: '224 70% 53%' },
-    enabledTabs: ['chat', 'tools', 'workflows', 'dashboard'],
+    enabledTabs: ['chat', 'tools', 'workflows', 'dashboard', 'knowledge-graph'],
     tools: [
       {
         id: 'target-scorer', type: 'calculator', name: '标的评分器', icon: '🎯',
@@ -2984,7 +2984,7 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
     localScripts: ['calc_cost_estimate', 'calc_cost_fee', 'calc_litigation_fee'],
     knowledgeCache: [],
     theme: { primary: '224 76% 48%', accent: '224 76% 48%' },
-    enabledTabs: ['chat', 'tools', 'documents', 'workflows'],
+    enabledTabs: ['chat', 'tools', 'documents', 'workflows', 'knowledge-graph'],
     tools: [],
     slashCommands: [],
     workflows: [],
@@ -3008,7 +3008,7 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
     localScripts: ['calc_iit', 'calc_vat'],
     knowledgeCache: [],
     theme: { primary: '142 72% 29%', accent: '142 72% 29%' },
-    enabledTabs: ['chat', 'tools', 'workflows'],
+    enabledTabs: ['chat', 'tools', 'workflows', 'knowledge-graph'],
     tools: [],
     slashCommands: [],
     workflows: [],
@@ -3033,7 +3033,7 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
     localScripts: ['calc_iit', 'calc_litigation_fee'],
     knowledgeCache: [],
     theme: { primary: '270 70% 55%', accent: '270 70% 55%' },
-    enabledTabs: ['chat', 'tools', 'workflows', 'dashboard'],
+    enabledTabs: ['chat', 'tools', 'workflows', 'dashboard', 'knowledge-graph'],
     tools: [],
     slashCommands: [],
     workflows: [],
@@ -3057,7 +3057,7 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
     localScripts: ['calc_litigation_fee', 'calc_iit'],
     knowledgeCache: [],
     theme: { primary: '201 96% 32%', accent: '201 96% 32%' },
-    enabledTabs: ['chat', 'tools', 'documents', 'workflows'],
+    enabledTabs: ['chat', 'tools', 'documents', 'workflows', 'knowledge-graph'],
     tools: [],
     slashCommands: [],
     workflows: [],
@@ -3081,7 +3081,7 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
     localScripts: ['calc_iit', 'calc_vat'],
     knowledgeCache: ['tax_law_basics'],
     theme: { primary: '28 80% 35%', accent: '28 80% 35%' },
-    enabledTabs: ['chat', 'tools', 'workflows', 'dashboard'],
+    enabledTabs: ['chat', 'tools', 'workflows', 'dashboard', 'knowledge-graph'],
     tools: [
       { id: 'iit', type: 'calculator', name: '个税计算器', icon: '🧾',
         agent: 'finance', apiPath: '/api/finance/calc/iit', localScript: 'calc_iit',
@@ -3128,7 +3128,7 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
     localScripts: ['calc_iit', 'calc_vat'],
     knowledgeCache: [],
     theme: { primary: '160 84% 39%', accent: '160 84% 39%' },
-    enabledTabs: ['chat', 'tools', 'documents', 'workflows'],
+    enabledTabs: ['chat', 'tools', 'documents', 'workflows', 'knowledge-graph'],
     tools: [],
     slashCommands: [],
     workflows: [],
@@ -3153,7 +3153,7 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
     localScripts: ['calc_iit', 'calc_vat', 'calc_litigation_fee'],
     knowledgeCache: [],
     theme: { primary: '173 80% 26%', accent: '173 80% 26%' },
-    enabledTabs: ['chat', 'tools', 'workflows', 'dashboard'],
+    enabledTabs: ['chat', 'tools', 'workflows', 'dashboard', 'knowledge-graph'],
     tools: [],
     slashCommands: [],
     workflows: [],
