@@ -13,7 +13,7 @@ import {
   ClipboardList, BookOpen, Receipt, FileBarChart, Lightbulb,
   Scale, FileSignature, FilePen, BadgeDollarSign,
   UserCheck, Banknote, ShieldAlert, Gavel,
-  Search, Briefcase, Globe, FileCheck,
+  Search, Briefcase, Globe, FileCheck, Network,
   type LucideIcon,
 } from 'lucide-react'
 

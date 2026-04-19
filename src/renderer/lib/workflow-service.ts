@@ -298,11 +298,18 @@ export async function executeScenario(
 
     // 降级：直接调用 Agent /consult
     if (scenario.expert) {
-      const agentId = scenario.expert.split('.')[0]
+      const [agentId, ...expertParts] = scenario.expert.split('.')
+      const expertId = expertParts.join('.') || undefined
       const directResp = await fetch(`${API_BASE}/api/${agentId}/consult`, {
         method: 'POST',
         headers: authHeaders(),
-        body: JSON.stringify({ request: query, query, question: query, ...getBillingFields() }),
+        body: JSON.stringify({
+          request: query,
+          query,
+          question: query,
+          expert_id: expertId,
+          ...getBillingFields(),
+        }),
         signal: reqSignal,
       })
       if (directResp.ok) {

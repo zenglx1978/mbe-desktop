@@ -2557,12 +2557,50 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
           { key: 'amount', label: '交易金额（元）', type: 'currency', required: true },
         ],
       },
+      // ── 企业 AI 降本增效（workforce_ai_analyst Expert） ──
+      { id: 'workforce-ai-roi', type: 'calculator', name: '企业AI降本ROI测算', icon: '🤖',
+        agent: 'invest', apiPath: '/api/invest/workforce_ai/roi_only',
+        description: '输入股票代码，秒算企业部署 AI 后的人力替代率 / 年化节省 / 投资回收期',
+        category: 'AI 降本增效',
+        fields: [
+          { key: 'ticker', label: '股票代码', type: 'text', placeholder: '如 600482 或 00751.HK', required: true },
+          { key: 'deployment_mode', label: '部署模式', type: 'select', default: 'auto',
+            options: [
+              { value: 'auto', label: '自动识别（按行业推荐）' },
+              { value: 'saas', label: 'SaaS 云端（溢价 1.0×）' },
+              { value: 'private', label: '私有化部署（溢价 2.5×）' },
+              { value: 'hybrid', label: '混合云（溢价 1.8×）' },
+              { value: 'offline', label: '物理隔离离线（溢价 4.0×）' },
+            ] },
+          { key: 'industry_key', label: '行业标识（可选）', type: 'text', placeholder: '留空自动识别' },
+        ],
+      },
+      { id: 'workforce-ai-report', type: 'doc-generator', name: '企业AI应用场景研报', icon: '📝',
+        agent: 'invest', apiPath: '/api/invest/workforce_ai/full_report',
+        description: '端到端生成《企业 AI 降本增效应用场景研究》Markdown 研报（含 ROI 测算 + 场景拆解 + 部署建议）',
+        category: 'AI 降本增效',
+        fields: [
+          { key: 'ticker', label: '股票代码', type: 'text', placeholder: '如 600482', required: true },
+          { key: 'deployment_mode', label: '部署模式', type: 'select', default: 'auto',
+            options: [
+              { value: 'auto', label: '自动识别' },
+              { value: 'saas', label: 'SaaS 云端' },
+              { value: 'private', label: '私有化部署' },
+              { value: 'hybrid', label: '混合云' },
+              { value: 'offline', label: '物理隔离离线' },
+            ] },
+          { key: 'industry_key', label: '行业标识覆盖', type: 'text', placeholder: '留空自动识别' },
+          { key: 'title_override', label: '自定义报告标题', type: 'text', placeholder: '留空使用默认标题' },
+        ],
+      },
     ],
     slashCommands: [
       { cmd: '/比率', label: '财务比率', icon: '📊', toolId: 'financial-ratio' },
       { cmd: '/评分', label: 'MISES评分', icon: '🎯', toolId: 'mises-score' },
       { cmd: '/估值', label: '估值计算', icon: '💹', toolId: 'valuation-calc' },
       { cmd: '/印花税', label: '印花税', icon: '📌', toolId: 'stamp-tax' },
+      { cmd: '/降本', label: 'AI降本ROI', icon: '🤖', toolId: 'workforce-ai-roi' },
+      { cmd: '/AI研报', label: '企业AI研报', icon: '📝', toolId: 'workforce-ai-report' },
     ],
     workflows: [
       {
@@ -2724,6 +2762,12 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
         prompt: '一站式查看四柱投资系统全貌', apiEndpoint: '/api/invest/four-pillar/dashboard', apiMethod: 'GET',
         expectedOutcome: '四柱合一视图：宏观+热点+个股+操作的综合研判',
         expert: 'invest.investment_analyst', profitImpact: { dimension: 'revenue', amount: '一站式决策，研究效率翻 10 倍' } },
+      // ── 企业 AI 降本增效批量扫描 ──
+      { id: 'workforce_ai_batch_scan', label: 'AI降本批量扫描', icon: '🔍',
+        prompt: '批量扫描以下股票的 AI 降本增效潜力，按 ROI 从高到低排序并给出 TOP 3 推荐（逗号分隔代码）：600482,600036,000001',
+        expectedOutcome: 'TOP 标的排序 + 每只股票的人力替代率/年化节省/投资回收期 + 投资优先级建议',
+        expert: 'invest.workforce_ai_analyst',
+        profitImpact: { dimension: 'revenue', amount: '批量发现 AI 降本受益标的，预期 α 收益 15-30%' } },
     ],
   },
   {
