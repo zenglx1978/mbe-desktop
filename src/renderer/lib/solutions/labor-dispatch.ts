@@ -1,0 +1,236 @@
+/**
+ * 自动拆分自 solution-registry-data.ts。
+ * 请勿手工编辑“结构”——如需改方案内容，请直接改本文件字段即可。
+ */
+import type { SolutionConfig } from '../solution-router'
+import { agent } from '../solution-router-agent'
+
+export const laborDispatchSolution: SolutionConfig = {
+  id: 'labor-dispatch',
+  name: '劳务派遣一站式方案',
+  icon: '👷',
+  color: '#f59e0b',
+  tagline: '三个岗位的活一个老板管，人力成本省 60%',
+  description: '过去需要法务 + 会计 + HR 三个专职岗位，MBE 派遣三位 AI 专家，用 1/3 的人力成本完成全部工作，释放出来的预算投入业务扩张。',
+  entrepreneurPurpose: '用 1/3 的人力成本完成合规+结算+纠纷全链路，释放利润空间',
+  profitMetrics: ['省下法务+会计+HR 三岗 ≈ 年省 30-50 万', '合规检查 40h→5min', '纠纷赔偿零差错，避免多赔'],
+  valueEquivalent: { humanHours: 40, mbeMinutes: 5, acceleration: '480x' },
+  agents: [
+    agent('legal', 8003, '劳动法专家', '用工合规、合同审查、纠纷处理'),
+    agent('finance', 8002, '薪酬财税专家', '工资计算、社保代缴、差额征税'),
+    agent('hr', 8010, '人力资源专家', '招聘管理、考勤排班、入离职流程'),
+  ],
+  localScripts: ['calc_labor_compensation', 'calc_litigation_fee', 'calc_hr_overtime', 'calc_hr_annual_leave'],
+  knowledgeCache: ['labor_law_basics', 'dispatch_regulations'],
+  theme: { primary: '38 92% 50%', accent: '38 92% 50%' },
+  enabledTabs: ['today', 'employees', 'payroll', 'compliance', 'disputes', 'tools', 'documents', 'chat', 'knowledge-graph'],
+  onboarding: {
+    questions: [
+      { key: 'company_size', label: '公司规模', options: ['1-20人', '20-50人', '50-200人', '200人以上'] },
+      { key: 'dispatch_count', label: '当前派遣人数', options: ['1-50人', '50-200人', '200-500人', '500人以上'] },
+      { key: 'industry', label: '主要派遣行业', options: ['制造业', '物流仓储', '建筑工程', '互联网/IT', '餐饮服务', '综合'] },
+    ],
+  },
+  tools: [
+    {
+      id: 'labor-compensation', type: 'calculator', name: '经济补偿计算器', icon: '💰',
+      agent: 'legal', apiPath: '/api/legal/calc/compensation',
+      localScript: 'calc_labor_compensation',
+      description: '劳动经济补偿金精确计算（N/N+1/2N）',
+      fields: [
+        { key: 'monthly_salary', label: '月工资（元）', type: 'currency', required: true },
+        { key: 'work_years', label: '工作年限', type: 'number', required: true },
+        { key: 'dismissal_type', label: '解除类型', type: 'select', required: true,
+          options: [
+            { value: 'N', label: 'N（协商/裁员/客观变化）' },
+            { value: 'N+1', label: 'N+1（未提前30天通知）' },
+            { value: '2N', label: '2N（违法解除）' },
+          ] },
+      ],
+    },
+    {
+      id: 'litigation-fee', type: 'calculator', name: '诉讼费计算器', icon: '⚖️',
+      agent: 'legal', apiPath: '/api/legal/calc/litigation-fee',
+      localScript: 'calc_litigation_fee',
+      description: '法院案件受理费精确计算',
+      fields: [
+        { key: 'amount', label: '标的额（元）', type: 'currency', required: true },
+      ],
+    },
+    {
+      id: 'salary-tax', type: 'calculator', name: '个税计算器', icon: '🧾',
+      agent: 'finance', apiPath: '/api/finance/calc/salary-tax',
+      localScript: 'calc_iit',
+      description: '工资薪金个人所得税计算',
+      fields: [
+        { key: 'salary', label: '税前月薪（元）', type: 'currency', required: true },
+        { key: 'insurance', label: '五险一金（元）', type: 'currency', default: 0 },
+        { key: 'deduction', label: '专项附加扣除（元）', type: 'currency', default: 0 },
+      ],
+    },
+    {
+      id: 'contract-review', type: 'document-ai', name: '劳动合同审查', icon: '📋',
+      agent: 'legal', apiPath: '/api/legal/ai/contract-review',
+      description: '上传劳动合同，AI 逐条审查风险',
+      acceptTypes: ['.txt', '.pdf', '.docx', '.jpg', '.png'],
+    },
+    {
+      id: 'overtime-calc', type: 'calculator', name: '加班费计算器', icon: '⏰',
+      agent: 'hr', apiPath: '/api/hr/calc/overtime',
+      localScript: 'calc_hr_overtime',
+      description: '工作日/周末/法定假日加班费精确计算（1.5x/2x/3x）',
+      fields: [
+        { key: 'monthly_salary', label: '月工资（元）', type: 'currency', required: true },
+        { key: 'hours', label: '加班小时数', type: 'number', required: true },
+        { key: 'overtime_type', label: '加班类型', type: 'select', required: true,
+          options: [
+            { value: 'weekday', label: '工作日延长（1.5倍）' },
+            { value: 'weekend', label: '休息日（2倍）' },
+            { value: 'holiday', label: '法定节假日（3倍）' },
+          ] },
+      ],
+    },
+    {
+      id: 'annual-leave', type: 'calculator', name: '年假天数计算', icon: '🏖️',
+      agent: 'hr', apiPath: '/api/hr/calc/annual-leave',
+      localScript: 'calc_hr_annual_leave',
+      description: '根据累计工龄计算法定年休假天数',
+      fields: [
+        { key: 'years', label: '累计工作年限', type: 'number', required: true },
+      ],
+    },
+    {
+      id: 'probation-salary', type: 'calculator', name: '试用期工资下限', icon: '📊',
+      agent: 'hr', apiPath: '/api/hr/calc/probation-salary',
+      description: '试用期工资不得低于约定工资的80%（劳动合同法第20条）',
+      fields: [
+        { key: 'monthly_salary', label: '约定月工资（元）', type: 'currency', required: true },
+      ],
+    },
+    {
+      id: 'dispatch-ratio', type: 'calculator', name: '派遣比例合规检测', icon: '📊',
+      agent: 'hr', apiPath: '/api/hr/calc/dispatch-ratio',
+      description: '检测劳务派遣用工比例是否超过 10% 法定上限（劳务派遣暂行规定第 4 条）',
+      fields: [
+        { key: 'total_employees', label: '用工总量（含直雇+派遣+外包）', type: 'number', required: true },
+        { key: 'dispatched_count', label: '被派遣劳动者数量', type: 'number', required: true },
+      ],
+    },
+  ],
+  slashCommands: [
+    { cmd: '/计算', label: '赔偿计算', icon: '💰', toolId: 'labor-compensation' },
+    { cmd: '/审查', label: '合同审查', icon: '📋', toolId: 'contract-review' },
+    { cmd: '/个税', label: '个税计算', icon: '🧾', toolId: 'salary-tax' },
+    { cmd: '/诉讼费', label: '诉讼费计算', icon: '⚖️', toolId: 'litigation-fee' },
+    { cmd: '/加班费', label: '加班费计算', icon: '⏰', toolId: 'overtime-calc' },
+    { cmd: '/年假', label: '年假天数', icon: '🏖️', toolId: 'annual-leave' },
+    { cmd: '/派遣比例', label: '派遣比例检测', icon: '📊', toolId: 'dispatch-ratio' },
+    { cmd: '/入职', label: '入职派遣流程', icon: '📋', description: '启动入职全流程' },
+    { cmd: '/纠纷', label: '劳动纠纷处理', icon: '⚖️', description: '启动纠纷处理流程' },
+  ],
+  workflows: [
+    {
+      id: 'onboarding', name: '入职派遣流程', icon: '📋',
+      description: '确保新派遣工合法合规上岗，用工风险可控、薪税方案最优',
+      mode: 'sequential',
+      deliverable: '入职派遣综合报告（含合规结论、合同审查结果、薪税方案）',
+      successCriteria: [
+        '明确用工形式合法性结论（派遣 vs 外包 vs 直雇）',
+        '劳动合同风险条款 ≤ 0 项高危',
+        '薪税方案含具体金额和法规依据',
+      ],
+      steps: [
+        { id: 'recruitment', agent: 'hr', expert: 'hr_consultant', label: '招聘与录用评估',
+          goal: '确认用工形式合法性，输出岗位匹配度评估',
+          successCriteria: ['明确派遣比例是否超标', '列出岗位三性（临时/辅助/替代）判定依据'],
+          profitImpact: { dimension: 'loss_avoidance', amount: '确保派遣比例合规，避免罚款 10-50 万' } },
+        { id: 'contract', agent: 'legal', expert: 'civil_lawyer', label: '劳动合同审查',
+          goal: '识别合同中全部法律风险并给出修改文本',
+          successCriteria: ['逐条标注风险等级（高/中/低）', '每条高风险给出替代条款文本', '引用劳动合同法具体条款号'],
+          profitImpact: { dimension: 'loss_avoidance', amount: '消除合同风险条款，避免纠纷损失 5-30 万' } },
+        { id: 'tax', agent: 'finance', expert: 'tax_consultant', label: '薪税方案核算',
+          goal: '输出个税最优方案和社保成本明细',
+          successCriteria: ['含工资、社保、公积金、个税各项金额', '对比至少 2 种薪酬结构方案的税后差异'],
+          profitImpact: { dimension: 'cost_saving', amount: '优选薪酬结构，每人每月省税 200-500 元' } },
+      ],
+      triggerPhrases: ['新员工入职', '派遣入职', '入职流程'],
+    },
+    {
+      id: 'dispute_resolution', name: '劳动纠纷处理', icon: '⚖️',
+      description: '输出可执行的纠纷应对方案，含法律分析、赔偿金额和操作步骤',
+      mode: 'sequential',
+      deliverable: '劳动纠纷处理方案（含法律意见、补偿金额、行动清单）',
+      successCriteria: [
+        '法律分析引用 ≥ 3 条具体法规条款',
+        '补偿金额给出精确计算过程（含公式和数字）',
+        '行动清单含时间节点和责任人',
+      ],
+      steps: [
+        { id: 'fact_finding', agent: 'legal', expert: 'civil_lawyer', label: '事实认定与法律分析',
+          goal: '厘清法律关系，判定违法/违约性质，评估胜诉概率',
+          successCriteria: ['明确劳动关系类型', '列出适用法条（条款号）', '给出胜诉概率区间'],
+          profitImpact: { dimension: 'loss_avoidance', amount: '精准定性避免败诉，减少赔偿 1-10 万' } },
+        { id: 'compensation', agent: 'finance', expert: 'tax_consultant', label: '补偿金额核算',
+          goal: '精确计算各类补偿/赔偿金额',
+          successCriteria: ['N/N+1/2N 各项金额逐项列出', '含社保补缴、年假折算等附带金额', '计算过程可验证'],
+          profitImpact: { dimension: 'loss_avoidance', amount: '精确计算避免多赔，每案省 0.5-3 万' } },
+        { id: 'strategy', agent: 'hr', expert: 'hr_consultant', label: '应对策略与预防',
+          goal: '输出可直接执行的应对方案和长效预防机制',
+          successCriteria: ['方案含谈判话术要点', '含时间线（仲裁/诉讼截止日期）', '提出 ≥ 2 项预防改进措施'],
+          profitImpact: { dimension: 'cost_saving', amount: '预防机制减少未来纠纷，年省 5-15 万' } },
+      ],
+      triggerPhrases: ['劳动纠纷', '员工辞退', '劳动仲裁', 'N+1'],
+    },
+    {
+      id: 'monthly_settlement', name: '月度薪资结算', icon: '💰',
+      description: '输出薪资发放明细和合规确认，确保零差错发放',
+      mode: 'sequential',
+      deliverable: '月度薪资结算单（含各项明细、合规确认、异常提示）',
+      successCriteria: [
+        '每人薪资含基本工资/加班费/社保/公积金/个税各项',
+        '标注异常项（如超时加班、基数偏低）',
+        '合规确认引用最低工资标准和社保基数文件',
+      ],
+      steps: [
+        { id: 'attendance', agent: 'hr', expert: 'hr_consultant', label: '考勤与工时汇总',
+          goal: '输出全员考勤统计，标注加班和异常',
+          successCriteria: ['加班工时分类（工作日/休息日/法定假）', '标注超 36 小时月加班上限的员工'],
+          profitImpact: { dimension: 'cost_saving', amount: '自动汇总省 2 天人工，月省 3000 元' } },
+        { id: 'payroll', agent: 'finance', expert: 'tax_consultant', label: '薪资与社保计算',
+          goal: '精确计算每人应发/实发金额',
+          successCriteria: ['含五险一金各项基数和金额', '个税累计预扣法计算正确', '总额与上月差异 ≤ 5% 或标注原因'],
+          profitImpact: { dimension: 'cost_saving', amount: '零差错批量计算，月省核算人力 1.5 天' } },
+        { id: 'compliance', agent: 'legal', expert: 'civil_lawyer', label: '用工合规检查',
+          goal: '确认发放方案无法律风险',
+          successCriteria: ['最低工资标准达标确认', '加班费计算基数合规', '社保缴纳比例符合当地规定'],
+          profitImpact: { dimension: 'loss_avoidance', amount: '确保发放合规，避免劳动监察处罚 5-20 万' } },
+      ],
+      triggerPhrases: ['薪资结算', '发工资', '社保核算'],
+    },
+  ],
+  safetyRules: [
+    { id: 'dispatch-ratio-alert', label: '派遣比例超标预警', trigger: '派遣用工比例接近或超过 10% 法定上限', action: '红色弹窗报警，阻止新增派遣合同，提示整改方案' },
+    { id: 'contract-expiry-guard', label: '合同到期提醒', trigger: '劳动合同/派遣协议距到期 ≤ 30 天', action: '推送续签提醒，自动生成续签方案' },
+    { id: 'minimum-wage-check', label: '最低工资保障', trigger: '计算工资低于当地最低工资标准', action: '阻止工资确认，提示差额和法律风险' },
+    { id: 'overtime-limit-alert', label: '加班超限预警', trigger: '月加班累计超过 36 小时法定上限', action: '橙色预警，通知 HR 调整排班' },
+    { id: 'social-insurance-gap', label: '社保断缴检测', trigger: '员工社保公积金断缴或基数异常', action: '红色报警，提示补缴方案和法律后果' },
+    { id: 'dispute-amount-review', label: '大额赔偿审核', trigger: '补偿/赔偿金额超过 10 万元', action: '暂停处理，需总经理审批确认' },
+  ],
+  quickActions: [
+    { id: 'ratio-check', label: '合规比例检测', icon: '📊', workflowId: 'compliance_audit', description: '一键检测派遣用工比例是否合规', cta: '立即检测' },
+    { id: 'salary-batch', label: '批量算薪', icon: '🧮', workflowId: 'monthly_settlement', description: '导入考勤数据，批量计算全员薪资', cta: '开始算薪' },
+    { id: 'contract-gen', label: '生成派遣协议', icon: '📄', description: '根据用工信息生成标准派遣协议草稿', cta: '生成协议' },
+    { id: 'dispute-calc', label: '补偿金计算', icon: '💰', description: '快速计算退回/辞退补偿金额', cta: '开始计算' },
+    { id: 'new-onboard', label: '新员工入职', icon: '👤', workflowId: 'onboarding', description: '启动入职全流程', cta: '办理入职' },
+    { id: 'compare-mode', label: '派遣 vs 外包', icon: '🔄', description: '对比派遣与外包方案的成本和风险', cta: '开始对比' },
+  ],
+  scenarios: [
+    { id: 'dismiss', label: '员工辞退方案', icon: '🚪', prompt: '公司想辞退一名员工，请分析合法的辞退方案和经济补偿', expectedOutcome: '含法律依据的辞退方案 + N/2N 精确金额 + 操作时间线', workflowId: 'dispute_resolution', profitImpact: { dimension: 'loss_avoidance', amount: '避免违法辞退赔偿 2-8 万' } },
+    { id: 'contract_check', label: '新合同审查', icon: '📋', prompt: '审查这份劳动合同的风险点', expectedOutcome: '逐条风险标注（高/中/低）+ 每条修改建议文本 + 引用法条', expert: 'legal.civil_lawyer', profitImpact: { dimension: 'loss_avoidance', amount: '避免合同漏洞损失 5-30 万' } },
+    { id: 'overtime_risk', label: '加班费风险', icon: '⏰', prompt: '分析加班费计算方式和潜在法律风险', expectedOutcome: '加班费计算公式 + 三种加班倍率 + 超时加班法律后果', expert: 'legal.civil_lawyer', profitImpact: { dimension: 'loss_avoidance', amount: '避免加班费追诉损失 1-5 万' } },
+    { id: 'social_insurance', label: '社保合规', icon: '🏥', prompt: '检查社保缴纳基数和比例是否合规', expectedOutcome: '当地社保基数上下限 + 各险种费率 + 差异金额', expert: 'finance.tax_consultant', profitImpact: { dimension: 'loss_avoidance', amount: '避免社保基数违规补缴 3-10 万' } },
+    { id: 'batch_onboard', label: '批量入职', icon: '👥', prompt: '20 名新员工同时入职的流程和注意事项', expectedOutcome: '批量入职检查清单 + 时间排期 + 常见风险点', workflowId: 'onboarding', profitImpact: { dimension: 'cost_saving', amount: '批量入职省时 80%，月省人力 5000 元' } },
+  ],
+}
+
+export default laborDispatchSolution
