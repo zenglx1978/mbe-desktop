@@ -34,7 +34,14 @@ export default function CalculatorForm({ tool, color }: Props) {
       const numericValues: Record<string, any> = {}
       tool.fields?.forEach(f => {
         const v = values[f.key]
-        if (f.type === 'number' || f.type === 'currency') {
+        if (f.array) {
+          // 数组字段：按分隔符拆分字符串为数组
+          const separator = f.arraySeparator ? new RegExp(f.arraySeparator) : /[,;\n\s]+/
+          numericValues[f.key] = (v || '')
+            .split(separator)
+            .map(s => s.trim())
+            .filter(s => s.length > 0)
+        } else if (f.type === 'number' || f.type === 'currency') {
           numericValues[f.key] = parseFloat(v) || 0
         } else {
           numericValues[f.key] = v
@@ -145,6 +152,10 @@ function CalcResultCard({ result, tool, color }: {
   const entries = Object.entries(data).filter(
     ([k, v]) => !k.startsWith('_') && typeof v !== 'object'
   )
+  // 检测批量扫描结果：data.results 为数组（batch_scan 专用渲染）
+  const batchResults = Array.isArray((data as any).results)
+    ? ((data as any).results as Array<{ ticker: string; status: string; path?: string; error?: string }>)
+    : null
 
   return (
     <div className="rounded-xl border border-border/50 overflow-hidden">
@@ -176,6 +187,52 @@ function CalcResultCard({ result, tool, color }: {
           </div>
         ))}
       </div>
+
+      {/* 批量扫描结果列表（batch_scan 专用） */}
+      {batchResults && batchResults.length > 0 && (
+        <div className="px-4 pb-4">
+          <div className="text-xs font-medium text-muted-foreground mb-2 mt-1">
+            批量结果（{batchResults.length} 项）
+          </div>
+          <div className="space-y-1.5 max-h-[320px] overflow-y-auto pr-1">
+            {batchResults.map((item, idx) => {
+              const ok = item.status === 'ok' || item.status === 'success'
+              return (
+                <div
+                  key={`${item.ticker}-${idx}`}
+                  className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-xs ${
+                    ok ? 'bg-emerald-500/5 border border-emerald-500/20' : 'bg-red-500/5 border border-red-500/20'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <span className={ok ? 'text-emerald-600' : 'text-red-500'}>{ok ? '✓' : '✗'}</span>
+                    <span className="font-mono font-medium">{item.ticker}</span>
+                    {ok && item.path && (
+                      <span className="text-muted-foreground/70 truncate" title={item.path}>
+                        {item.path}
+                      </span>
+                    )}
+                    {!ok && item.error && (
+                      <span className="text-red-400/80 truncate" title={item.error}>
+                        {item.error}
+                      </span>
+                    )}
+                  </div>
+                  {ok && item.path && (
+                    <button
+                      onClick={() => navigator.clipboard.writeText(item.path!)}
+                      className="text-muted-foreground hover:text-foreground transition-colors px-1.5 py-0.5 rounded hover:bg-secondary/50 flex-shrink-0"
+                      title="复制路径"
+                    >
+                      📋
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* 底部操作 */}
       <div className="px-4 py-3 bg-secondary/20 flex items-center justify-between">

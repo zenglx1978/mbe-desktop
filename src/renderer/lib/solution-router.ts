@@ -33,6 +33,10 @@ export interface ToolField {
   options?: { value: string; label: string }[]
   required?: boolean
   default?: string | number
+  /** 数组字段标志：输入字符串按分隔符拆分为数组后提交（用于 List[str] 参数） */
+  array?: boolean
+  /** 数组分隔符（默认为逗号，支持换行、分号等） */
+  arraySeparator?: string
 }
 
 /** 快捷操作（方案首页卡片） */

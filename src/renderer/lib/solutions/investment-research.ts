@@ -114,6 +114,24 @@ export const investmentResearchSolution: SolutionConfig = {
         { key: 'title_override', label: '自定义报告标题', type: 'text', placeholder: '留空使用默认标题' },
       ],
     },
+    { id: 'workforce-ai-batch-scan', type: 'calculator', name: '企业AI降本批量扫描', icon: '🔍',
+      agent: 'invest', apiPath: '/api/invest/workforce_ai/batch_scan',
+      description: '批量扫描多只股票的 AI 降本增效潜力，一次生成多份研报（按 ROI 从高到低）',
+      category: 'AI 降本增效',
+      fields: [
+        { key: 'tickers', label: '股票代码列表', type: 'textarea',
+          placeholder: '多个代码用逗号、换行或分号分隔\n例如：600482, 600036, 000001',
+          required: true, array: true, arraySeparator: '[,;\\n\\s]+' },
+        { key: 'deployment_mode', label: '部署模式', type: 'select', default: 'auto',
+          options: [
+            { value: 'auto', label: '自动识别（按行业推荐）' },
+            { value: 'saas', label: 'SaaS 云端' },
+            { value: 'private', label: '私有化部署' },
+            { value: 'hybrid', label: '混合云' },
+            { value: 'offline', label: '物理隔离离线' },
+          ] },
+      ],
+    },
   ],
   slashCommands: [
     { cmd: '/比率', label: '财务比率', icon: '📊', toolId: 'financial-ratio' },
@@ -283,12 +301,6 @@ export const investmentResearchSolution: SolutionConfig = {
       prompt: '一站式查看四柱投资系统全貌', apiEndpoint: '/api/invest/four-pillar/dashboard', apiMethod: 'GET',
       expectedOutcome: '四柱合一视图：宏观+热点+个股+操作的综合研判',
       expert: 'invest.investment_analyst', profitImpact: { dimension: 'revenue', amount: '一站式决策，研究效率翻 10 倍' } },
-    // ── 企业 AI 降本增效批量扫描 ──
-    { id: 'workforce_ai_batch_scan', label: 'AI降本批量扫描', icon: '🔍',
-      prompt: '批量扫描以下股票的 AI 降本增效潜力，按 ROI 从高到低排序并给出 TOP 3 推荐（逗号分隔代码）：600482,600036,000001',
-      expectedOutcome: 'TOP 标的排序 + 每只股票的人力替代率/年化节省/投资回收期 + 投资优先级建议',
-      expert: 'invest.workforce_ai_analyst',
-      profitImpact: { dimension: 'revenue', amount: '批量发现 AI 降本受益标的，预期 α 收益 15-30%' } },
   ],
 }
 
