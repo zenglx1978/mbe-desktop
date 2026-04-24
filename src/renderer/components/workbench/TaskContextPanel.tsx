@@ -107,6 +107,21 @@ const TASK_CONTEXTS: Record<string, TaskContext> = {
     ],
     toolIds: ['iit', 'vat', 'cit-quarterly', 'stamp-tax'],
   },
+  'business-plan': {
+    title: '商业计划书',
+    description: '融资 BP 写作 → IPO 板块评估 → 合规诊断，AI 2 周工作量压缩到 3 小时',
+    icon: <TrendingUp className="w-5 h-5" />,
+    workflowIds: ['bp_writing', 'ipo_board_matching'],
+    scenarioIds: ['bp_angel', 'bp_series_a', 'ipo_match'],
+    quickActions: [
+      { label: '天使轮 BP 起草', prompt: '帮我为融资客户起草天使轮商业计划书，包含市场分析和商业模式', icon: <TrendingUp className="w-4 h-4" /> },
+      { label: 'A 轮 BP 写作', prompt: '客户准备启动 A 轮融资，帮我生成完整14章商业计划书', icon: <TrendingUp className="w-4 h-4" /> },
+      { label: 'IPO 板块评估', prompt: '客户净利润连续3年超3000万，推荐哪个A股上市板块？', icon: <BarChart3 className="w-4 h-4" /> },
+      { label: '股权架构税务', prompt: '融资前股权架构调整，持股平台 vs 个人直接持股哪种税务更优？', icon: <Calculator className="w-4 h-4" /> },
+      { label: 'IPO 合规预检', prompt: '客户冲刺 IPO，帮我做12大类合规预检，重点排查关联交易和股权历史', icon: <CheckCircle2 className="w-4 h-4" /> },
+    ],
+    toolIds: ['bp-wizard'],
+  },
 
   // ── 律所方案任务上下文 ──
   cases: {

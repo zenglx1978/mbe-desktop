@@ -13,7 +13,7 @@ import {
   ClipboardList, BookOpen, Receipt, FileBarChart, Lightbulb,
   Scale, FileSignature, FilePen, BadgeDollarSign,
   UserCheck, Banknote, ShieldAlert, Gavel,
-  Search, Briefcase, Globe, FileCheck, Network,
+  Search, Briefcase, Globe, FileCheck, Network, Rocket,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -67,6 +67,7 @@ export const TAB_ICON_MAP: Record<string, TabMeta> = {
   'dispatch-dashboard': { icon: Radio,  label: 'Dispatch 控制台' },
   'design-engine':      { icon: FileImage, label: 'Design Engine' },
   'knowledge-graph':    { icon: Network,   label: '知识图谱' },
+  'business-plan':      { icon: Rocket,    label: '商业计划书' },
 }
 
 export const SIDEBAR_ACTIONS = {

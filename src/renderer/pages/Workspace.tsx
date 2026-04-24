@@ -457,6 +457,8 @@ function ActivePanel({ tab }: { tab: string }) {
       return <TaskContextPanel solution={solution} taskId="reports" />
     case 'tax-planning':
       return <TaskContextPanel solution={solution} taskId="tax-planning" />
+    case 'business-plan':
+      return <TaskContextPanel solution={solution} taskId="business-plan" />
     // 律所专属任务 tab
     case 'cases':
       return <TaskContextPanel solution={solution} taskId="cases" />

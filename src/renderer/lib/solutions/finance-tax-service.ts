@@ -25,7 +25,7 @@ export const financeTaxServiceSolution: SolutionConfig = {
   localScripts: ['calc_iit', 'calc_vat'],
   knowledgeCache: ['tax_law_basics', 'accounting_standards'],
   theme: { primary: '164 100% 42%', accent: '164 100% 42%' },
-  enabledTabs: ['today', 'bookkeeping', 'invoices', 'tax-filing', 'reports', 'tax-planning', 'tools', 'documents', 'chat', 'dashboard', 'knowledge-graph'],
+  enabledTabs: ['today', 'bookkeeping', 'invoices', 'tax-filing', 'reports', 'tax-planning', 'business-plan', 'tools', 'documents', 'chat', 'dashboard', 'knowledge-graph'],
   onboarding: {
     questions: [
       { key: 'taxpayer_type', label: '纳税人类型', options: ['一般纳税人', '小规模纳税人'] },
@@ -193,6 +193,21 @@ export const financeTaxServiceSolution: SolutionConfig = {
         { key: 'period', label: '审计期间', type: 'text', required: true },
       ],
     },
+    { id: 'bp-wizard', type: 'document-ai', name: '融资 BP 写作', icon: '🚀',
+      agent: 'finance', apiPath: '/api/finance/bp/plans',
+      description: '智能生成融资商业计划书（天使/A/B轮），14章全文初稿 + Word/PDF 双格式导出',
+      fields: [
+        { key: 'round', label: '融资轮次', type: 'select', required: true,
+          options: [
+            { value: 'angel', label: '天使轮（7章精简版）' },
+            { value: 'pre-a', label: 'Pre-A 轮' },
+            { value: 'series-a', label: 'A 轮（14章完整版）' },
+            { value: 'series-b', label: 'B 轮及以上' },
+          ] },
+        { key: 'industry', label: '行业', type: 'text', required: true },
+        { key: 'target_amount', label: '融资金额（万元）', type: 'currency', required: true },
+      ],
+    },
   ],
   slashCommands: [
     { cmd: '/个税', label: '个税计算', icon: '🧾', toolId: 'iit' },
@@ -209,6 +224,9 @@ export const financeTaxServiceSolution: SolutionConfig = {
     { cmd: '/抽样', label: '审计抽样', icon: '🎲', toolId: 'sampling-calc' },
     { cmd: '/函证', label: '生成函证', icon: '📮', toolId: 'confirmation-gen' },
     { cmd: '/舞弊', label: '舞弊筛查', icon: '🔎', toolId: 'fraud-scan' },
+    { cmd: '/商业计划书', label: '融资 BP 写作', icon: '🚀', toolId: 'bp-wizard' },
+    { cmd: '/融资BP', label: '融资 BP 写作', icon: '🚀', toolId: 'bp-wizard' },
+    { cmd: '/IPO', label: 'IPO 板块评估', icon: '📊', description: '输入客户财务指标，推荐上市板块' },
   ],
   safetyRules: [
     { id: 'unbalanced-voucher', label: '借贷不平衡拦截', trigger: '凭证借方合计 ≠ 贷方合计', action: '阻止保存，提示差额' },
@@ -236,6 +254,8 @@ export const financeTaxServiceSolution: SolutionConfig = {
     { id: 'confirmation', label: '智能函证', icon: '📮', description: '批量生成+跟踪+差异调查', cta: '生成函证' },
     { id: 'fraud', label: '舞弊筛查', icon: '🔎', description: '日记账全量扫描+关联方', cta: '开始筛查' },
     { id: 'audit-report', label: '审计报告', icon: '📄', description: '汇总→评估→报告+建议书', cta: '生成报告' },
+    { id: 'financing-bp', label: '融资 BP', icon: '🚀', workflowId: 'capital_market_readiness', description: '天使/A/B轮融资商业计划书，3小时完成初稿', cta: '开始写作' },
+    { id: 'ipo-check', label: 'IPO 预检', icon: '📊', workflowId: 'ipo_board_matching', description: '5分钟评估主板/创业板/科创板/北交所适配', cta: '立即评估' },
   ],
   workflows: [
     {
@@ -463,6 +483,36 @@ export const financeTaxServiceSolution: SolutionConfig = {
       ],
       triggerPhrases: ['审计报告', '审计意见', '管理建议书'],
     },
+    {
+      id: 'bp_writing', name: '融资商业计划书写作', icon: '🚀',
+      description: '为融资客户生成专业商业计划书（天使/A/B轮），AI 完成14章全文初稿 + 占位符清单 + Word/PDF 双格式导出',
+      mode: 'sequential',
+      deliverable: '14章融资 BP 初稿（Word + PDF）+ 占位符清单 + 股权合规风险标注',
+      successCriteria: [
+        'BP 覆盖执行摘要/市场分析/商业模式/竞争分析/财务预测等14章',
+        '财务章节自动注入客户历史数据',
+        '法律专家确认股权结构描述合规',
+        '导出前所有 [待补充] 占位符清单生成完毕',
+      ],
+      steps: [
+        { id: 'stage_match', agent: 'finance', expert: 'finance_accountant', label: '融资阶段判断',
+          goal: '确认融资轮次，选择对应 BP 模板', successCriteria: ['天使轮选7章/A轮及以上选14章', '行业适配确认'],
+          profitImpact: { dimension: 'revenue', amount: '2周工作量压缩到3小时，服务单价提升' } },
+        { id: 'draft_gen', agent: 'finance', expert: 'finance_accountant', label: 'AI 批量生成初稿',
+          goal: '生成执行摘要/公司概况/市场分析/竞争分析/商业模式/产品等全章', successCriteria: ['各章节篇幅达标', '逻辑连贯'],
+          profitImpact: { dimension: 'cost_saving', amount: 'BP 写作从 2 周压缩到 3 小时' } },
+        { id: 'financial_inject', agent: 'finance', expert: 'tax_consultant', label: '财务数据注入',
+          goal: '将客户历史财务数据和税务架构建议嵌入财务章节', successCriteria: ['三年历史数据填入', '税务效率建议完整'],
+          profitImpact: { dimension: 'revenue', amount: '财务数据驱动的BP说服力更强' } },
+        { id: 'legal_review', agent: 'legal', expert: 'civil_lawyer', label: '股权合规校验',
+          goal: '核查BP中股权结构描述合规性，标记对赌/回购/反稀释条款风险', successCriteria: ['股权结构描述无法律风险', '对赌条款风险标注完整'],
+          profitImpact: { dimension: 'loss_avoidance', amount: '提前发现股权法律风险，避免融资失败' } },
+        { id: 'export', agent: 'finance', expert: 'finance_accountant', label: '导出与占位符清单',
+          goal: '导出 Word/PDF，生成待客户补充的占位符列表', successCriteria: ['双格式导出成功', '占位符清单无遗漏'],
+          profitImpact: { dimension: 'cost_saving', amount: '专业格式交付，提升客户信任度' } },
+      ],
+      triggerPhrases: ['融资BP', '商业计划书', '天使轮', 'A轮', 'B轮', '融资材料', '路演材料'],
+    },
   ],
   scenarios: [
     { id: 'invoice_check', label: '发票合规检查', icon: '🧾', prompt: '检查这批发票是否合规', expectedOutcome: '逐张发票合规/异常判定 + 异常原因 + 处理建议', expert: 'finance.finance_accountant', profitImpact: { dimension: 'loss_avoidance', amount: '避免虚开发票风险，防止稽查处罚 5-50 万' } },
@@ -482,6 +532,9 @@ export const financeTaxServiceSolution: SolutionConfig = {
     { id: 'sampling_method', label: '抽样方法选择', icon: '🎲', prompt: '测试销售收入完整性，用什么抽样方法？样本量多少？', expectedOutcome: '推荐方法 + 样本量计算 + 选样明细', expert: 'finance.finance_accountant', profitImpact: { dimension: 'cost_saving', amount: '抽样设计从 2 小时到 10 分钟' } },
     { id: 'audit_report_type', label: '审计意见类型', icon: '📄', prompt: '累计未更正错报超过重要性但未遍及，出什么类型报告？', expectedOutcome: '意见类型判定 + 审计准则引用 + 意见段措辞', expert: 'finance.finance_accountant', profitImpact: { dimension: 'loss_avoidance', amount: '意见类型判定准确避免执业风险' } },
     { id: 'internal_control', label: '内控评价', icon: '🏛️', prompt: '被审计单位采购审批全靠口头，如何评估内控风险？', expectedOutcome: '内控缺陷评级 + 控制测试方案 + 实质性程序调整', expert: 'finance.finance_accountant', profitImpact: { dimension: 'loss_avoidance', amount: '内控薄弱需扩大实质性程序范围' } },
+    { id: 'bp_angel', label: '天使轮 BP 起草', icon: '🚀', prompt: '帮我为融资客户起草一份天使轮商业计划书', expectedOutcome: '7章 BP 初稿（执行摘要/市场/产品/商业模式/团队/财务/融资需求）+ 占位符清单', workflowId: 'bp_writing', profitImpact: { dimension: 'revenue', amount: 'BP 写作服务单价 3-10 万，2周工作量压缩到3小时' } },
+    { id: 'bp_series_a', label: 'A 轮 BP 写作', icon: '🚀', prompt: '客户准备启动 A 轮融资，帮我生成完整商业计划书', expectedOutcome: '14章完整 BP（含财务预测/竞争壁垒/增长策略）+ Word/PDF 导出 + 股权合规标注', workflowId: 'bp_writing', profitImpact: { dimension: 'revenue', amount: 'A 轮 BP 服务费 5-20 万' } },
+    { id: 'ipo_match', label: 'IPO 板块适配', icon: '📊', prompt: '客户净利润连续3年超3000万，推荐哪个A股上市板块？', expectedOutcome: '主板/创业板/科创板/北交所适配分析 + 差距项 + 整改时间表', expert: 'finance.ipo_advisor', profitImpact: { dimension: 'revenue', amount: 'IPO 辅导服务单价 50-200 万' } },
   ],
 }
 
