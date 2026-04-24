@@ -1,6 +1,6 @@
 {
   "name": "mbe-desktop",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "MBE Desktop — AI 专业服务统一桌面端",
   "main": "dist/main/index.js",
   "author": "MBE Team",

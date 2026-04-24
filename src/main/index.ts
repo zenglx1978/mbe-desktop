@@ -330,9 +330,9 @@ function setupAutoUpdater() {
       }, 1500)
     } else {
       sendUpdateStatus('installing', { version: info.version })
-      // isSilent=false: 让 NSIS 显示安装界面并正确处理 UAC 提权（perMachine 必须）
-      // forceRunAfter=true: 配合 package.json runAfterFinish 确保安装后重启
-      setTimeout(() => autoUpdater.quitAndInstall(false, true), 2000)
+      // isSilent=true: 静默安装，无需用户干预（customInit 已改为自动卸载旧版）
+      // forceRunAfter=true: 确保安装完成后自动重启应用
+      setTimeout(() => autoUpdater.quitAndInstall(true, true), 2000)
     }
   })
 
