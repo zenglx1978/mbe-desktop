@@ -14,7 +14,7 @@ import {
   Scale, FileSignature, FilePen, BadgeDollarSign,
   UserCheck, Banknote, ShieldAlert, Gavel,
   Search, Briefcase, Globe, FileCheck, Network, Rocket,
-  GitBranch, Download, ListChecks, ClipboardCheck,
+  GitBranch, Download, ListChecks, ClipboardCheck, Store,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -73,6 +73,7 @@ export const TAB_ICON_MAP: Record<string, TabMeta> = {
   'mises-export':       { icon: Download,    label: '研报导出' },
   'ipo-prep':           { icon: ListChecks,      label: 'IPO 准备' },
   'audit-report':      { icon: ClipboardCheck,  label: '审计报告' },
+  'neeq':              { icon: Store,           label: '新三板' },
 }
 
 export const SIDEBAR_ACTIONS = {

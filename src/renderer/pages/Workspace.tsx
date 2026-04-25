@@ -48,6 +48,7 @@ import ConsolidatedReportPanel from '@/components/workbench/ConsolidatedReportPa
 import MisesExportPanel from '@/components/workbench/MisesExportPanel'
 import IPOPrepPanel from '@/components/workbench/IPOPrepPanel'
 import AuditReportFullPanel from '@/components/workbench/AuditReportFullPanel'
+import NEEQPanel from '@/components/workbench/NEEQPanel'
 import NotificationBell from '@/components/NotificationBell'
 import OfflineBanner from '@/components/OfflineBanner'
 import UndoToast from '@/components/workbench/UndoToast'
@@ -499,6 +500,8 @@ function ActivePanel({ tab }: { tab: string }) {
       return <IPOPrepPanel solution={solution} />
     case 'audit-report':
       return <AuditReportFullPanel solution={solution} />
+    case 'neeq':
+      return <NEEQPanel solution={solution} />
     case 'knowledge-graph':
       return <KnowledgeGraphPanel />
     default:
