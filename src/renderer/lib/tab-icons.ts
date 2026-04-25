@@ -14,6 +14,7 @@ import {
   Scale, FileSignature, FilePen, BadgeDollarSign,
   UserCheck, Banknote, ShieldAlert, Gavel,
   Search, Briefcase, Globe, FileCheck, Network, Rocket,
+  GitBranch, Download,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -68,6 +69,8 @@ export const TAB_ICON_MAP: Record<string, TabMeta> = {
   'design-engine':      { icon: FileImage, label: 'Design Engine' },
   'knowledge-graph':    { icon: Network,   label: '知识图谱' },
   'business-plan':      { icon: Rocket,    label: '商业计划书' },
+  'consolidated':       { icon: GitBranch, label: '合并报表' },
+  'mises-export':       { icon: Download,  label: '研报导出' },
 }
 
 export const SIDEBAR_ACTIONS = {

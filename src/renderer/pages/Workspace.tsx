@@ -44,6 +44,8 @@ import LaborTodayPanel from '@/components/workbench/LaborTodayPanel'
 import InvestTodayPanel from '@/components/workbench/InvestTodayPanel'
 import HkFinanceTodayPanel from '@/components/workbench/HkFinanceTodayPanel'
 import TaskContextPanel from '@/components/workbench/TaskContextPanel'
+import ConsolidatedReportPanel from '@/components/workbench/ConsolidatedReportPanel'
+import MisesExportPanel from '@/components/workbench/MisesExportPanel'
 import NotificationBell from '@/components/NotificationBell'
 import OfflineBanner from '@/components/OfflineBanner'
 import UndoToast from '@/components/workbench/UndoToast'
@@ -486,6 +488,11 @@ function ActivePanel({ tab }: { tab: string }) {
       return <TaskContextPanel solution={solution} taskId="macro" />
     case 'compliance-pub':
       return <TaskContextPanel solution={solution} taskId="compliance-pub" />
+    case 'mises-export':
+      return <MisesExportPanel solution={solution} />
+    // 财税方案专属任务 tab
+    case 'consolidated':
+      return <ConsolidatedReportPanel solution={solution} />
     case 'knowledge-graph':
       return <KnowledgeGraphPanel />
     default:

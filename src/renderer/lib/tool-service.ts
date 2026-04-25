@@ -225,3 +225,61 @@ export async function runCalculation(
   }
   return remoteResult
 }
+
+export interface DownloadResult {
+  success: boolean
+  fileName?: string
+  error?: string
+}
+
+/**
+ * 执行文件导出下载（file-export 工具专用）
+ * 发起 GET 请求，将二进制响应流存为本地文件。
+ */
+export async function runFileExport(
+  tool: ToolConfig,
+  values: Record<string, string>,
+  format: string,
+): Promise<DownloadResult> {
+  try {
+    const base = resolveAgentBase(tool.agent)
+    // 替换路径中的 {xxx} 占位符
+    let path = tool.apiPath
+    for (const [k, v] of Object.entries(values)) {
+      path = path.replace(`{${k}}`, encodeURIComponent(v))
+    }
+    const params = new URLSearchParams({ format })
+    const url = `${base}${path}?${params}`
+
+    const resp = await fetch(url, {
+      method: tool.method ?? 'GET',
+      headers: authHeaders(),
+      signal: AbortSignal.timeout(60000),
+    })
+    if (!resp.ok) {
+      return { success: false, error: `服务器错误 (${resp.status})` }
+    }
+
+    const blob = await resp.blob()
+    const ext = format === 'pdf' ? 'pdf' : format === 'pptx' ? 'pptx' : format
+    // 构造文件名：模板替换
+    let fileName = tool.fileNameTemplate ?? `{ticker}_report.{ext}`
+    for (const [k, v] of Object.entries(values)) {
+      fileName = fileName.replace(`{${k}}`, v)
+    }
+    fileName = fileName.replace('{ext}', ext).replace('{format}', ext)
+
+    const objUrl = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = objUrl
+    a.download = fileName
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(objUrl)
+
+    return { success: true, fileName }
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : '下载失败' }
+  }
+}

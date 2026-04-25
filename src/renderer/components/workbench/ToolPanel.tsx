@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react'
 import type { SolutionConfig, ToolConfig, ToolField } from '@/lib/solution-router'
-import { runCalculation } from '@/lib/tool-service'
+import { runCalculation, runFileExport } from '@/lib/tool-service'
 import { useAdaptiveUIStore } from '@/stores/adaptive-ui-store'
+import { Download, Loader2, CheckCircle2, AlertCircle, FileText } from 'lucide-react'
 
 interface Props {
   solution: SolutionConfig
@@ -30,13 +31,16 @@ export default function ToolPanel({ solution }: Props) {
                 {category}
               </h3>
               {tools.map((tool) => (
-                <ToolCard key={tool.id} tool={tool} solutionId={solution.id} />
-              ))}
-            </div>
+                tool.type === 'file-export'
+                  ? <FileExportCard key={tool.id} tool={tool} />
+                  : <ToolCard key={tool.id} tool={tool} solutionId={solution.id} />
+              ))}            </div>
           ))
         ) : (
           solution.tools.map((tool) => (
-            <ToolCard key={tool.id} tool={tool} solutionId={solution.id} />
+            tool.type === 'file-export'
+              ? <FileExportCard key={tool.id} tool={tool} />
+              : <ToolCard key={tool.id} tool={tool} solutionId={solution.id} />
           ))
         )}
       </div>
@@ -252,6 +256,85 @@ function FieldInput({
         placeholder={field.placeholder}
         className="w-full px-3 py-2 rounded-lg bg-secondary/30 border border-border/50 text-sm outline-none focus:border-primary/50"
       />
+    </div>
+  )
+}
+
+// ── FileExportCard — file-export 类型工具渲染 ────────────────────────────────
+function FileExportCard({ tool }: { tool: ToolConfig }) {
+  const [values, setValues] = useState<Record<string, string>>({})
+  const [activeFormat, setActiveFormat] = useState<string>('')
+  const [loading, setLoading] = useState(false)
+  const [result, setResult] = useState<{ success: boolean; fileName?: string; error?: string } | null>(null)
+
+  const formats = tool.exportFormats ?? [{ value: 'pdf', label: 'PDF', ext: 'pdf' }]
+
+  const handleDownload = async (fmt: string) => {
+    setLoading(true)
+    setActiveFormat(fmt)
+    setResult(null)
+    const today = new Date().toISOString().slice(0, 10)
+    const res = await runFileExport(tool, { ...values, date: today }, fmt)
+    setResult(res)
+    setLoading(false)
+  }
+
+  return (
+    <div className="rounded-2xl border border-border/50 bg-card/80 overflow-hidden">
+      {/* 头部 */}
+      <div className="flex items-center gap-4 p-4">
+        <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-xl shrink-0">
+          {tool.icon}
+        </div>
+        <div className="flex-1">
+          <h4 className="text-sm font-semibold">{tool.name}</h4>
+          <p className="text-xs text-muted-foreground mt-0.5">{tool.description}</p>
+        </div>
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-500/10 text-xs font-medium text-amber-600">
+          <Download className="w-3 h-3" />文件导出
+        </div>
+      </div>
+
+      {/* 表单字段 */}
+      {tool.fields && tool.fields.length > 0 && (
+        <div className="px-4 pb-3 grid grid-cols-2 gap-2">
+          {tool.fields.map((f) => (
+            <FieldInput
+              key={f.key}
+              field={f}
+              value={values[f.key] ?? (f.default != null ? String(f.default) : '')}
+              onChange={(v) => setValues((prev) => ({ ...prev, [f.key]: String(v) }))}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* 结果提示 */}
+      {result && (
+        <div className={`mx-4 mb-3 flex items-center gap-2 px-3 py-2 rounded-lg text-xs ${result.success ? 'bg-green-500/10 text-green-700 dark:text-green-400' : 'bg-destructive/10 text-destructive'}`}>
+          {result.success
+            ? <><CheckCircle2 className="w-3.5 h-3.5 shrink-0" />已下载：{result.fileName}</>
+            : <><AlertCircle className="w-3.5 h-3.5 shrink-0" />{result.error}</>}
+        </div>
+      )}
+
+      {/* 导出格式按钮 */}
+      <div className="flex gap-2 px-4 pb-4">
+        {formats.map((f) => (
+          <button
+            key={f.value}
+            type="button"
+            onClick={() => handleDownload(f.value)}
+            disabled={loading}
+            className="flex-1 flex items-center justify-center gap-2 h-9 rounded-xl text-xs font-semibold border border-border/50 hover:bg-muted disabled:opacity-50 transition-all"
+          >
+            {loading && activeFormat === f.value
+              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              : <FileText className="w-3.5 h-3.5" />}
+            {f.label}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }

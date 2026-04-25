@@ -23,7 +23,7 @@ export const investmentResearchSolution: SolutionConfig = {
   localScripts: ['calc_iit', 'calc_vat'],
   knowledgeCache: ['invest_mises_framework'],
   theme: { primary: '38 92% 43%', accent: '38 92% 43%' },
-  enabledTabs: ['today', 'research', 'portfolio', 'macro', 'compliance-pub', 'tools', 'documents', 'chat', 'knowledge-graph'],
+  enabledTabs: ['today', 'research', 'portfolio', 'macro', 'compliance-pub', 'mises-export', 'tools', 'documents', 'chat', 'knowledge-graph'],
   onboarding: {
     questions: [
       { key: 'institution_type', label: '机构类型', options: ['私募基金', '家族办公室', '独立投研工作室', '券商/资管', '个人投资者'] },
@@ -130,6 +130,28 @@ export const investmentResearchSolution: SolutionConfig = {
             { value: 'hybrid', label: '混合云' },
             { value: 'offline', label: '物理隔离离线' },
           ] },
+      ],
+    },
+    // ── MISES 研报导出（PDF / PPTX 矢量版） ──
+    { id: 'mises-report-export', type: 'file-export', name: 'MISES 深度研报导出', icon: '📄',
+      agent: 'invest', apiPath: '/api/invest/mises/report/{ticker}/export',
+      method: 'GET',
+      description: '导出含矢量图表的 MISES 五维深度研报（PDF 或 PPTX），支持打印 / 路演分发',
+      category: 'MISES 研报',
+      fileNameTemplate: '{ticker}_MISES研报_{date}.{ext}',
+      fields: [
+        { key: 'ticker', label: '股票代码', type: 'text',
+          placeholder: '如 600482 或 00751.HK 或 AAPL', required: true },
+        { key: 'market', label: '市场', type: 'select', required: true,
+          options: [
+            { value: 'A', label: 'A股' },
+            { value: 'HK', label: '港股' },
+            { value: 'US', label: '美股' },
+          ] },
+      ],
+      exportFormats: [
+        { value: 'pdf',  label: 'PDF（适合打印/存档）', ext: 'pdf' },
+        { value: 'pptx', label: 'PPTX（适合路演/演示）', ext: 'pptx' },
       ],
     },
   ],

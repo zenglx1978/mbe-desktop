@@ -53,13 +53,15 @@ export interface QuickAction {
 /** 工具配置 — 配置驱动，不硬编码 */
 export interface ToolConfig {
   id: string
-  type: 'calculator' | 'document-ai' | 'doc-generator' | 'task-board' | 'batch-processor' | 'automation' | 'setup-wizard' | 'access-control' | 'report'
+  type: 'calculator' | 'document-ai' | 'doc-generator' | 'task-board' | 'batch-processor' | 'automation' | 'setup-wizard' | 'access-control' | 'report' | 'file-export'
   name: string
   icon: string
   /** 对应的 Agent ID（用于 API 调用） */
   agent: string
   /** 远端 API 路径 */
   apiPath: string
+  /** HTTP 方法（file-export 默认 GET，其他默认 POST） */
+  method?: 'GET' | 'POST'
   /** 本地 Python 脚本（离线可用） */
   localScript?: string
   /** 表单字段（calculator / doc-generator 用） */
@@ -70,6 +72,10 @@ export interface ToolConfig {
   description?: string
   /** 工具分类标签（用于分组展示） */
   category?: string
+  /** 导出格式选项（file-export 用） */
+  exportFormats?: { value: string; label: string; ext: string }[]
+  /** 下载文件名模板（支持 {ticker} {date} 等占位符） */
+  fileNameTemplate?: string
 }
 
 /** Slash 命令 */
@@ -91,10 +97,10 @@ export interface DashboardWidget {
 }
 
 export type WorkbenchTab = 'chat' | 'tools' | 'documents' | 'tasks' | 'dashboard' | 'workflows' | 'approvals' | 'costs' | 'scheduler' | 'designer' | 'efficiency' | 'automation' | 'clients' | 'roi' | 'account' | 'scout' | 'pipeline' | 'brands' | 'erp-sync'
-  | 'today' | 'bookkeeping' | 'invoices' | 'tax-filing' | 'reports' | 'tax-planning'
+  | 'today' | 'bookkeeping' | 'invoices' | 'tax-filing' | 'reports' | 'tax-planning' | 'consolidated'
   | 'cases' | 'contracts' | 'legal-docs' | 'billing'
   | 'employees' | 'payroll' | 'compliance' | 'disputes'
-  | 'research' | 'portfolio' | 'macro' | 'compliance-pub'
+  | 'research' | 'portfolio' | 'macro' | 'compliance-pub' | 'mises-export'
   | 'design-engine' | 'dispatch-dashboard' | 'knowledge-graph'
 
 /** 利润影响标注 — 米塞斯 P2：企业的目的是获取利润 */
