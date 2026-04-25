@@ -97,7 +97,7 @@ export interface DashboardWidget {
 }
 
 export type WorkbenchTab = 'chat' | 'tools' | 'documents' | 'tasks' | 'dashboard' | 'workflows' | 'approvals' | 'costs' | 'scheduler' | 'designer' | 'efficiency' | 'automation' | 'clients' | 'roi' | 'account' | 'scout' | 'pipeline' | 'brands' | 'erp-sync'
-  | 'today' | 'bookkeeping' | 'invoices' | 'tax-filing' | 'reports' | 'tax-planning' | 'consolidated'
+  | 'today' | 'bookkeeping' | 'invoices' | 'tax-filing' | 'reports' | 'tax-planning' | 'consolidated' | 'ipo-prep'
   | 'cases' | 'contracts' | 'legal-docs' | 'billing'
   | 'employees' | 'payroll' | 'compliance' | 'disputes'
   | 'research' | 'portfolio' | 'macro' | 'compliance-pub' | 'mises-export'

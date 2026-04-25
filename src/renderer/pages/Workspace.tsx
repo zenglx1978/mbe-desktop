@@ -46,6 +46,7 @@ import HkFinanceTodayPanel from '@/components/workbench/HkFinanceTodayPanel'
 import TaskContextPanel from '@/components/workbench/TaskContextPanel'
 import ConsolidatedReportPanel from '@/components/workbench/ConsolidatedReportPanel'
 import MisesExportPanel from '@/components/workbench/MisesExportPanel'
+import IPOPrepPanel from '@/components/workbench/IPOPrepPanel'
 import NotificationBell from '@/components/NotificationBell'
 import OfflineBanner from '@/components/OfflineBanner'
 import UndoToast from '@/components/workbench/UndoToast'
@@ -493,6 +494,8 @@ function ActivePanel({ tab }: { tab: string }) {
     // 财税方案专属任务 tab
     case 'consolidated':
       return <ConsolidatedReportPanel solution={solution} />
+    case 'ipo-prep':
+      return <IPOPrepPanel solution={solution} />
     case 'knowledge-graph':
       return <KnowledgeGraphPanel />
     default:
