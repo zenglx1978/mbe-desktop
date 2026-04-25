@@ -90,6 +90,7 @@ type View =
   | 'prospectus'
   | 'dd'
   | 'equity-chart'
+  | 'audit-report'
 
 const BOARD_OPTIONS = [
   { value: 'main_board', label: '沪深主板' },
@@ -160,7 +161,8 @@ export default function IPOPrepPanel({ solution: _solution }: Props) {
               onGoCompliance={() => setView('compliance')}
               onGoProspectus={() => setView('prospectus')}
               onGoDD={() => setView('dd')}
-              onGoEquityChart={() => setView('equity-chart')} />
+              onGoEquityChart={() => setView('equity-chart')}
+              onGoAuditReport={() => setView('audit-report')} />
           : null
       case 'compliance':
         return project ? <CompliancePanel project={project} BASE={BASE} onBack={() => setView('dashboard')} msg={msg} /> : null
@@ -170,6 +172,8 @@ export default function IPOPrepPanel({ solution: _solution }: Props) {
         return project ? <DDPanel project={project} BASE={BASE} onBack={() => setView('dashboard')} msg={msg} /> : null
       case 'equity-chart':
         return project ? <EquityChartPanel project={project} BASE={BASE} onBack={() => setView('dashboard')} /> : null
+      case 'audit-report':
+        return project ? <AuditReportPanel project={project} BASE={BASE} onBack={() => setView('dashboard')} /> : null
       default: return <ProjectList projects={projects} loading={loading} onSelect={openProject}
           onCreateNew={() => setView('create')}
           onAssessment={() => setView('assessment')} />
@@ -470,11 +474,11 @@ function CreateProjectForm({
 
 function ProjectDashboard({
   project, BASE, onBack,
-  onGoCompliance, onGoProspectus, onGoDD, onGoEquityChart,
+  onGoCompliance, onGoProspectus, onGoDD, onGoEquityChart, onGoAuditReport,
 }: {
   project: IPOProject; BASE: string; onBack: () => void
   onGoCompliance: () => void; onGoProspectus: () => void
-  onGoDD: () => void; onGoEquityChart: () => void
+  onGoDD: () => void; onGoEquityChart: () => void; onGoAuditReport: () => void
 }) {
   const [dash, setDash] = useState<Dashboard | null>(null)
   const [initLoading, setInitLoading] = useState<Record<string, boolean>>({})
@@ -543,6 +547,14 @@ function ProjectDashboard({
       stat: '生成 SVG',
       total: undefined,
       onGo: onGoEquityChart,
+      initKey: null,
+    },
+    {
+      label: '审计报告', icon: <FileText className="w-5 h-5 text-rose-600" />,
+      color: 'bg-rose-500/10',
+      stat: 'AI 起草 + 导出',
+      total: undefined,
+      onGo: onGoAuditReport,
       initKey: null,
     },
   ]
@@ -1084,6 +1096,240 @@ function EquityChartPanel({ project, BASE, onBack }: { project: IPOProject; BASE
           ) : (
             <img src={chartUrl} alt="股权架构图" className="w-full rounded-lg" />
           )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── 审计报告面板 ─────────────────────────────────────────────────────────────
+
+interface AuditProject {
+  id: string
+  name: string
+  audit_type: string
+  fiscal_year: number
+  status: string
+}
+
+function AuditReportPanel({ project, BASE, onBack }: { project: IPOProject; BASE: string; onBack: () => void }) {
+  const AUDIT_BASE = BASE.replace('/ipo', '/audit')
+
+  const [auditProjects, setAuditProjects] = useState<AuditProject[]>([])
+  const [selectedAudit, setSelectedAudit] = useState<AuditProject | null>(null)
+  const [opinionType, setOpinionType] = useState<'unqualified' | 'qualified' | 'adverse' | 'disclaimer'>('unqualified')
+  const [cpaFirm, setCpaFirm] = useState('')
+  const [cpaNames, setCpaNames] = useState('')
+  const [includeKAM, setIncludeKAM] = useState(true)
+  const [drafting, setDrafting] = useState(false)
+  const [reportContent, setReportContent] = useState('')
+  const [exportLoading, setExportLoading] = useState<'docx' | 'pdf' | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  // 覆盖度核查
+  const [coverage, setCoverage] = useState<{ summary: string; all_covered: boolean; missing_years: number[]; coverage: { fiscal_year: number; covered: boolean; status?: string }[] } | null>(null)
+  const [checkingCoverage, setCheckingCoverage] = useState(false)
+
+  const loadAuditProjects = useCallback(async () => {
+    try {
+      const r = await fetch(`${AUDIT_BASE}/projects`, { headers: authHeaders() })
+      if (r.ok) {
+        const d = await r.json()
+        const list: AuditProject[] = (d.projects || d).filter((p: AuditProject) =>
+          ['external', 'annual', 'ipo'].includes(p.audit_type)
+        )
+        setAuditProjects(list)
+        if (list.length > 0 && !selectedAudit) setSelectedAudit(list[0])
+      }
+    } catch {}
+  }, [AUDIT_BASE])
+
+  useEffect(() => { loadAuditProjects() }, [loadAuditProjects])
+
+  const checkCoverage = async () => {
+    setCheckingCoverage(true); setError(null)
+    try {
+      const r = await fetch(`${AUDIT_BASE}/ipo-coverage-check`, {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company_id: project.id }),
+      })
+      if (r.ok) setCoverage(await r.json())
+      else throw new Error(`${r.status}`)
+    } catch (e) { setError(e instanceof Error ? e.message : '核查失败') }
+    finally { setCheckingCoverage(false) }
+  }
+
+  const draftReport = async () => {
+    if (!selectedAudit) { setError('请先选择审计项目'); return }
+    setDrafting(true); setError(null); setReportContent('')
+    try {
+      const r = await fetch(`${AUDIT_BASE}/projects/${selectedAudit.id}/draft-report`, {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          opinion_type: opinionType,
+          cpa_firm: cpaFirm || undefined,
+          cpa_names: cpaNames ? cpaNames.split('、').map(s => s.trim()) : undefined,
+          include_key_audit_matters: includeKAM,
+        }),
+      })
+      const d = await r.json()
+      if (!r.ok) throw new Error(d.detail || `${r.status}`)
+      setReportContent(d.report_content || '')
+    } catch (e) { setError(e instanceof Error ? e.message : '起草失败') }
+    finally { setDrafting(false) }
+  }
+
+  const exportReport = async (fmt: 'docx' | 'pdf') => {
+    if (!reportContent || !selectedAudit) return
+    setExportLoading(fmt); setError(null)
+    try {
+      const r = await fetch(`${AUDIT_BASE}/projects/${selectedAudit.id}/export-report`, {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ report_content: reportContent, fmt, cpa_firm: cpaFirm || undefined }),
+      })
+      if (!r.ok) throw new Error(`${r.status}`)
+      const blob = await r.blob()
+      const ext = fmt === 'docx' ? 'docx' : 'pdf'
+      const filename = `审计报告_${selectedAudit.fiscal_year}.${ext}`
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url; a.download = filename; a.click()
+      URL.revokeObjectURL(url)
+    } catch (e) { setError(e instanceof Error ? e.message : '导出失败') }
+    finally { setExportLoading(null) }
+  }
+
+  const OPINION_OPTIONS = [
+    { value: 'unqualified', label: '无保留意见（标准意见）' },
+    { value: 'qualified', label: '保留意见' },
+    { value: 'adverse', label: '否定意见' },
+    { value: 'disclaimer', label: '无法表示意见' },
+  ]
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <button onClick={onBack} className="p-1.5 rounded-lg hover:bg-muted"><ArrowLeft className="w-4 h-4" /></button>
+        <h3 className="text-sm font-semibold">审计报告</h3>
+        <span className="text-xs text-muted-foreground ml-1">IPO 近三年一期</span>
+      </div>
+
+      {/* IPO 年审覆盖度核查 */}
+      <div className="rounded-xl border border-border/50 bg-card/80 p-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold">IPO 年审覆盖度核查</p>
+          <button onClick={checkCoverage} disabled={checkingCoverage}
+            className="h-7 px-3 rounded-lg text-xs font-medium border border-border/50 hover:bg-muted disabled:opacity-50 transition-colors flex items-center gap-1.5">
+            {checkingCoverage ? <Loader2 className="w-3 h-3 animate-spin" /> : <Search className="w-3 h-3" />}
+            检查覆盖度
+          </button>
+        </div>
+        {coverage && (
+          <div>
+            <p className={`text-xs mb-2 ${coverage.all_covered ? 'text-green-700' : 'text-orange-600'}`}>
+              {coverage.summary}
+            </p>
+            <div className="flex gap-1.5 flex-wrap">
+              {coverage.coverage.map(c => (
+                <div key={c.fiscal_year}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs ${c.covered ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  {c.covered ? <CheckCircle2 className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
+                  {c.fiscal_year}年
+                  {c.covered && c.status && <span className="opacity-60">·{c.status}</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 审计报告起草 */}
+      <div className="rounded-xl border border-border/50 bg-card/80 p-3 space-y-3">
+        <p className="text-xs font-semibold">AI 起草审计报告</p>
+
+        {/* 选择审计项目 */}
+        <div>
+          <label className="text-xs text-muted-foreground">审计项目（外部年报审计）</label>
+          <select value={selectedAudit?.id || ''}
+            onChange={e => setSelectedAudit(auditProjects.find(p => p.id === e.target.value) || null)}
+            className="mt-1 w-full h-8 px-2 rounded-lg border border-border/50 bg-background text-xs focus:outline-none">
+            <option value="">— 选择审计项目 —</option>
+            {auditProjects.map(p => (
+              <option key={p.id} value={p.id}>{p.name}（{p.fiscal_year}年）</option>
+            ))}
+          </select>
+          {auditProjects.length === 0 && (
+            <p className="text-xs text-muted-foreground mt-1">
+              暂无外部/年报审计项目，请在「审计」模块创建类型为 external/annual/ipo 的项目
+            </p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-xs text-muted-foreground">意见类型</label>
+            <select value={opinionType} onChange={e => setOpinionType(e.target.value as typeof opinionType)}
+              className="mt-1 w-full h-8 px-2 rounded-lg border border-border/50 bg-background text-xs focus:outline-none">
+              {OPINION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">会计师事务所</label>
+            <input value={cpaFirm} onChange={e => setCpaFirm(e.target.value)}
+              placeholder="例：普华永道" className="mt-1 w-full h-8 px-2 rounded-lg border border-border/50 bg-background text-xs focus:outline-none" />
+          </div>
+          <div className="col-span-2">
+            <label className="text-xs text-muted-foreground">签字注册会计师（用「、」分隔）</label>
+            <input value={cpaNames} onChange={e => setCpaNames(e.target.value)}
+              placeholder="张三、李四" className="mt-1 w-full h-8 px-2 rounded-lg border border-border/50 bg-background text-xs focus:outline-none" />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input type="checkbox" id="kam" checked={includeKAM} onChange={e => setIncludeKAM(e.target.checked)}
+            className="w-3.5 h-3.5 rounded" />
+          <label htmlFor="kam" className="text-xs text-muted-foreground cursor-pointer">
+            包含关键审计事项（CAS 1504，IPO/上市公司要求）
+          </label>
+        </div>
+
+        {error && <p className="text-xs text-destructive">{error}</p>}
+
+        <button onClick={draftReport} disabled={drafting || !selectedAudit}
+          className="w-full h-9 rounded-xl text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-all flex items-center justify-center gap-2">
+          {drafting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+          AI 起草审计报告
+        </button>
+      </div>
+
+      {/* 报告内容 + 导出 */}
+      {reportContent && (
+        <div className="rounded-xl border border-border/50 bg-card/80 p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold">审计报告草稿</p>
+            <div className="flex gap-1.5">
+              <button onClick={() => exportReport('docx')} disabled={!!exportLoading}
+                className="flex items-center gap-1 h-7 px-3 rounded-lg text-xs font-medium bg-blue-500/10 text-blue-700 hover:bg-blue-500/20 disabled:opacity-50 transition-colors">
+                {exportLoading === 'docx' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+                Word
+              </button>
+              <button onClick={() => exportReport('pdf')} disabled={!!exportLoading}
+                className="flex items-center gap-1 h-7 px-3 rounded-lg text-xs font-medium bg-rose-500/10 text-rose-700 hover:bg-rose-500/20 disabled:opacity-50 transition-colors">
+                {exportLoading === 'pdf' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+                PDF
+              </button>
+            </div>
+          </div>
+          <textarea
+            value={reportContent}
+            onChange={e => setReportContent(e.target.value)}
+            className="w-full rounded-lg border border-border/50 bg-background text-xs p-2 focus:outline-none resize-none"
+            rows={16}
+          />
+          <p className="text-xs text-muted-foreground">可直接编辑上方文本，修改完成后导出</p>
         </div>
       )}
     </div>
