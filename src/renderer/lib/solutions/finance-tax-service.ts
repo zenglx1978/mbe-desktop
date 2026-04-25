@@ -25,7 +25,7 @@ export const financeTaxServiceSolution: SolutionConfig = {
   localScripts: ['calc_iit', 'calc_vat'],
   knowledgeCache: ['tax_law_basics', 'accounting_standards'],
   theme: { primary: '164 100% 42%', accent: '164 100% 42%' },
-  enabledTabs: ['today', 'bookkeeping', 'invoices', 'tax-filing', 'reports', 'tax-planning', 'business-plan', 'consolidated', 'ipo-prep', 'tools', 'documents', 'chat', 'dashboard', 'knowledge-graph'],
+  enabledTabs: ['today', 'bookkeeping', 'invoices', 'tax-filing', 'reports', 'tax-planning', 'business-plan', 'consolidated', 'ipo-prep', 'audit-report', 'tools', 'documents', 'chat', 'dashboard', 'knowledge-graph'],
   onboarding: {
     questions: [
       { key: 'taxpayer_type', label: '纳税人类型', options: ['一般纳税人', '小规模纳税人'] },

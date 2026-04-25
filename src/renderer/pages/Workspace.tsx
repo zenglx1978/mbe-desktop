@@ -47,6 +47,7 @@ import TaskContextPanel from '@/components/workbench/TaskContextPanel'
 import ConsolidatedReportPanel from '@/components/workbench/ConsolidatedReportPanel'
 import MisesExportPanel from '@/components/workbench/MisesExportPanel'
 import IPOPrepPanel from '@/components/workbench/IPOPrepPanel'
+import AuditReportFullPanel from '@/components/workbench/AuditReportFullPanel'
 import NotificationBell from '@/components/NotificationBell'
 import OfflineBanner from '@/components/OfflineBanner'
 import UndoToast from '@/components/workbench/UndoToast'
@@ -496,6 +497,8 @@ function ActivePanel({ tab }: { tab: string }) {
       return <ConsolidatedReportPanel solution={solution} />
     case 'ipo-prep':
       return <IPOPrepPanel solution={solution} />
+    case 'audit-report':
+      return <AuditReportFullPanel solution={solution} />
     case 'knowledge-graph':
       return <KnowledgeGraphPanel />
     default:
