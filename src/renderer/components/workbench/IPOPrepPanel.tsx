@@ -497,7 +497,6 @@ function ProjectDashboard({
     setInitLoading(p => ({ ...p, [section]: true }))
     setError(null)
     try {
-      const isPost = section !== 'init-milestones'
       const url = section === 'init-milestones'
         ? `${BASE}/projects/${project.id}/init-milestones`
         : `${BASE}/projects/${project.id}/${section}`

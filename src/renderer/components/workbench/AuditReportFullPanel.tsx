@@ -11,7 +11,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Loader2, Search, CheckCircle2, AlertCircle,
-  Download, Sparkles, RefreshCw, FileText, ClipboardCheck, Plus,
+  Download, Sparkles, RefreshCw, FileText, ClipboardCheck,
 } from 'lucide-react'
 import type { SolutionConfig } from '@/lib/solution-router'
 import { API_BASE, authHeaders } from '@/lib/api-client'

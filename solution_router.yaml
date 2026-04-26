@@ -1,0 +1,179 @@
+# solution_router.yaml — MBE Desktop 行业方案路由配置
+# 格式：每个方案 → 关联的 Agent 后端列表 + Expert 列表
+
+base_url: "https://mbe.hi-maker.com"
+
+solutions:
+  - id: labor-dispatch
+    name: "劳务派遣方案"
+    description: "劳动法合规 + 薪酬核算 + 人事管理"
+    icon: "👷"
+    color: "#f59e0b"
+    agents:
+      - id: legal
+        name: "法律 Agent"
+        url: "https://mbe.hi-maker.com/api/legal"
+        ws_url: "wss://mbe.hi-maker.com/ws/legal/chat"
+        experts:
+          - id: civil_lawyer
+            name: "劳动法顾问"
+            avatar: "⚖️"
+            description: "劳动合同、派遣合规、仲裁诉讼"
+      - id: finance
+        name: "财务 Agent"
+        url: "https://mbe.hi-maker.com/api/finance"
+        ws_url: "wss://mbe.hi-maker.com/ws/finance/chat"
+        experts:
+          - id: tax_consultant
+            name: "薪税专家"
+            avatar: "💰"
+            description: "工资个税、社保核算、派遣发票"
+      - id: hr
+        name: "HR Agent"
+        url: "https://mbe.hi-maker.com/api/hr"
+        ws_url: "wss://mbe.hi-maker.com/ws/hr/chat"
+        experts:
+          - id: hr_consultant
+            name: "HR 顾问"
+            avatar: "👥"
+            description: "绩效考核、入离职管理、劳动合规"
+
+  - id: law-firm
+    name: "律所运营方案"
+    description: "诉讼分析 + 合同审查 + 律所财务"
+    icon: "⚖️"
+    color: "#6366f1"
+    agents:
+      - id: legal
+        name: "法律 Agent"
+        url: "https://mbe.hi-maker.com/api/legal"
+        ws_url: "wss://mbe.hi-maker.com/ws/legal/chat"
+        experts:
+          - id: civil_lawyer
+            name: "诉讼专家"
+            avatar: "🏛️"
+            description: "案件分析、IRAC、诉讼策略"
+          - id: contract_reviewer
+            name: "合同审查"
+            avatar: "📋"
+            description: "合同风险、条款审查、修改建议"
+      - id: finance
+        name: "财务 Agent"
+        url: "https://mbe.hi-maker.com/api/finance"
+        ws_url: "wss://mbe.hi-maker.com/ws/finance/chat"
+        experts:
+          - id: finance_accountant
+            name: "律所财务"
+            avatar: "📊"
+            description: "律所收入确认、案件成本核算"
+
+  - id: finance-service
+    name: "财税专业服务方案"
+    description: "记账报税 + 财务分析 + 税务筹划"
+    icon: "📊"
+    color: "#3b82f6"
+    agents:
+      - id: finance
+        name: "财务 Agent"
+        url: "https://mbe.hi-maker.com/api/finance"
+        ws_url: "wss://mbe.hi-maker.com/ws/finance/chat"
+        experts:
+          - id: tax_consultant
+            name: "税务顾问"
+            avatar: "🧾"
+            description: "增值税、企业所得税、个税筹划"
+          - id: finance_accountant
+            name: "会计专家"
+            avatar: "📒"
+            description: "账务处理、报表编制、合规审计"
+
+  - id: cost-engineering
+    name: "工程造价方案"
+    description: "工程量清单 + 招投标分析 + 变更签证"
+    icon: "🏗️"
+    color: "#f97316"
+    agents:
+      - id: cost
+        name: "造价 Agent"
+        url: "https://mbe.hi-maker.com/api/cost"
+        ws_url: "wss://mbe.hi-maker.com/ws/cost/chat"
+        experts:
+          - id: cost_engineer
+            name: "造价工程师"
+            avatar: "📐"
+            description: "定额取费、工程量清单、变更估价"
+
+  - id: pulmonary-clinical
+    name: "呼吸科临床方案"
+    description: "临床评分 + 诊疗方案 + 用药指导"
+    icon: "🫁"
+    color: "#06b6d4"
+    agents:
+      - id: pulmonary
+        name: "肺科 Agent"
+        url: "https://mbe.hi-maker.com/api/pulmonary"
+        ws_url: "wss://mbe.hi-maker.com/ws/pulmonary/chat"
+        experts:
+          - id: pulmonary_physician
+            name: "呼吸科医生"
+            avatar: "🩺"
+            description: "COPD、哮喘、肺炎、肺功能评估"
+
+  - id: sme-operations
+    name: "中小企业运营方案"
+    description: "财税 + 法务 + 人事 + 销售全覆盖"
+    icon: "🏢"
+    color: "#10b981"
+    agents:
+      - id: finance
+        name: "财务 Agent"
+        url: "https://mbe.hi-maker.com/api/finance"
+        ws_url: "wss://mbe.hi-maker.com/ws/finance/chat"
+        experts:
+          - id: tax_consultant
+            name: "税务顾问"
+            avatar: "💹"
+            description: "税务筹划、增值税、企业所得税"
+      - id: legal
+        name: "法律 Agent"
+        url: "https://mbe.hi-maker.com/api/legal"
+        ws_url: "wss://mbe.hi-maker.com/ws/legal/chat"
+        experts:
+          - id: civil_lawyer
+            name: "法律顾问"
+            avatar: "📜"
+            description: "合同审查、劳动纠纷、公司合规"
+      - id: hr
+        name: "HR Agent"
+        url: "https://mbe.hi-maker.com/api/hr"
+        ws_url: "wss://mbe.hi-maker.com/ws/hr/chat"
+        experts:
+          - id: hr_consultant
+            name: "HR 顾问"
+            avatar: "🤝"
+            description: "招聘、绩效、薪酬、劳动合规"
+      - id: sales
+        name: "销售 Agent"
+        url: "https://mbe.hi-maker.com/api/sales"
+        ws_url: "wss://mbe.hi-maker.com/ws/sales/chat"
+        experts:
+          - id: sales_strategist
+            name: "销售顾问"
+            avatar: "🎯"
+            description: "大客户开发、报价策略、Pipeline 管理"
+
+  - id: education
+    name: "教育培训方案"
+    description: "课程规划 + 备考策略 + 留学申请"
+    icon: "🎓"
+    color: "#8b5cf6"
+    agents:
+      - id: education
+        name: "教育 Agent"
+        url: "https://mbe.hi-maker.com/api/education"
+        ws_url: "wss://mbe.hi-maker.com/ws/education/chat"
+        experts:
+          - id: education_tutor
+            name: "教育顾问"
+            avatar: "📚"
+            description: "课程规划、雅思托福备考、留学申请"
