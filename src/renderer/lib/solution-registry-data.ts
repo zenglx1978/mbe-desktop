@@ -29,6 +29,7 @@ import { ipAgencySolution } from './solutions/ip-agency'
 import { taxAgencySolution } from './solutions/tax-agency'
 import { pharmaceuticalComplianceSolution } from './solutions/pharmaceutical-compliance'
 import { logisticsSupplyChainSolution } from './solutions/logistics-supply-chain'
+import { capitalMarketsSolution } from './solutions/capital-markets'
 
 export const SOLUTION_REGISTRY: SolutionConfig[] = [
   laborDispatchSolution,
@@ -52,4 +53,5 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
   taxAgencySolution,
   pharmaceuticalComplianceSolution,
   logisticsSupplyChainSolution,
+  capitalMarketsSolution,
 ]
