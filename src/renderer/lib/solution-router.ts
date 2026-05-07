@@ -37,6 +37,8 @@ export interface ToolField {
   array?: boolean
   /** 数组分隔符（默认为逗号，支持换行、分号等） */
   arraySeparator?: string
+  /** 条件显示表达式（用于动态表单联动） */
+  showIf?: string
 }
 
 /** 快捷操作（方案首页卡片） */
@@ -80,11 +82,16 @@ export interface ToolConfig {
 
 /** Slash 命令 */
 export interface SlashCommand {
-  cmd: string
+  /** 命令字符串（如 /计算），与 command 二选一 */
+  cmd?: string
+  /** 命令字符串别名（部分方案文件使用） */
+  command?: string
   label: string
-  icon: string
-  /** 关联工具 ID（打开工具面板）或 null（发送消息） */
+  icon?: string
+  /** 关联工具 ID（打开工具面板） */
   toolId?: string
+  /** 关联工作流 ID（触发工作流） */
+  workflowId?: string
   description?: string
 }
 
@@ -113,34 +120,43 @@ export interface ProfitImpact {
 
 /** 工作流步骤 — 目标驱动，不硬编码过程 */
 export interface WorkflowStep {
-  id: string
-  agent: string
-  expert: string
+  /** 步骤唯一标识（可选，简洁写法可省略） */
+  id?: string
+  /** AI Agent ID（hitl/human_in_loop 步骤可省略） */
+  agent?: string
+  /** Expert ID */
+  expert?: string
   label: string
   /** 这一步要达成的目标（不是"怎么做"，而是"做到什么"） */
-  goal: string
+  goal?: string
   /** 可衡量的成功标准（评估 AI 输出质量的依据） */
-  successCriteria: string[]
+  successCriteria?: string[]
   description?: string
   /** 此步骤对企业家利润的影响（米塞斯 P2） */
   profitImpact?: ProfitImpact
+  /** 步骤级并发模式（覆盖 WorkflowConfig.mode） */
+  mode?: 'sequential' | 'parallel' | 'single' | 'hitl' | 'human_in_loop'
 }
 
 /** 工作流定义 — 目标驱动的多 Agent 编排 */
 export interface WorkflowConfig {
   id: string
   name: string
-  icon: string
+  icon?: string
   description: string
-  /** sequential = 流水线（步骤间传递结果）, parallel = 并行合并, single = 单步执行 */
-  mode: 'sequential' | 'parallel' | 'single'
+  /** sequential = 流水线, parallel = 并行合并, single = 单步, hitl = 人工介入, human_in_loop = 同 hitl */
+  mode?: 'sequential' | 'parallel' | 'single' | 'hitl' | 'human_in_loop'
   /** 工作流的最终交付物（用户能拿到什么） */
-  deliverable: string
+  deliverable?: string
   /** 整体成功标准（如何判定工作流完成） */
-  successCriteria: string[]
+  successCriteria?: string[]
   steps: WorkflowStep[]
   /** 触发词（Chat 自动匹配） */
   triggerPhrases?: string[]
+  /** 人工 vs AI 完成时间对比（ROI 展示用） */
+  estimatedTime?: { human: string; ai: string }
+  /** AI 自动化率（0-1） */
+  aiRate?: number
 }
 
 /** 快捷场景 — 目标驱动的一键提问 */
@@ -167,8 +183,13 @@ export interface ScenarioConfig {
 export interface SafetyRule {
   id: string
   label: string
-  trigger: string
-  action: string
+  /** 触发条件（可选：部分方案仅用 description 描述） */
+  trigger?: string
+  /** 触发后动作（可选） */
+  action?: string
+  /** 严重级别（critical / hard / medium / warning / info） */
+  level?: 'critical' | 'hard' | 'medium' | 'warning' | 'info' | string
+  description?: string
 }
 
 export interface SolutionConfig {
@@ -187,31 +208,37 @@ export interface SolutionConfig {
   /** 人力等效数据（米塞斯 P3：帮企业家做经济计算） */
   valueEquivalent?: { humanHours: number; mbeMinutes: number; acceleration: string }
   agents: AgentEndpoint[]
-  /** 本地可用的确定性计算脚本 */
-  localScripts: string[]
-  /** 离线可用的知识缓存 */
-  knowledgeCache: string[]
-  /** 行业方案专属主题（色彩差异化） */
-  theme: SolutionTheme
+  /** 本地可用的确定性计算脚本（可选） */
+  localScripts?: string[]
+  /** 离线可用的知识缓存（可选） */
+  knowledgeCache?: string[]
+  /** 行业方案专属主题（色彩差异化，可选，默认使用全局主题） */
+  theme?: SolutionTheme
   /** 业务工具配置 */
   tools: ToolConfig[]
   /** Slash 命令（Chat → 工具桥接） */
   slashCommands: SlashCommand[]
-  /** 可用的 Tab 页 */
-  enabledTabs: WorkbenchTab[]
+  /** 可用的 Tab 页（可选，默认全部） */
+  enabledTabs?: WorkbenchTab[]
   /** 仪表盘组件 */
   dashboardWidgets?: DashboardWidget[]
   /** 行业工作流（多 Agent 编排） */
   workflows: WorkflowConfig[]
-  /** 快捷场景（一键提问） */
-  scenarios: ScenarioConfig[]
+  /** 快捷场景（一键提问，可选） */
+  scenarios?: ScenarioConfig[]
   /** 安全规则（AI 输出合规保障） */
   safetyRules?: SafetyRule[]
   /** 快捷操作（方案首页卡片） */
   quickActions?: QuickAction[]
   /** P2-10: 首次进入引导配置（QuickBooks 风格） */
   onboarding?: {
-    questions: { key: string; label: string; options: string[] }[]
+    questions: {
+      key: string
+      label: string
+      options: string[]
+      /** 条件显示表达式（用于多步骤问卷联动） */
+      showIf?: string
+    }[]
   }
 }
 
@@ -248,16 +275,13 @@ export function resetSolutionStatuses(): void {
 export async function fetchSolutionStatuses(): Promise<Map<string, SolutionConfig['status']>> {
   try {
     const url = `${API_BASE}/api/v1/solutions`
-    console.log(`[SolutionRouter] fetching ${url}`)
     const res = await fetch(url, {
       headers: authHeaders(),
       signal: AbortSignal.timeout(10_000),
     })
-    console.log(`[SolutionRouter] response status=${res.status} ok=${res.ok} type=${res.headers.get('content-type')}`)
     if (res.ok) {
       const data = await res.json()
       const solutions: { id: string; status?: string }[] = data.solutions || []
-      console.log(`[SolutionRouter] received ${solutions.length} solutions:`, solutions.map(s => s.id))
       _remoteStatuses.clear()
       _returnedIds.clear()
       for (const sol of solutions) {
@@ -274,7 +298,6 @@ export async function fetchSolutionStatuses(): Promise<Map<string, SolutionConfi
   } catch (err) {
     console.warn('[SolutionRouter] fetchSolutionStatuses failed – user may see unfiltered solutions:', err)
   }
-  console.log(`[SolutionRouter] final state: returnedIds=${[..._returnedIds]}, fetchedAt=${_statusFetchedAt}`)
   return _remoteStatuses
 }
 

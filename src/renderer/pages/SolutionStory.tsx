@@ -81,7 +81,7 @@ export default function SolutionStory() {
     description: a.handles,
   }))
 
-  const scenarios = solution.scenarios.map((s) => ({
+  const scenarios = (solution.scenarios ?? []).map((s) => ({
     label: s.label,
     icon: s.icon,
     expectedOutcome: s.expectedOutcome ?? '',

@@ -744,6 +744,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     answer: (text: string, solutionId?: string) => ipcRenderer.invoke('inference:answer', text, solutionId),
     analyze: (text: string) => ipcRenderer.invoke('inference:analyze', text),
     status: () => ipcRenderer.invoke('inference:status'),
+    /** 将在线回答提取为知识片段持久化，离线时可检索 */
+    persistSnippet: (data: {
+      id: string
+      patterns: string[]
+      answer: string
+      category: string
+      confidence: number
+      solutionId: string
+      ttlHours?: number
+    }) => ipcRenderer.invoke('inference:persistSnippet', data),
   },
 
   // ── 数据迁移 ──

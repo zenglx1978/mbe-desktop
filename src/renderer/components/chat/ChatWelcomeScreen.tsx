@@ -8,8 +8,8 @@ export interface ChatWelcomeScreenProps {
 }
 
 export function ChatWelcomeScreen({ solution, onScenarioClick }: ChatWelcomeScreenProps) {
-  const pillars = solution.scenarios.filter((s) => s.id.startsWith('pillar_'))
-  const others = solution.scenarios.filter((s) => !s.id.startsWith('pillar_'))
+  const pillars = (solution.scenarios ?? []).filter((s) => s.id.startsWith('pillar_'))
+  const others = (solution.scenarios ?? []).filter((s) => !s.id.startsWith('pillar_'))
 
   return (
     <div className="flex flex-col gap-8 max-w-2xl mx-auto py-6">

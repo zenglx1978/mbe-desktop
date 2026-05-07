@@ -35,7 +35,7 @@ export default function Sidebar() {
 
   if (!solution) return null
 
-  const baseTabs = [...solution.enabledTabs] as WorkbenchTab[]
+  const baseTabs = [...(solution.enabledTabs ?? [])] as WorkbenchTab[]
   if (!baseTabs.includes('approvals')) baseTabs.push('approvals')
   if (!baseTabs.includes('costs')) baseTabs.push('costs')
   if (!baseTabs.includes('efficiency')) baseTabs.push('efficiency')

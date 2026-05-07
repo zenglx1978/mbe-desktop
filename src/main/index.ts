@@ -19,18 +19,23 @@ import { setupDataPipelineIPC, setPipelineMainWindow } from './data-pipeline'
 import { setupSchedulerIPC, setSchedulerMainWindow, setSchedulerDb, initScheduler, destroyScheduler } from './scheduler'
 import { setupDispatchIPC, setDispatchMainWindow, destroyDispatch } from './dispatch-bridge'
 import { setupUserMemoryIPC, setMemoryMainWindow, setMemoryDb } from './user-memory'
-import { setupLocalInferenceIPC, setInferenceDb, setInferenceMainWindow, initLocalInference } from './local-inference'
+import { setupLocalInferenceIPC, setInferenceDb, setInferenceMainWindow, initLocalInference, setupKnowledgeCacheIPC } from './local-inference'
 import { setupBehaviorObserverIPC, setBehaviorObserverMainWindow, setBehaviorObserverDb, startBehaviorObserver, stopBehaviorObserver } from './behavior-observer'
 import { setupPatternRecognizerIPC, setPatternRecognizerMainWindow, setPatternRecognizerDb, startPatternRecognizer, stopPatternRecognizer } from './pattern-recognizer'
 import { setupDownloadManagerIPC, setDownloadManagerMainWindow } from './download-manager'
 import { setupErpAutoSetupIPC, setErpSetupMainWindow } from './erp-auto-setup'
 import { setupRpaBridgeIPC, setRpaMainWindow } from './rpa-bridge'
 import { setupFullPipelineIPC, setFullPipelineMainWindow } from './full-pipeline'
+import { logger } from './logger'
 
-console.log(`[App] MBE Desktop starting — pid=${process.pid}, platform=${process.platform}, electron=${process.versions.electron}`)
+logger.info('App', `MBE Desktop starting`, { pid: process.pid, platform: process.platform, electron: process.versions.electron })
 
 process.on('uncaughtException', (err) => {
-  console.error('[App] Uncaught exception:', err)
+  logger.error('App', 'Uncaught exception — shutting down', {
+    name: err.name,
+    message: err.message,
+    stack: err.stack?.slice(0, 1000),
+  })
   try {
     const lockFile = path.join(app.getPath('userData'), '.mbe-running.lock')
     if (fs.existsSync(lockFile)) fs.unlinkSync(lockFile)
@@ -39,7 +44,12 @@ process.on('uncaughtException', (err) => {
 })
 
 process.on('unhandledRejection', (reason) => {
-  console.error('[App] Unhandled rejection:', reason)
+  const isError = reason instanceof Error
+  logger.error('App', 'Unhandled Promise rejection', {
+    name: isError ? reason.name : typeof reason,
+    message: isError ? reason.message : String(reason),
+    stack: isError ? reason.stack?.slice(0, 1000) : undefined,
+  })
 })
 
 if (process.platform === 'win32') {
@@ -122,7 +132,7 @@ function writeSession(data: Record<string, unknown>): void {
 
 const gotLock = app.requestSingleInstanceLock()
 if (!gotLock) {
-  console.log('[App] Another instance is running, exiting.')
+  logger.warn('App', 'Another instance is already running — exiting')
   app.quit()
   process.exit(0)
 }
@@ -386,12 +396,13 @@ ipcMain.on('update:download', () => {
 // ==================== App 生命周期 ====================
 
 app.whenReady().then(async () => {
-  console.log('[App] whenReady fired, starting initialization...')
+  logger.init(path.join(app.getPath('documents'), 'MBE Desktop'))
+  logger.info('App', 'whenReady fired, starting initialization')
 
   try {
     await initDatabase()
   } catch (err) {
-    console.error('[App] Database init failed, continuing with null db:', err)
+    logger.error('App', 'Database init failed, continuing with null db', { error: String(err) })
   }
 
   setupDatabaseIPC()
@@ -410,6 +421,7 @@ app.whenReady().then(async () => {
   setupDispatchIPC()
   setupUserMemoryIPC()
   setupLocalInferenceIPC()
+  setupKnowledgeCacheIPC()
   setupBehaviorObserverIPC()
   setupPatternRecognizerIPC()
   setupDownloadManagerIPC()

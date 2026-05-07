@@ -42,7 +42,6 @@ jobs:
     name: Playwright E2E
     runs-on: ubuntu-latest
     needs: lint-typecheck-test
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -99,6 +98,8 @@ jobs:
         run: npm run pack:win
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
 
       - name: Upload Windows Artifacts
         uses: actions/upload-artifact@v4

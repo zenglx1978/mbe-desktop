@@ -217,7 +217,7 @@ export default function Workspace() {
 
   const allTabs = useMemo(() => {
     if (!solution) return [] as WorkbenchTab[]
-    const tabs = [...solution.enabledTabs]
+    const tabs = [...(solution.enabledTabs ?? [])]
     const isTaskOriented = ['finance-tax-service', 'law-firm', 'labor-dispatch', 'investment-research'].includes(solution.id)
     // P1-6: 任务导向方案仅追加 approvals，efficiency/automation/roi 等降级
     if (!tabs.includes('approvals')) tabs.push('approvals' as (typeof tabs)[number])

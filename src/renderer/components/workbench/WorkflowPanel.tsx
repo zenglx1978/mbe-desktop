@@ -140,7 +140,7 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
 
   useEffect(() => {
     if (pendingScenarioId) {
-      const sc = solution.scenarios.find((s) => s.id === pendingScenarioId)
+      const sc = (solution.scenarios ?? []).find((s) => s.id === pendingScenarioId)
       consumePendingScenarioId()
       if (sc) selectScenario(sc)
     }
@@ -157,8 +157,9 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
   }, [resetState])
 
   const { pillarScenarios, auxScenarios } = useMemo(() => {
-    const pillar = solution.scenarios.filter((sc) => sc.id.startsWith('pillar_'))
-    const aux = solution.scenarios.filter((sc) => !sc.id.startsWith('pillar_'))
+    const all = solution.scenarios ?? []
+    const pillar = all.filter((sc) => sc.id.startsWith('pillar_'))
+    const aux = all.filter((sc) => !sc.id.startsWith('pillar_'))
     return { pillarScenarios: pillar, auxScenarios: aux }
   }, [solution.scenarios])
 
@@ -210,7 +211,7 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
               </h3>
               <div className="space-y-3">
                 {solution.workflows.map(wf => {
-                  const WfIcon = getWorkflowIcon(wf.icon)
+                  const WfIcon = getWorkflowIcon(wf.icon ?? '')
                   return (
                     <button
                       key={wf.id}
@@ -228,9 +229,9 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
                         <p className="text-xs text-muted-foreground mt-0.5">{wf.description}</p>
                         <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                           {wf.steps.map((s, i) => {
-                            const ModeIcon = ORCHESTRATION_META[wf.mode]?.icon
+                            const ModeIcon = wf.mode ? ORCHESTRATION_META[wf.mode]?.icon : undefined
                             return (
-                              <span key={s.id} className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
+                              <span key={s.id ?? i} className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
                                 {i > 0 && ModeIcon && <ModeIcon className="w-3 h-3" />}
                                 {s.label}
                                 {s.profitImpact && <ProfitBadge impact={s.profitImpact} />}
@@ -239,7 +240,7 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
                           })}
                         </div>
                       </div>
-                      <OrchestrationBadge mode={wf.mode} />
+                      <OrchestrationBadge mode={wf.mode ?? 'sequential'} />
                     </button>
                   )
                 })}
@@ -248,7 +249,7 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
           )}
 
           {/* 快捷场景（四柱决策链 + 辅助） */}
-          {solution.scenarios.length > 0 && (
+          {(solution.scenarios ?? []).length > 0 && (
               <>
                 {pillarScenarios.length > 0 && (
                   <section>
@@ -317,7 +318,7 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
               </>
           )}
 
-          {solution.workflows.length === 0 && solution.scenarios.length === 0 && (
+          {solution.workflows.length === 0 && (solution.scenarios ?? []).length === 0 && (
             <div className="text-center py-12">
               <div className="w-12 h-12 rounded-xl bg-muted/20 flex items-center justify-center mx-auto mb-4">
                 {(() => { const R = STATUS_ICONS.running; return <R className="w-6 h-6 text-muted-foreground/30" /> })()}
@@ -375,7 +376,7 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
                   <SuccessCheck className="w-3.5 h-3.5 text-green-500" /> 成功标准
                 </p>
                 <ul className="space-y-1">
-                  {activeWf.successCriteria.map((c, i) => (
+                  {(activeWf.successCriteria ?? []).map((c, i) => (
                     <li key={i} className="text-xs text-muted-foreground flex items-start gap-2">
                       <span className="text-green-500 shrink-0 mt-0.5">✓</span>
                       <span>{c}</span>
@@ -385,11 +386,11 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
               </div>
               <div className="space-y-2">
                 <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-secondary/20 overflow-x-auto">
-                  <OrchestrationBadge mode={activeWf.mode} />
+                  <OrchestrationBadge mode={activeWf.mode ?? 'sequential'} />
                   {activeWf.steps.map((s, i) => {
-                    const ModeIcon = ORCHESTRATION_META[activeWf.mode]?.icon
+                    const ModeIcon = activeWf.mode ? ORCHESTRATION_META[activeWf.mode]?.icon : undefined
                     return (
-                      <span key={s.id} className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
+                      <span key={s.id ?? i} className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
                         {i > 0 && ModeIcon && <ModeIcon className="w-3 h-3 text-border" />}
                         <span className="w-5 h-5 rounded-full bg-secondary/40 flex items-center justify-center text-[10px] font-bold">
                           {i + 1}
@@ -401,8 +402,8 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
                 </div>
                 {activeWf.steps.some(s => s.profitImpact) && (
                   <div className="flex flex-wrap gap-2 px-4">
-                    {activeWf.steps.filter(s => s.profitImpact).map(s => (
-                      <span key={s.id} className="text-[10px] text-muted-foreground">
+                    {activeWf.steps.filter(s => s.profitImpact).map((s, i) => (
+                      <span key={s.id ?? i} className="text-[10px] text-muted-foreground">
                         {s.label}: <ProfitBadge impact={s.profitImpact} />
                       </span>
                     ))}
@@ -455,7 +456,7 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
     <div className="flex-1 overflow-y-auto px-6 py-5">
       <div className="max-w-2xl mx-auto space-y-6">
         {activeWf && (() => {
-          const WfIcon = getWorkflowIcon(activeWf.icon)
+          const WfIcon = getWorkflowIcon(activeWf.icon ?? '')
           return (
             <>
               <div className="flex items-center gap-3">
@@ -463,7 +464,7 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
                   <WfIcon className="w-4 h-4" />
                 </div>
                 <h2 className="text-base font-bold">{activeWf.name}</h2>
-                <OrchestrationBadge mode={activeWf.mode} />
+                <OrchestrationBadge mode={activeWf.mode ?? 'sequential'} />
                 {view === 'running' && (
                   <span className="ml-auto text-xs px-2 py-1 rounded-full bg-primary/10 text-primary animate-pulse">
                     执行中…
@@ -479,14 +480,15 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
               {/* 步骤进度条 */}
               <div className="space-y-3">
                 {activeWf.steps.map((step, i) => {
-                  const status = stepStatuses[step.id] || 'pending'
-                  const partial = stepPartials[step.id]
-                  const sr = result?.steps.find(s => s.stepId === step.id)
+                  const stepId = step.id ?? `step_${i}`
+                  const status = stepStatuses[stepId] || 'pending'
+                  const partial = stepPartials[stepId]
+                  const sr = result?.steps.find(s => s.stepId === stepId)
                   return (
                     <StepCard
-                      key={step.id}
+                      key={stepId}
                       index={i}
-                      step={step}
+                      step={{ ...step, id: stepId }}
                       status={status}
                       answer={sr?.answer || partial}
                       error={sr?.error}
@@ -619,7 +621,7 @@ function OrchestrationBadge({ mode }: { mode: string }) {
 
 function StepCard({ index, step, status, answer, error, durationMs, color }: {
   index: number
-  step: { id: string; label: string; agent: string; expert: string; profitImpact?: ProfitImpact }
+  step: { id: string; label: string; agent?: string; expert?: string; profitImpact?: ProfitImpact }
   status: StepStatus
   answer?: string
   error?: string

@@ -406,7 +406,7 @@ export default function TaskContextPanel({ solution, taskId }: Props) {
   }
 
   const relatedWorkflows = solution.workflows.filter(w => ctx.workflowIds.includes(w.id))
-  const relatedScenarios = solution.scenarios.filter(s => ctx.scenarioIds.includes(s.id))
+  const relatedScenarios = (solution.scenarios ?? []).filter(s => ctx.scenarioIds.includes(s.id))
   const relatedTools = solution.tools.filter(t => ctx.toolIds.includes(t.id))
 
   return (

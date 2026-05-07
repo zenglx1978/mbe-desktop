@@ -113,13 +113,13 @@ export function DashboardCatalogFooter({
         </div>
       </div>
 
-      {solution.scenarios.length > 0 && (
+      {(solution.scenarios ?? []).length > 0 && (
         <div>
           <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
             快捷场景
           </h3>
           <div className="flex flex-wrap gap-2">
-            {solution.scenarios.slice(0, 6).map((sc) => (
+            {(solution.scenarios ?? []).slice(0, 6).map((sc) => (
               <button
                 key={sc.id}
                 onClick={onOpenWorkflows}

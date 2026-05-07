@@ -4,9 +4,9 @@
  * 所有使用方案图标的页面统一从此处导入，确保一致性（C2 重复原则）。
  */
 import {
-  HardHat, Scale, Calculator, Building2, Stethoscope,
+  HardHat, Scale, Calculator, Building2, Heart,
   Briefcase, Plane, GraduationCap, ShoppingBag, ShieldCheck,
-  TrendingUp, Landmark, type LucideIcon,
+  TrendingUp, Landmark, BarChart3, Factory, Server, type LucideIcon,
 } from 'lucide-react'
 
 export const SOLUTION_ICON_MAP: Record<string, LucideIcon> = {
@@ -15,13 +15,16 @@ export const SOLUTION_ICON_MAP: Record<string, LucideIcon> = {
   'finance-tax-service': Calculator,
   'hk-finance-tax': Landmark,
   'construction-cost': Building2,
-  'clinic-respiratory': Stethoscope,
+  'clinic-respiratory': Heart,
   'smb-operations': Briefcase,
   'study-abroad-consulting': Plane,
   'education-training': GraduationCap,
   'ecommerce-brand-service': ShoppingBag,
   'insurance-operations': ShieldCheck,
   'investment-research': TrendingUp,
+  'capital-markets': BarChart3,
+  'oem-manufacturing': Factory,
+  'legacy-erp-ai':     Server,
 }
 
 export const DEFAULT_ICON: LucideIcon = Briefcase

@@ -13,7 +13,7 @@ export default function SlashMenu({ commands, query, onSelect, onClose }: Props)
   const menuRef = useRef<HTMLDivElement>(null)
 
   const filtered = commands.filter(cmd =>
-    cmd.cmd.includes(query) || cmd.label.includes(query)
+    (cmd.cmd ?? cmd.command ?? '').includes(query) || cmd.label.includes(query)
   )
 
   useEffect(() => {

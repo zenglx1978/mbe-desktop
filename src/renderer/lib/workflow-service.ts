@@ -76,8 +76,8 @@ export async function executeWorkflow(
   onProgress?: StepProgressCallback,
 ): Promise<WorkflowResult> {
   const startTime = Date.now()
-  const stepResults: StepResult[] = workflow.steps.map(s => ({
-    stepId: s.id, status: 'pending' as StepStatus,
+  const stepResults: StepResult[] = workflow.steps.map((s, i) => ({
+    stepId: s.id ?? `step_${i}`, status: 'pending' as StepStatus,
   }))
 
   // 尝试 SSE 流式
@@ -150,7 +150,7 @@ async function trySSE(
     return {
       success: stepResults.every(s => s.status === 'done'),
       workflowId: workflow.id,
-      mode: workflow.mode,
+      mode: workflow.mode ?? 'sequential',
       steps: stepResults,
       mergedAnswer: mergedAnswer || undefined,
     }
@@ -176,9 +176,10 @@ async function executeStandard(
     for (let i = 0; i < workflow.steps.length; i++) {
       const step = workflow.steps[i]
       const sr = stepResults[i]
+      const stepId = step.id ?? `step_${i}`
 
       sr.status = 'running'
-      onProgress?.(step.id, 'running')
+      onProgress?.(stepId, 'running')
       const stepStart = Date.now()
 
       try {
@@ -195,13 +196,13 @@ async function executeStandard(
           data.answer || data.text || data.content || JSON.stringify(data)
         sr.expert = `${step.agent}.${step.expert}`
         sr.durationMs = Date.now() - stepStart
-        onProgress?.(step.id, 'done', sr.answer)
+        onProgress?.(stepId, 'done', sr.answer)
       } catch (err: unknown) {
         if (isAbortError(err)) throw err
         sr.status = 'error'
         sr.error = err instanceof Error ? err.message : '请求失败'
         sr.durationMs = Date.now() - stepStart
-        onProgress?.(step.id, 'error', sr.error)
+        onProgress?.(stepId, 'error', sr.error)
       }
     }
 
@@ -213,7 +214,7 @@ async function executeStandard(
     return {
       success: stepResults.every(s => s.status === 'done'),
       workflowId: workflow.id,
-      mode: workflow.mode,
+      mode: workflow.mode ?? 'sequential',
       steps: stepResults,
       mergedAnswer: mergedAnswer || undefined,
       totalDurationMs: Date.now() - startTime,
@@ -223,7 +224,7 @@ async function executeStandard(
     return {
       success: false,
       workflowId: workflow.id,
-      mode: workflow.mode,
+      mode: workflow.mode ?? 'sequential',
       steps: stepResults,
       totalDurationMs: Date.now() - startTime,
       error: err instanceof Error ? err.message : '请求失败',
@@ -466,11 +467,11 @@ function processEvent(
   if (type === 'step_start') {
     if (idx >= 0) {
       stepResults[idx].status = 'running'
-      onProgress?.(steps[idx].id, 'running')
+      onProgress?.(steps[idx].id ?? `step_${idx}`, 'running')
     }
   } else if (type === 'step_complete' || type === 'step_done') {
     if (idx >= 0) {
-      const stepId = steps[idx].id
+      const stepId = steps[idx].id ?? `step_${idx}`
       if (evt.success === false) {
         stepResults[idx].status = 'error'
         stepResults[idx].error = evt.error || '步骤执行失败'
@@ -487,7 +488,7 @@ function processEvent(
     if (idx >= 0) {
       stepResults[idx].status = 'error'
       stepResults[idx].error = evt.error || evt.message
-      onProgress?.(steps[idx].id, 'error', evt.error)
+      onProgress?.(steps[idx].id ?? `step_${idx}`, 'error', evt.error)
     }
   }
 }
