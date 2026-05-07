@@ -4,6 +4,7 @@ import { useChatStore } from '@/stores/chat-store'
 import { useToolStore } from '@/stores/tool-store'
 import { useAdaptiveUIStore } from '@/stores/adaptive-ui-store'
 import { useConversationStore } from '@/stores/conversation-store'
+import { useAuthStore } from '@/stores/auth-store'
 import { sendMessage } from '@/lib/chat-service'
 import { authFetch, API_BASE } from '@/lib/api-client'
 import { getDefaultAgent } from '@/lib/solution-router'
@@ -14,14 +15,12 @@ import ConversationList from '@/components/ConversationList'
 import type { AttachedFile } from '@/components/io'
 import type { SlashCommand } from '@/lib/solution-router'
 
-const GLOBAL_COMMANDS: SlashCommand[] = [
-  {
-    cmd: '/doctor',
-    label: '运行诊断',
-    icon: '🩺',
-    description: '检查 Agent 连接、知识库、MCP 等健康状态',
-  },
-]
+const DOCTOR_COMMAND: SlashCommand = {
+  cmd: '/doctor',
+  label: '运行诊断',
+  icon: '🩺',
+  description: '检查 Agent 连接、知识库、MCP 等健康状态',
+}
 
 function formatDoctorReport(data: Record<string, unknown>): string {
   const statusIcon = (s: string) =>
@@ -64,10 +63,15 @@ export default function ChatPanel() {
   const { trackTabSwitch } = useAdaptiveUIStore()
   const { currentConversationId } = useConversationStore()
   const solution = currentSolution()
+  const user = useAuthStore((s) => s.user)
+  const isInternal = user?.role === 'admin' || user?.role === 'mbe_staff'
 
   const allCommands = useMemo(
-    () => [...GLOBAL_COMMANDS, ...(solution?.slashCommands ?? [])],
-    [solution],
+    () => [
+      ...(isInternal ? [DOCTOR_COMMAND] : []),
+      ...(solution?.slashCommands ?? []),
+    ],
+    [solution, isInternal],
   )
 
   const handleAttach = useCallback((files: AttachedFile[]) => {

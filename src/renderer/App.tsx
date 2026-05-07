@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth-store'
 
 const OfflineBanner = lazy(() => import('@/components/OfflineBanner'))
 const UpdateBanner = lazy(() => import('@/components/UpdateBanner'))
+const NetworkToast = lazy(() => import('@/components/NetworkToast'))
 const AuthPage = lazy(() => import('@/pages/AuthPage'))
 const SolutionPicker = lazy(() => import('@/pages/SolutionPicker'))
 const Workspace = lazy(() => import('@/pages/Workspace'))
@@ -20,6 +21,7 @@ const DeepMindInsights = lazy(() => import('@/pages/DeepMindInsights'))
 const ScheduleManager = lazy(() => import('@/pages/ScheduleManager'))
 const DispatchPanel = lazy(() => import('@/pages/DispatchPanel'))
 const DispatchDashboard = lazy(() => import('@/pages/DispatchDashboard'))
+const OnboardingPage = lazy(() => import('@/pages/OnboardingPage'))
 
 function LoadingScreen() {
   return (
@@ -95,6 +97,19 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+/**
+ * 仅限内部员工访问的路由守卫（role: admin | mbe_staff）。
+ * 外部付费用户访问开发者路由时，重定向到首页而非 403，避免暴露内部工具存在感。
+ */
+function RequireInternal({ children }: { children: React.ReactNode }) {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const user = useAuthStore((s) => s.user)
+  if (!isAuthenticated()) return <Navigate to="/auth" replace />
+  const isInternal = user?.role === 'admin' || user?.role === 'mbe_staff'
+  if (!isInternal) return <Navigate to="/" replace />
+  return <>{children}</>
+}
+
 function AppRoutes() {
   const { hasPickedSolution } = useAppStore()
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -155,31 +170,31 @@ function AppRoutes() {
             </RequireAuth>
           }
         />
-        {/* 知识图谱可视化（开发者工具） */}
+        {/* 知识图谱可视化 — 仅限内部员工 */}
         <Route
           path="/kb-graph"
           element={
-            <RequireAuth>
+            <RequireInternal>
               <KnowledgeGraphPage />
-            </RequireAuth>
+            </RequireInternal>
           }
         />
-        {/* 数据热力图分析 */}
+        {/* 数据热力图分析 — 仅限内部员工 */}
         <Route
           path="/analytics/heatmaps"
           element={
-            <RequireAuth>
+            <RequireInternal>
               <AnalyticsHeatmaps />
-            </RequireAuth>
+            </RequireInternal>
           }
         />
-        {/* DeepMind Insights 仪表盘（开发者工具） */}
+        {/* DeepMind Insights 仪表盘 — 仅限内部员工 */}
         <Route
           path="/deepmind"
           element={
-            <RequireAuth>
+            <RequireInternal>
               <DeepMindInsights />
-            </RequireAuth>
+            </RequireInternal>
           }
         />
         {/* AI 专家定时巡检管理 */}
@@ -206,6 +221,15 @@ function AppRoutes() {
           element={
             <RequireAuth>
               <DispatchDashboard />
+            </RequireAuth>
+          }
+        />
+        {/* 新用户引导页 — 说明计费方式与使用流程 */}
+        <Route
+          path="/welcome"
+          element={
+            <RequireAuth>
+              <OnboardingPage />
             </RequireAuth>
           }
         />
@@ -244,6 +268,7 @@ export default function App() {
         <Suspense fallback={null}>
           <OfflineBanner />
           <UpdateBanner />
+          <NetworkToast />
         </Suspense>
         <AppRoutes />
       </HashRouter>

@@ -13,6 +13,17 @@ export interface ChatInputBarProps {
   isLoading: boolean
 }
 
+/** 单次对话输入最大字符数 */
+const MAX_CHARS = 4_000
+/** 字数达到此阈值时开始显示计数器 */
+const CHAR_WARN_THRESHOLD = 300
+
+function fmtFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
 export function ChatInputBar({
   input,
   setInput,
@@ -29,19 +40,58 @@ export function ChatInputBar({
     [setInput],
   )
 
-  const hasContent = input.trim() || (attachedFiles && attachedFiles.length > 0)
+  const charCount = input.length
+  const charsLeft = MAX_CHARS - charCount
+  const showCounter = charCount >= CHAR_WARN_THRESHOLD
+  const isNearLimit = charCount >= MAX_CHARS * 0.9
+  const isOverLimit = charCount > MAX_CHARS
+
+  const hasContent = (input.trim() || (attachedFiles && attachedFiles.length > 0)) && !isOverLimit
+
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      // 超过上限时截断，不允许继续输入
+      if (e.target.value.length <= MAX_CHARS) {
+        setInput(e.target.value)
+      }
+    },
+    [setInput],
+  )
 
   return (
     <div className="border-t border-border/50 p-4">
-      <div className="max-w-3xl mx-auto">
-        <div className="flex items-end gap-3 bg-secondary/30 rounded-xl border border-border/50 px-4 py-3 focus-within:border-primary/50 transition-colors">
+      <div className="max-w-3xl mx-auto space-y-1.5">
+        {/* 附件列表 */}
+        {attachedFiles && attachedFiles.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 px-1">
+            {attachedFiles.map((f, i) => (
+              <div
+                key={i}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-secondary/50 border border-border/40 text-xs text-muted-foreground"
+              >
+                <span>📎</span>
+                <span className="max-w-[120px] truncate">{f.name || `文件 ${i + 1}`}</span>
+                {'size' in f && typeof f.size === 'number' && (
+                  <span className="text-muted-foreground/50">· {fmtFileSize(f.size)}</span>
+                )}
+              </div>
+            ))}
+            <span className="self-center text-[10px] text-muted-foreground/40">最大 10MB/文件</span>
+          </div>
+        )}
+
+        {/* 输入区 */}
+        <div className={`flex items-end gap-3 bg-secondary/30 rounded-xl border px-4 py-3 focus-within:border-primary/50 transition-colors ${
+          isOverLimit ? 'border-red-500/50' : 'border-border/50'
+        }`}>
           <textarea
             ref={textareaRef as React.RefObject<HTMLTextAreaElement>}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={handleChange}
             onKeyDown={onKeyDown}
             placeholder="输入问题，或用 📎 上传发票/文件..."
             rows={1}
+            maxLength={MAX_CHARS}
             className="flex-1 bg-transparent border-none outline-none resize-none text-sm leading-relaxed max-h-32 placeholder:text-muted-foreground/50"
             style={{ fieldSizing: 'content' } as React.CSSProperties}
           />
@@ -60,6 +110,22 @@ export function ChatInputBar({
             )}
           </button>
         </div>
+
+        {/* 字数计数器 — 仅在接近上限时显示 */}
+        {showCounter && (
+          <div className="flex justify-end pr-1">
+            <span className={`text-[10px] tabular-nums transition-colors ${
+              isOverLimit ? 'text-red-500 font-medium' :
+              isNearLimit ? 'text-amber-500' :
+              'text-muted-foreground/40'
+            }`}>
+              {isOverLimit
+                ? `已超出 ${-charsLeft} 字`
+                : `${charCount} / ${MAX_CHARS.toLocaleString()}`
+              }
+            </span>
+          </div>
+        )}
       </div>
     </div>
   )

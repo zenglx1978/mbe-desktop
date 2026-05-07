@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth-store'
+import { useAppStore } from '@/stores/app-store'
 import { API_BASE } from '@/lib/api-client'
 
 type AuthMode = 'login' | 'register'
@@ -14,10 +15,17 @@ const GOOGLE_SVG = (
   </svg>
 )
 
+/** 登录/注册成功后的跳转目标：新用户 → /welcome，老用户 → /pick */
+function usePostAuthRedirect() {
+  const hasCompletedOnboarding = useAppStore((s) => s.hasCompletedOnboarding)
+  return hasCompletedOnboarding ? '/pick' : '/welcome'
+}
+
 export default function AuthPage() {
   const navigate = useNavigate()
   const { login, register, loading, error, clearError, setToken, setUser, emailUnverified, resendVerification, referralCode, setReferralCode } = useAuthStore()
   const [searchParams] = useSearchParams()
+  const postAuthDest = usePostAuthRedirect()
 
   const [mode, setMode] = useState<AuthMode>('login')
   const [email, setEmail] = useState('')
@@ -59,7 +67,7 @@ export default function AuthPage() {
         setToken(data.token)
         setUser({ name: data.name || data.email?.split('@')[0] || '', email: data.email || '' })
         setGoogleLoading(false)
-        navigate('/pick', { replace: true })
+        navigate(postAuthDest, { replace: true })
       }
     })
 
@@ -79,7 +87,7 @@ export default function AuthPage() {
 
     if (mode === 'login') {
       const ok = await login(email.trim(), password.trim())
-      if (ok) navigate('/pick', { replace: true })
+      if (ok) navigate(postAuthDest, { replace: true })
     } else {
       const result = await register(email.trim(), password.trim(), username.trim() || undefined)
       if (result.ok) {
@@ -87,11 +95,12 @@ export default function AuthPage() {
           setSuccessMsg('注册成功！请查收邮箱完成验证，然后登录。')
           setMode('login')
         } else {
-          navigate('/pick', { replace: true })
+          // 新注册用户：始终进入引导页（即便之前看过，注册新账号也需重新引导）
+          navigate('/welcome', { replace: true })
         }
       }
     }
-  }, [mode, email, password, username, login, register, navigate])
+  }, [mode, email, password, username, login, register, navigate, postAuthDest])
 
   const handleGoogleLogin = useCallback(() => {
     setGoogleLoading(true)

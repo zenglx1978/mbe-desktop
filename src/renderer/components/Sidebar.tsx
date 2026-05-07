@@ -70,33 +70,67 @@ export default function Sidebar() {
         sidebarExpanded ? 'w-64' : 'w-16'
       }`}
     >
-      {/* 用户信息 */}
-      <div className={`shrink-0 border-b border-border/50 ${sidebarExpanded ? 'px-4 py-3' : 'px-2 py-3 flex justify-center'}`}>
+      {/* 用户信息 + 方案名快捷切换 */}
+      <div className={`shrink-0 border-b border-border/50 ${sidebarExpanded ? 'px-4 py-3' : 'px-2 py-3 flex flex-col items-center gap-2'}`}>
         {sidebarExpanded ? (
-          <div className="flex items-center gap-3 min-w-0">
+          <>
+            <div className="flex items-center gap-3 min-w-0">
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+                style={{ backgroundColor: color }}
+              >
+                {initials}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-foreground truncate">
+                  {user?.name || labels.notLoggedIn}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {user?.email || ''}
+                </p>
+              </div>
+            </div>
+            {/* 当前方案名 — 点击跳回方案选择器 */}
+            <button
+              type="button"
+              onClick={() => {
+                useAppStore.getState().clearSolution()
+                navigate('/pick', { replace: true })
+              }}
+              className="mt-1 w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-secondary/40 transition-colors group"
+              title="切换行业方案"
+            >
+              <div
+                className="w-3 h-3 rounded-full shrink-0"
+                style={{ backgroundColor: color }}
+              />
+              <span className="text-xs text-muted-foreground truncate flex-1 text-left">
+                {solution.name}
+              </span>
+              <SwitchIcon className="w-3 h-3 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
+            </button>
+          </>
+        ) : (
+          <>
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white cursor-default"
               style={{ backgroundColor: color }}
+              title={user?.email || labels.notLoggedIn}
             >
               {initials}
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-foreground truncate">
-                {user?.name || labels.notLoggedIn}
-              </p>
-              <p className="text-xs text-muted-foreground truncate">
-                {user?.email || ''}
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white cursor-default"
-            style={{ backgroundColor: color }}
-            title={user?.email || labels.notLoggedIn}
-          >
-            {initials}
-          </div>
+            {/* 折叠态：方案色点 */}
+            <button
+              type="button"
+              onClick={() => {
+                useAppStore.getState().clearSolution()
+                navigate('/pick', { replace: true })
+              }}
+              title={`${solution.name} · 点击切换方案`}
+              className="w-5 h-5 rounded-full border-2 border-background/50 hover:scale-110 transition-transform"
+              style={{ backgroundColor: color }}
+            />
+          </>
         )}
       </div>
 

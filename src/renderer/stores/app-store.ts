@@ -19,6 +19,13 @@ interface AppState {
   billingContext: BillingContext | null
   _billingCacheKey: string
 
+  /**
+   * 新用户引导是否已完成。
+   * true = 已看过引导页，下次登录直接跳 /pick。
+   * 存储在 localStorage 中，key = 'mbe_onboarding_v1'
+   */
+  hasCompletedOnboarding: boolean
+
   setSolution: (id: string) => void
   /** 清除当前方案选择，回到方案选择器 */
   clearSolution: () => void
@@ -29,9 +36,12 @@ interface AppState {
   /** 从后端拉取当前用户的方案角色（切换方案时自动调用） */
   fetchBillingContext: (solutionId: string) => Promise<void>
   getBillingContext: () => BillingContext | null
+  /** 标记新用户引导已完成（写入 localStorage） */
+  markOnboardingDone: () => void
 }
 
 const STORAGE_KEY = 'lastSolutionId'
+const ONBOARDING_KEY = 'mbe_onboarding_v1'
 
 function persist(id: string) {
   try {
@@ -48,6 +58,7 @@ function persist(id: string) {
 
 export const useAppStore = create<AppState>((set, get) => {
   const stored = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null
+  const onboardingDone = typeof window !== 'undefined' ? !!localStorage.getItem(ONBOARDING_KEY) : false
   return {
     solutionId: stored,
     currentSolutionId: stored,
@@ -56,6 +67,7 @@ export const useAppStore = create<AppState>((set, get) => {
     currentAgentIndex: 0,
     billingContext: null,
     _billingCacheKey: '',
+    hasCompletedOnboarding: onboardingDone,
 
     setSolution: (id) => {
       set({ solutionId: id, currentSolutionId: id, hasPickedSolution: true, currentAgentIndex: 0 })
@@ -119,6 +131,11 @@ export const useAppStore = create<AppState>((set, get) => {
       }
 
       set({ billingContext: ctx, _billingCacheKey: cacheKey })
+    },
+
+    markOnboardingDone: () => {
+      localStorage.setItem(ONBOARDING_KEY, '1')
+      set({ hasCompletedOnboarding: true })
     },
 
     initFromStorage: async () => {

@@ -201,10 +201,23 @@ export async function sendMessage(
           aborted = true
         } else {
           const errorMsg = err instanceof Error ? err.message : '请求失败'
-          chatStore.updateMessage(assistantId, {
-            content: `⚠️ 连接${agent.role}失败：${errorMsg}\n\n请检查网络连接，或使用本地计算功能。`,
-            streaming: false,
-          })
+          // 计费类错误：展示专属升级引导而非通用网络错误提示
+          if (errorMsg.startsWith('BILLING:')) {
+            const [, code, detail] = errorMsg.split(':')
+            const isQuota = code === 'QUOTA_EXCEEDED'
+            const billingContent = isQuota
+              ? `## 💳 额度已用尽\n\n${detail ? `> ${detail}\n\n` : ''}您本月的 AI 用量已达上限。\n\n**升级方案** 或 **购买加油包** 可立即恢复服务：\n\n- 前往 **账户 → 订阅管理** 查看当前套餐\n- 或在侧栏点击 **💳 升级** 按钮`
+              : `## ⏱️ 请求过于频繁\n\n${detail ? `> ${detail}\n\n` : ''}您的请求频率已触发限流保护，请稍等片刻后重试。\n\n如需更高频率配额，可在 **账户 → 订阅管理** 升级套餐。`
+            chatStore.updateMessage(assistantId, {
+              content: billingContent,
+              streaming: false,
+            })
+          } else {
+            chatStore.updateMessage(assistantId, {
+              content: `⚠️ 连接${agent.role}失败：${errorMsg}\n\n请检查网络连接，或使用本地计算功能。`,
+              streaming: false,
+            })
+          }
         }
       }
     }
@@ -510,6 +523,16 @@ async function streamViaHTTP(
   }
 
   if (!response.ok) {
+    // 402 额度不足 / 429 触发限流 — 特殊处理，上层可展示升级引导
+    if (response.status === 402 || response.status === 429) {
+      let detail = ''
+      try {
+        const errBody = (await response.json()) as Record<string, unknown>
+        detail = String(errBody.detail ?? errBody.message ?? '')
+      } catch { /* 忽略解析失败 */ }
+      const code = response.status === 402 ? 'QUOTA_EXCEEDED' : 'RATE_LIMITED'
+      throw new Error(`BILLING:${code}:${detail}`)
+    }
     throw new Error(`HTTP ${response.status}`)
   }
 

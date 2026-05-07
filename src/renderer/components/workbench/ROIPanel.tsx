@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { TrendingUp, DollarSign, Users, RefreshCw, BarChart3, ArrowUpRight, ArrowDownRight } from 'lucide-react'
-import { authFetch, API_BASE, isElectron } from '@/lib/api-client'
+import { authFetch, API_BASE } from '@/lib/api-client'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface RoleROI {
   role: string
@@ -24,41 +25,43 @@ interface ROISummary {
 export default function ROIPanel() {
   const [data, setData] = useState<ROISummary | null>(null)
   const [loading, setLoading] = useState(false)
+  const user = useAuthStore((s) => s.user)
+  const isInternal = user?.role === 'admin' || user?.role === 'mbe_staff'
 
   const fetchROI = useCallback(async () => {
-    if (!isElectron()) return
     setLoading(true)
     try {
-      const resp = await authFetch(`${API_BASE}/api/v1/admin/entrepreneur-roi/dashboard`)
-      if (resp.ok) {
-        const json = await resp.json()
-        if (json?.success) setData(json.data)
-      } else {
-        throw new Error('dashboard API failed')
+      // 外部付费用户始终走 /my（只看自己的数据）；内部员工才可访问 /dashboard 汇总视图
+      const myResp = await authFetch(`${API_BASE}/api/v1/admin/entrepreneur-roi/my`)
+      if (myResp.ok) {
+        const json = await myResp.json()
+        if (json?.success) {
+          const d = json.data
+          setData({
+            total_revenue: d.revenue || 0,
+            total_cost: d.cost || 0,
+            total_profit: d.profit || 0,
+            overall_roi: d.roi_percent || 0,
+            roles: [],
+            period: d.period || '',
+          })
+          setLoading(false)
+          return
+        }
+      }
+      // 仅内部员工 fallback 到汇总 dashboard
+      if (isInternal) {
+        const dashResp = await authFetch(`${API_BASE}/api/v1/admin/entrepreneur-roi/dashboard`)
+        if (dashResp.ok) {
+          const json = await dashResp.json()
+          if (json?.success) setData(json.data)
+        }
       }
     } catch {
-      try {
-        const resp = await authFetch(`${API_BASE}/api/v1/admin/entrepreneur-roi/my`)
-        if (resp.ok) {
-          const json = await resp.json()
-          if (json?.success) {
-            const d = json.data
-            setData({
-              total_revenue: d.revenue || 0,
-              total_cost: d.cost || 0,
-              total_profit: d.profit || 0,
-              overall_roi: d.roi_percent || 0,
-              roles: [],
-              period: d.period || '',
-            })
-          }
-        }
-      } catch {
-        setData(null)
-      }
+      setData(null)
     }
     setLoading(false)
-  }, [])
+  }, [isInternal])
 
   useEffect(() => { fetchROI() }, [fetchROI])
 

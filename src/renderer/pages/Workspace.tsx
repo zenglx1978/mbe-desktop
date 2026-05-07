@@ -219,8 +219,9 @@ export default function Workspace() {
     if (!solution) return [] as WorkbenchTab[]
     const tabs = [...(solution.enabledTabs ?? [])]
     const isTaskOriented = ['finance-tax-service', 'law-firm', 'labor-dispatch', 'investment-research'].includes(solution.id)
-    // P1-6: 任务导向方案仅追加 approvals，efficiency/automation/roi 等降级
+    // 「账户 / 用量 / 订阅」对所有付费用户始终可达，不受方案类型影响
     if (!tabs.includes('approvals')) tabs.push('approvals' as (typeof tabs)[number])
+    if (!tabs.includes('account')) tabs.push('account' as (typeof tabs)[number])
     if (!isTaskOriented) {
       if (!tabs.includes('costs')) tabs.push('costs' as (typeof tabs)[number])
       if (!tabs.includes('efficiency')) tabs.push('efficiency' as (typeof tabs)[number])
@@ -228,7 +229,6 @@ export default function Workspace() {
       if (!tabs.includes('clients')) tabs.push('clients' as (typeof tabs)[number])
       if (!tabs.includes('roi')) tabs.push('roi' as (typeof tabs)[number])
       if (!tabs.includes('scout')) tabs.push('scout' as (typeof tabs)[number])
-      if (!tabs.includes('account')) tabs.push('account' as (typeof tabs)[number])
       if (!tabs.includes('pipeline')) tabs.push('pipeline' as (typeof tabs)[number])
     }
     return tabs

@@ -4,6 +4,11 @@ import { API_BASE, authFetch, isElectron } from '@/lib/api-client'
 import { useAuthStore } from '@/stores/auth-store'
 import { useAppStore } from '@/stores/app-store'
 
+function useIsInternalUser() {
+  const user = useAuthStore((s) => s.user)
+  return user?.role === 'admin' || user?.role === 'mbe_staff'
+}
+
 interface SolutionUser {
   user_id: string
   email: string
@@ -33,6 +38,7 @@ export default function Settings() {
   const navigate = useNavigate()
   const { token } = useAuthStore()
   const solutionId = useAppStore((s) => s.solutionId) || ''
+  const isInternal = useIsInternalUser()
 
   const [solutionUsers, setSolutionUsers] = useState<SolutionUser[]>([])
   const [loadingUsers, setLoadingUsers] = useState(false)
@@ -400,39 +406,41 @@ export default function Settings() {
           </p>
         </section>
 
-        {/* 开发者工具 */}
-        <section className="rounded-lg border border-border bg-card p-4 mb-4">
-          <h2 className="text-sm font-medium text-foreground mb-3">开发者工具</h2>
-          <div className="space-y-2">
-            <button
-              type="button"
-              onClick={navigateKbGraph}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md border border-border/50 hover:bg-muted/30 transition-colors text-muted-foreground hover:text-foreground"
-            >
-              <span className="text-base">🧠</span>
-              知识图谱可视化
-              <span className="text-[10px] text-muted-foreground/50 ml-auto">11 Agent · 577 文件</span>
-            </button>
-            <button
-              type="button"
-              onClick={navigateHeatmaps}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md border border-border/50 hover:bg-muted/30 transition-colors text-muted-foreground hover:text-foreground"
-            >
-              <span className="text-base">🔥</span>
-              数据热力图分析
-              <span className="text-[10px] text-muted-foreground/50 ml-auto">法律风险 · 投资瓶颈 · 产业链</span>
-            </button>
-            <button
-              type="button"
-              onClick={navigateDeepmind}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md border border-border/50 hover:bg-muted/30 transition-colors text-muted-foreground hover:text-foreground"
-            >
-              <span className="text-base">🔬</span>
-              实验洞察仪表盘
-              <span className="text-[10px] text-muted-foreground/50 ml-auto">退火 · 波动 · 策略 · 暖启动</span>
-            </button>
-          </div>
-        </section>
+        {/* 开发者工具 — 仅对内部员工（admin / mbe_staff）可见 */}
+        {isInternal && (
+          <section className="rounded-lg border border-border bg-card p-4 mb-4">
+            <h2 className="text-sm font-medium text-foreground mb-3">开发者工具</h2>
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={navigateKbGraph}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md border border-border/50 hover:bg-muted/30 transition-colors text-muted-foreground hover:text-foreground"
+              >
+                <span className="text-base">🧠</span>
+                知识图谱可视化
+                <span className="text-[10px] text-muted-foreground/50 ml-auto">11 Agent · 577 文件</span>
+              </button>
+              <button
+                type="button"
+                onClick={navigateHeatmaps}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md border border-border/50 hover:bg-muted/30 transition-colors text-muted-foreground hover:text-foreground"
+              >
+                <span className="text-base">🔥</span>
+                数据热力图分析
+                <span className="text-[10px] text-muted-foreground/50 ml-auto">法律风险 · 投资瓶颈 · 产业链</span>
+              </button>
+              <button
+                type="button"
+                onClick={navigateDeepmind}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md border border-border/50 hover:bg-muted/30 transition-colors text-muted-foreground hover:text-foreground"
+              >
+                <span className="text-base">🔬</span>
+                实验洞察仪表盘
+                <span className="text-[10px] text-muted-foreground/50 ml-auto">退火 · 波动 · 策略 · 暖启动</span>
+              </button>
+            </div>
+          </section>
+        )}
       </div>
     </main>
   )

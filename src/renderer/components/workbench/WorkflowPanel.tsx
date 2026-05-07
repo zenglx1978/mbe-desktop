@@ -4,7 +4,7 @@
  * 可从 Chat Slash 命令 / WelcomeScreen / Sidebar 触发
  */
 
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
+import { useState, useCallback, useMemo, useRef, useEffect, memo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { ArrowLeft, Copy, Play, ClipboardList as ClipboardListIcon } from 'lucide-react'
@@ -19,6 +19,33 @@ import {
   DELIVERABLE_ICON, SUCCESS_ICON, EXPECTED_ICON,
 } from '@/lib/workflow-icons'
 import { useToolStore } from '@/stores/tool-store'
+
+/**
+ * 工作流运行中计时器 — 展示已执行秒数，超时给出等待提示
+ * 与父组件完全解耦，mount 时启动，unmount 时自动清理。
+ */
+const RunningTimer = memo(function RunningTimer({ startMs }: { startMs: number }) {
+  const [elapsed, setElapsed] = useState(0)
+
+  useEffect(() => {
+    const t = setInterval(() => setElapsed(Math.floor((Date.now() - startMs) / 1000)), 1000)
+    return () => clearInterval(t)
+  }, [startMs])
+
+  const hint =
+    elapsed >= 90 ? '后端处理耗时较长，请耐心等待…' :
+    elapsed >= 45 ? '正在等待 AI 响应，大文件/复杂任务较慢…' :
+    elapsed >= 20 ? '正在处理中…' :
+    null
+
+  return (
+    <span className="flex items-center gap-1.5 text-xs text-muted-foreground/60 tabular-nums">
+      <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shrink-0" />
+      {elapsed}s
+      {hint && <span className="ml-1 text-amber-500/80">{hint}</span>}
+    </span>
+  )
+})
 
 /** Markdown 渲染器，统一样式 */
 function MarkdownContent({ content, className = '' }: { content: string; className?: string }) {
@@ -91,6 +118,7 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
   const [result, setResult] = useState<WorkflowResult | null>(null)
   const [scenarioAnswer, setScenarioAnswer] = useState<string | null>(null)
   const [error, setError] = useState('')
+  const [runStartMs, setRunStartMs] = useState<number>(0)
   const runAbortRef = useRef<AbortController | null>(null)
 
   useEffect(() => () => {
@@ -167,6 +195,7 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
     runAbortRef.current?.abort()
     runAbortRef.current = new AbortController()
     const { signal } = runAbortRef.current
+    setRunStartMs(Date.now())
     try {
       if (activeWf) {
         setView('running')
@@ -466,8 +495,11 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
                 <h2 className="text-base font-bold">{activeWf.name}</h2>
                 <OrchestrationBadge mode={activeWf.mode ?? 'sequential'} />
                 {view === 'running' && (
-                  <span className="ml-auto text-xs px-2 py-1 rounded-full bg-primary/10 text-primary animate-pulse">
-                    执行中…
+                  <span className="ml-auto flex items-center gap-2">
+                    <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary animate-pulse">
+                      执行中
+                    </span>
+                    <RunningTimer startMs={runStartMs} />
                   </span>
                 )}
                 {view === 'done' && result?.success && (
@@ -531,10 +563,13 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
                 </div>
                 <h2 className="text-base font-bold">{activeScenario.label}</h2>
                 {view === 'running' && (
-                  <div
-                    className="ml-auto w-5 h-5 border-2 border-t-transparent rounded-full animate-spin"
-                    style={{ borderColor: `${solution.color}40`, borderTopColor: solution.color }}
-                  />
+                  <span className="ml-auto flex items-center gap-2">
+                    <div
+                      className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin shrink-0"
+                      style={{ borderColor: `${solution.color}40`, borderTopColor: solution.color }}
+                    />
+                    <RunningTimer startMs={runStartMs} />
+                  </span>
                 )}
               </div>
 
@@ -543,11 +578,7 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
                   <MarkdownContent content={scenarioAnswer} />
                   {activeScenario?.apiEndpoint && (
                     <div className="mt-3 pt-2 border-t border-border/20 flex items-center gap-2 text-[10px] text-muted-foreground/50">
-                      <span>数据来源：</span>
-                      <code className="px-1 py-0.5 rounded bg-secondary/30 font-mono">
-                        {activeScenario.apiEndpoint.split('?')[0]}
-                      </code>
-                      <span>（规则引擎 + 知识库）</span>
+                      <span>数据来源：规则引擎 + 知识库</span>
                     </div>
                   )}
                 </div>
