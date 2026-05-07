@@ -398,10 +398,11 @@ export default function SolutionPicker() {
               <button
                 onClick={handleIntakeSubmit}
                 disabled={!search.trim() || intakeLoading}
-                className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                aria-label={intakeLoading ? 'AI 匹配中，请稍候' : '点击匹配行业方案'}
+                className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground"
               >
                 {intakeLoading ? (
-                  <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                  <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" aria-hidden="true" />
                 ) : (
                   <ArrowRight className="w-4 h-4" />
                 )}

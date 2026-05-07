@@ -55,6 +55,7 @@ import UndoToast from '@/components/workbench/UndoToast'
 import { startApprovalPolling } from '@/stores/approval-store'
 import { useApprovalNotifications } from '@/hooks/useApprovalNotifications'
 import { MessageSquare, ChevronDown, X, ArrowLeftRight, Sparkles } from 'lucide-react'
+import { PanelErrorBoundary } from '@/components/PanelErrorBoundary'
 
 let connectivityInitialized = false
 let clientIntelInitialized = false
@@ -271,28 +272,37 @@ export default function Workspace() {
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       <UpdateBanner />
+      {/* 移动端侧边栏遮罩：小于 md 且侧边栏展开时显示，点击收起 */}
+      {sidebarExpanded && (
+        <div
+          className="fixed inset-0 bg-black/40 z-30 md:hidden"
+          aria-hidden="true"
+          onClick={() => useAppStore.getState().toggleSidebar?.()}
+        />
+      )}
       <Sidebar />
       <main
         id="main-content"
         role="main"
         aria-label={solution.name}
-        className={`flex-1 flex flex-col transition-all duration-200 ${sidebarExpanded ? 'ml-64' : 'ml-16'}`}
+        className={`flex-1 flex flex-col transition-all duration-200 ${sidebarExpanded ? 'md:ml-64 ml-0' : 'ml-16'}`}
       >
         <OfflineBanner />
         {/* 顶部栏 */}
         <header className="h-12 border-b border-border/50 flex items-center px-4 shrink-0" role="banner">
-          <button
-            onClick={() => {
-              useAppStore.getState().clearSolution()
-              navigate('/pick', { replace: true })
-            }}
-            className="flex items-center gap-2 shrink-0 px-2 py-1 -ml-2 rounded-md hover:bg-secondary/40 transition-colors group"
-            title={isHkSolution ? '切換行業方案' : '切换行业方案'}
-          >
-            <SolutionIcon className="w-5 h-5 text-primary" />
-            <span className="font-medium text-sm hidden sm:inline">{solution.name}</span>
-            <ArrowLeftRight className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-          </button>
+            <button
+                onClick={() => {
+                  useAppStore.getState().clearSolution()
+                  navigate('/pick', { replace: true })
+                }}
+                className="flex items-center gap-2 shrink-0 px-2 py-1 -ml-2 rounded-md hover:bg-secondary/40 transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                aria-label={`${solution.name} — ${isHkSolution ? '切換行業方案' : '切换行业方案'}`}
+                title={isHkSolution ? '切換行業方案' : '切换行业方案'}
+              >
+                <SolutionIcon className="w-5 h-5 text-primary" aria-hidden="true" />
+                <span className="font-medium text-sm hidden sm:inline">{solution.name}</span>
+                <ArrowLeftRight className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" />
+              </button>
 
           {/* P1-7: 客户切换下拉（代理记账多客户场景） */}
           {isFinance && (
@@ -350,10 +360,11 @@ export default function Workspace() {
             {showAssistantButton && (
               <button
                 onClick={() => setAssistantOpen(!assistantOpen)}
-                className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md transition-colors ${assistantOpen ? 'bg-primary/15 text-primary' : 'bg-muted/40 hover:bg-muted/70 text-muted-foreground'}`}
-                title={isHkSolution ? '開啟 AI 助手' : '打开 AI 助手'}
+                aria-pressed={assistantOpen}
+                aria-label={assistantOpen ? 'AI 助手（已展开，点击关闭）' : (isHkSolution ? '展開 AI 助手' : '展开 AI 助手')}
+                className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${assistantOpen ? 'bg-primary/15 text-primary' : 'bg-muted/40 hover:bg-muted/70 text-muted-foreground'}`}
               >
-                <MessageSquare className="w-3.5 h-3.5" />
+                <MessageSquare className="w-3.5 h-3.5" aria-hidden="true" />
                 <span className="hidden sm:inline">{isLawFirm ? '问律师' : solution?.id === 'investment-research' ? '问分析师' : isHkSolution ? '問專家' : '问专家'}</span>
               </button>
             )}
@@ -365,15 +376,25 @@ export default function Workspace() {
         {/* 内容区 + AI 助手侧面板 */}
         <div className="flex-1 flex overflow-hidden">
           <div className="flex-1 flex flex-col overflow-hidden">
-            <ActivePanel tab={activeTab} />
+            <PanelErrorBoundary name={activeTab}>
+              <ActivePanel tab={activeTab} />
+            </PanelErrorBoundary>
           </div>
           {/* P1-5: AI 助手侧面板（滑出式） */}
           {assistantOpen && showAssistantButton && (
-            <aside className="w-80 border-l border-border/50 flex flex-col bg-card shrink-0 animate-slide-in-right">
+            <aside
+              className="w-80 border-l border-border/50 flex flex-col bg-card shrink-0 animate-slide-in-right"
+              aria-label="AI 助手面板"
+              role="complementary"
+            >
               <div className="flex items-center justify-between px-3 py-2 border-b border-border/30">
-                <span className="text-xs font-medium text-foreground">{isHkSolution ? 'AI 助手' : 'AI 助手'}</span>
-                <button onClick={() => setAssistantOpen(false)} className="p-1 hover:bg-muted/50 rounded">
-                  <X className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="text-xs font-medium text-foreground" id="ai-assistant-title">AI 助手</span>
+                <button
+                  onClick={() => setAssistantOpen(false)}
+                  aria-label="关闭 AI 助手面板"
+                  className="p-1 hover:bg-muted/50 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                >
+                  <X className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
                 </button>
               </div>
               <div className="flex-1 flex flex-col overflow-hidden">

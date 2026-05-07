@@ -99,11 +99,12 @@ export default function OnboardingPage() {
   return (
     <div
       className={`min-h-screen bg-background flex flex-col transition-opacity duration-500 ${visible ? 'opacity-100' : 'opacity-0'}`}
+      role="main"
     >
       {/* ── 顶部品牌栏 ─────────────────────────────── */}
-      <header className="flex items-center justify-between px-8 py-5 border-b border-border/40">
+      <header className="flex items-center justify-between px-4 sm:px-8 py-5 border-b border-border/40">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center" aria-hidden="true">
             <span className="text-primary-foreground font-bold text-sm">M</span>
           </div>
           <span className="font-semibold text-sm tracking-tight">MBE Desktop</span>
@@ -111,13 +112,14 @@ export default function OnboardingPage() {
         <button
           type="button"
           onClick={handleStart}
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="跳过引导，直接进入方案选择"
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
         >
           跳过引导 →
         </button>
       </header>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto" id="main-content">
         {step === 'billing' ? (
           <BillingStep
             firstName={firstName}
@@ -130,16 +132,26 @@ export default function OnboardingPage() {
         )}
       </div>
 
-      {/* ── 底部进度点 ─────────────────────────────── */}
+      {/* ── 底部进度指示 ─────────────────────────────── */}
       <footer className="flex items-center justify-center gap-2 py-5 border-t border-border/30">
-        {(['billing', 'workflow'] as const).map((s) => (
-          <div
-            key={s}
-            className={`w-2 h-2 rounded-full transition-all duration-300 ${
-              step === s ? 'bg-primary w-5' : 'bg-border'
-            }`}
-          />
-        ))}
+        <nav aria-label="引导步骤进度">
+          <ol className="flex items-center gap-2 list-none m-0 p-0">
+            {([
+              { key: 'billing', label: '第 1 步：了解计费方式' },
+              { key: 'workflow', label: '第 2 步：了解使用流程' },
+            ] as const).map(({ key, label }) => (
+              <li key={key}>
+                <span
+                  role="img"
+                  aria-label={step === key ? `${label}（当前步骤）` : label}
+                  className={`block rounded-full transition-all duration-300 ${
+                    step === key ? 'bg-primary w-5 h-2' : 'bg-border w-2 h-2'
+                  }`}
+                />
+              </li>
+            ))}
+          </ol>
+        </nav>
       </footer>
     </div>
   )
@@ -176,15 +188,18 @@ function BillingStep({
       </div>
 
       {/* 计费卡片 */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4" role="group" aria-label="选择计费方式">
         {BILLING_CARDS.map((card) => (
           <button
             key={card.id}
             type="button"
             onClick={() => onSelectCard(card.id)}
+            aria-pressed={activeCard === card.id}
+            aria-label={`${card.title}：${card.subtitle}${activeCard === card.id ? '（已选择）' : ''}`}
             className={`
               relative text-left rounded-xl border p-5 transition-all duration-200
               bg-gradient-to-br ${card.color}
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2
               ${activeCard === card.id
                 ? `${card.border} ring-2 ring-offset-1 ring-offset-background shadow-md scale-[1.02]`
                 : 'border-border/50 hover:border-border hover:scale-[1.01]'
@@ -206,7 +221,7 @@ function BillingStep({
             <ul className="space-y-1.5">
               {card.highlights.map((h) => (
                 <li key={h} className="flex items-center gap-1.5 text-xs">
-                  <Check className="w-3 h-3 text-primary shrink-0" />
+                  <Check className="w-3 h-3 text-primary shrink-0" aria-hidden="true" />
                   <span>{h}</span>
                 </li>
               ))}
