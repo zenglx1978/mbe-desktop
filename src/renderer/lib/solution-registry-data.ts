@@ -30,6 +30,8 @@ import { taxAgencySolution } from './solutions/tax-agency'
 import { pharmaceuticalComplianceSolution } from './solutions/pharmaceutical-compliance'
 import { logisticsSupplyChainSolution } from './solutions/logistics-supply-chain'
 import { capitalMarketsSolution } from './solutions/capital-markets'
+import { oemManufacturingSolution } from './solutions/oem-manufacturing'
+import { legacyErpAiSolution } from './solutions/legacy-erp-ai'
 
 export const SOLUTION_REGISTRY: SolutionConfig[] = [
   laborDispatchSolution,
@@ -54,4 +56,6 @@ export const SOLUTION_REGISTRY: SolutionConfig[] = [
   pharmaceuticalComplianceSolution,
   logisticsSupplyChainSolution,
   capitalMarketsSolution,
+  oemManufacturingSolution,
+  legacyErpAiSolution,
 ]

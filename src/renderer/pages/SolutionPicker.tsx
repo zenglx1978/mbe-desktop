@@ -29,12 +29,34 @@ interface IntakeResult {
 }
 
 const CATEGORIES: { label: string; ids: string[] }[] = [
-  { label: '專業服務', ids: ['labor-dispatch', 'law-firm', 'finance-tax-service', 'hk-finance-tax'] },
-  { label: '工程 · 造價', ids: ['construction-cost'] },
-  { label: '健康 · 醫療', ids: ['clinic-respiratory'] },
-  { label: '企業經營', ids: ['smb-operations', 'ecommerce-brand-service', 'oem-manufacturing', 'legacy-erp-ai'] },
-  { label: '教育培訓', ids: ['study-abroad-consulting', 'education-training'] },
-  { label: '金融保險', ids: ['insurance-operations', 'investment-research', 'capital-markets'] },
+  {
+    label: '專業服務',
+    ids: ['labor-dispatch', 'law-firm', 'finance-tax-service', 'hk-finance-tax', 'tax-agency', 'ip-agency'],
+  },
+  {
+    label: '工程 · 製造',
+    ids: ['construction-cost', 'oem-manufacturing', 'legacy-erp-ai', 'logistics-supply-chain', 'government-procurement'],
+  },
+  {
+    label: '健康 · 醫療',
+    ids: ['clinic-respiratory', 'pharmaceutical-compliance'],
+  },
+  {
+    label: '企業經營',
+    ids: ['smb-operations', 'ecommerce-brand-service', 'real-estate-management', 'agriculture-tech'],
+  },
+  {
+    label: '教育 · 培訓',
+    ids: ['study-abroad-consulting', 'education-training'],
+  },
+  {
+    label: '金融 · 保險',
+    ids: ['insurance-operations', 'investment-research', 'capital-markets', 'acquisition-growth'],
+  },
+  {
+    label: '增長 · 行銷',
+    ids: ['professional-service-marketing'],
+  },
 ]
 
 function findSolution(id: string): SolutionConfig | undefined {
