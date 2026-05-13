@@ -98,18 +98,14 @@
     "win": {
       "target": [
         {
-          "target": "nsis",
+          "target": "zip",
           "arch": [
             "x64"
           ]
         }
       ],
       "icon": "build/icon.ico",
-      "artifactName": "MBE-Desktop-${version}.${ext}",
-      "signtoolOptions": {
-        "sign": "./build/win-sign.js",
-        "signingHashAlgorithms": ["sha256"]
-      }
+      "artifactName": "MBE-Desktop-${version}.${ext}"
     },
     "mac": {
       "target": [
