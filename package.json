@@ -106,11 +106,10 @@
       ],
       "icon": "build/icon.ico",
       "artifactName": "MBE-Desktop-${version}.${ext}",
-      "signAndEditExecutable": true,
-      "sign": "./build/win-sign.js",
-      "signingHashAlgorithms": [
-        "sha256"
-      ]
+      "signtoolOptions": {
+        "sign": "./build/win-sign.js",
+        "signingHashAlgorithms": ["sha256"]
+      }
     },
     "mac": {
       "target": [
