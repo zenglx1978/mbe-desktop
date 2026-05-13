@@ -89,7 +89,7 @@ export default function TaskCard({ task, onStatusChange, onPriorityChange, onDel
             {/* 优先级 */}
             <button
               onClick={cyclePriority}
-              className="text-[10px] px-1.5 py-0.5 rounded-md flex items-center gap-1 hover:opacity-80 transition-opacity"
+              className="text-[11px] px-1.5 py-0.5 rounded-md flex items-center gap-1 hover:opacity-80 transition-opacity"
               style={{ backgroundColor: `${pmeta.color}15`, color: pmeta.color }}
               title="切换优先级"
             >
@@ -98,14 +98,14 @@ export default function TaskCard({ task, onStatusChange, onPriorityChange, onDel
 
             {/* 任务类型 */}
             {task.type !== 'general' && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-secondary/40 text-muted-foreground">
+              <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-secondary/40 text-muted-foreground">
                 {task.type}
               </span>
             )}
 
             {/* 时效 */}
             {task.dueDate && dueStatus !== 'none' && (
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${DUE_STYLE[dueStatus]}`}>
+              <span className={`text-[11px] px-1.5 py-0.5 rounded-md ${DUE_STYLE[dueStatus]}`}>
                 {dueStatus === 'overdue' && `逾期 ${Math.abs(daysLeft || 0)} 天`}
                 {dueStatus === 'today' && '今天到期'}
                 {dueStatus === 'upcoming' && `${daysLeft} 天后到期`}

@@ -178,7 +178,7 @@ function VisibilitySelector({
         )
       })}
       {!isAll && (
-        <span className="text-[10px] text-amber-400 ml-1">仅选中的人可见</span>
+        <span className="text-[11px] text-amber-400 ml-1">仅选中的人可见</span>
       )}
     </div>
   )
@@ -203,14 +203,14 @@ function AIReviewPanel({
           {draft.agent_icon} {draft.agent_name} 草稿 — 审核后发布
         </span>
         {draft.confidence > 0 && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+          <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
             置信度 {Math.round(draft.confidence * 100)}%
           </span>
         )}
       </div>
 
       {draft.sources.length > 0 && (
-        <div className="text-[10px] text-muted-foreground mb-2 flex items-center gap-1 flex-wrap">
+        <div className="text-[11px] text-muted-foreground mb-2 flex items-center gap-1 flex-wrap">
           <span>来源:</span>
           {draft.sources.map((s, i) => (
             <span key={i} className="bg-muted px-1.5 py-0.5 rounded">{s}</span>

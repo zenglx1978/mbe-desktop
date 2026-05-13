@@ -151,7 +151,7 @@ export default function AuditPanel() {
           {/* 风险分布条 */}
           {Object.keys(stats.by_risk_level).length > 0 && (
             <div className="flex items-center gap-2 mt-3">
-              <span className="text-[10px] text-muted-foreground/60 shrink-0">风险分布</span>
+              <span className="text-[11px] text-muted-foreground/60 shrink-0">风险分布</span>
               <div className="flex-1 flex rounded-full overflow-hidden h-2">
                 {(['critical', 'high', 'medium', 'low'] as const).map(level => {
                   const count = stats.by_risk_level[level] || 0
@@ -194,20 +194,20 @@ export default function AuditPanel() {
         />
 
         <div className="ml-auto flex items-center gap-2">
-          <span className="text-[10px] text-muted-foreground/50">
+          <span className="text-[11px] text-muted-foreground/50">
             {total} 条记录
           </span>
           <button
             onClick={handleExport}
             disabled={exporting || items.length === 0}
-            className="text-[10px] px-2 py-1 rounded border border-border/40 text-muted-foreground hover:text-foreground hover:bg-secondary/30 transition-colors disabled:opacity-40"
+            className="text-[11px] px-2 py-1 rounded border border-border/40 text-muted-foreground hover:text-foreground hover:bg-secondary/30 transition-colors disabled:opacity-40"
           >
             {exporting ? '导出中...' : '📥 导出 CSV'}
           </button>
           <button
             onClick={refresh}
             disabled={loading}
-            className="text-[10px] px-2 py-1 rounded border border-border/40 text-muted-foreground hover:text-foreground hover:bg-secondary/30 transition-colors disabled:opacity-40"
+            className="text-[11px] px-2 py-1 rounded border border-border/40 text-muted-foreground hover:text-foreground hover:bg-secondary/30 transition-colors disabled:opacity-40"
           >
             {loading ? '...' : '刷新'}
           </button>
@@ -289,18 +289,18 @@ export default function AuditPanel() {
                 type="button"
                 onClick={pagePrev}
                 disabled={(filters.offset || 0) === 0}
-                className="text-[10px] px-2 py-1 rounded border border-border/40 disabled:opacity-30"
+                className="text-[11px] px-2 py-1 rounded border border-border/40 disabled:opacity-30"
               >
                 ← 上一页
               </button>
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-[11px] text-muted-foreground">
                 {(filters.offset || 0) + 1}–{Math.min((filters.offset || 0) + (filters.limit || 50), total)} / {total}
               </span>
               <button
                 type="button"
                 onClick={pageNext}
                 disabled={(filters.offset || 0) + (filters.limit || 50) >= total}
-                className="text-[10px] px-2 py-1 rounded border border-border/40 disabled:opacity-30"
+                className="text-[11px] px-2 py-1 rounded border border-border/40 disabled:opacity-30"
               >
                 下一页 →
               </button>
@@ -327,7 +327,7 @@ function MiniStat({ label, value, dot }: { label: string; value: number | string
     <div className="text-center">
       <div className="flex items-center justify-center gap-1 mb-0.5">
         {dot && <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />}
-        <span className="text-[10px] text-muted-foreground/60">{label}</span>
+        <span className="text-[11px] text-muted-foreground/60">{label}</span>
       </div>
       <span className="text-sm font-bold">{value}</span>
     </div>
@@ -342,7 +342,7 @@ function FilterSelect({ label, value, options, onChange }: {
 }) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-[10px] text-muted-foreground/60">{label}</span>
+      <span className="text-[11px] text-muted-foreground/60">{label}</span>
       <select
         value={value}
         onChange={e => onChange(e.target.value)}
@@ -378,7 +378,7 @@ function AuditDetail({ item, onClose }: { item: ApprovalItem; onClose: () => voi
 
       {item.reason && (
         <div className="mb-3">
-          <label className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium">原因</label>
+          <label className="text-[11px] uppercase tracking-wider text-muted-foreground/60 font-medium">原因</label>
           <p className="text-xs mt-1 p-2.5 rounded-lg bg-secondary/30">{item.reason}</p>
         </div>
       )}
@@ -397,14 +397,14 @@ function AuditDetail({ item, onClose }: { item: ApprovalItem; onClose: () => voi
 
       {item.decision_note && (
         <div className="mb-3">
-          <label className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium">审批备注</label>
+          <label className="text-[11px] uppercase tracking-wider text-muted-foreground/60 font-medium">审批备注</label>
           <p className="text-xs mt-1 p-2.5 rounded-lg bg-secondary/30">{item.decision_note}</p>
         </div>
       )}
 
       {item.context && Object.keys(item.context).length > 0 && (
         <div>
-          <label className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium">上下文</label>
+          <label className="text-[11px] uppercase tracking-wider text-muted-foreground/60 font-medium">上下文</label>
           <div className="mt-1 p-2.5 rounded-lg bg-secondary/20 text-[11px] font-mono max-h-40 overflow-y-auto">
             {Object.entries(item.context).map(([k, v]) => (
               <div key={k} className="flex gap-2 py-0.5">
@@ -417,7 +417,7 @@ function AuditDetail({ item, onClose }: { item: ApprovalItem; onClose: () => voi
       )}
 
       <div className="mt-4 pt-3 border-t border-border/20">
-        <span className="text-[10px] text-muted-foreground/40 font-mono">{item.id}</span>
+        <span className="text-[11px] text-muted-foreground/40 font-mono">{item.id}</span>
       </div>
     </div>
   )

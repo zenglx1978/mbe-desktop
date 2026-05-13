@@ -78,7 +78,7 @@ export default function EmployeeKanbanPanel() {
           <div className={`flex items-center gap-2 px-3 py-2 ${col.bgColor}`}>
             <span className={col.color}>{col.icon}</span>
             <span className={`text-xs font-semibold ${col.color}`}>{col.title}</span>
-            <span className={`ml-auto text-[10px] font-bold ${col.color} bg-background/60 px-1.5 py-0.5 rounded-full`}>
+            <span className={`ml-auto text-[11px] font-bold ${col.color} bg-background/60 px-1.5 py-0.5 rounded-full`}>
               {col.items.length}
             </span>
           </div>
@@ -89,19 +89,19 @@ export default function EmployeeKanbanPanel() {
                 className="p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer"
               >
                 <div className="text-xs font-medium text-foreground">{emp.name}</div>
-                <div className="text-[10px] text-muted-foreground">{emp.position} · {emp.employer}</div>
+                <div className="text-[11px] text-muted-foreground">{emp.position} · {emp.employer}</div>
                 {emp.daysLeft != null && (
-                  <div className={`text-[10px] mt-0.5 ${emp.daysLeft <= 3 ? 'text-red-500' : 'text-amber-500'}`}>
+                  <div className={`text-[11px] mt-0.5 ${emp.daysLeft <= 3 ? 'text-red-500' : 'text-amber-500'}`}>
                     {emp.daysLeft} 天后到岗
                   </div>
                 )}
                 {emp.salary && (
-                  <div className="text-[10px] text-emerald-500 mt-0.5">{emp.salary}/月</div>
+                  <div className="text-[11px] text-emerald-500 mt-0.5">{emp.salary}/月</div>
                 )}
               </div>
             ))}
             {col.items.length === 0 && (
-              <div className="text-[10px] text-muted-foreground text-center py-4">暂无</div>
+              <div className="text-[11px] text-muted-foreground text-center py-4">暂无</div>
             )}
           </div>
         </div>

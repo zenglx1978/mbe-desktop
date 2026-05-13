@@ -222,7 +222,7 @@ export function ProgressRing({
           className="transition-all duration-500"
         />
       </svg>
-      <span className="absolute text-[10px] font-bold" style={{ color: color || ringColor }}>
+      <span className="absolute text-[11px] font-bold" style={{ color: color || ringColor }}>
         {Math.round(pct * 100)}%
       </span>
     </div>
@@ -255,9 +255,9 @@ export function KpiCard({ label, value, trendData, color = '#6366f1', unit = '' 
   return (
     <div className="p-3 rounded-xl border border-border/30 bg-card">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-[10px] text-muted-foreground truncate">{label}</span>
+        <span className="text-[11px] text-muted-foreground truncate">{label}</span>
         {trend && (
-          <span className="flex items-center gap-0.5 text-[10px]" style={{ color: trendColor }}>
+          <span className="flex items-center gap-0.5 text-[11px]" style={{ color: trendColor }}>
             <TrendIcon className="w-3 h-3" />
             {Math.abs(trend.pct).toFixed(1)}%
           </span>
@@ -300,7 +300,7 @@ export function CountdownCard({ label, targetDate }: CountdownCardProps) {
     <div className="p-3 rounded-xl border border-border/30 bg-card">
       <div className="flex items-center gap-2 mb-1">
         <UrgencyIcon className="w-3.5 h-3.5" style={{ color: urgencyColor }} />
-        <span className="text-[10px] text-muted-foreground truncate">{label}</span>
+        <span className="text-[11px] text-muted-foreground truncate">{label}</span>
       </div>
       <div className="flex items-baseline gap-1.5">
         <span className="text-xl font-bold" style={{ color: urgencyColor }}>
@@ -308,7 +308,7 @@ export function CountdownCard({ label, targetDate }: CountdownCardProps) {
         </span>
         {diff > 0 && <span className="text-xs text-muted-foreground">天</span>}
       </div>
-      <p className="text-[10px] text-muted-foreground mt-1">
+      <p className="text-[11px] text-muted-foreground mt-1">
         {new Date(targetDate).toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' })}
       </p>
     </div>
@@ -336,21 +336,21 @@ export function ActionList({ actions, color = '#6366f1' }: ActionListProps) {
           <div className="flex-1 min-w-0">
             <p className="text-xs leading-relaxed">{String(a.description || a.action || a.title || '待办')}</p>
             {!!a.created_at && (
-              <p className="text-[10px] text-muted-foreground">{String(a.created_at).slice(0, 10)}</p>
+              <p className="text-[11px] text-muted-foreground">{String(a.created_at).slice(0, 10)}</p>
             )}
           </div>
         </div>
       ))}
       {completed.length > 0 && (
         <details className="text-muted-foreground">
-          <summary className="text-[10px] cursor-pointer hover:text-foreground">
+          <summary className="text-[11px] cursor-pointer hover:text-foreground">
             {completed.length} 项已完成
           </summary>
           <div className="mt-1 space-y-1">
             {completed.map((a, i) => (
               <div key={`c-${i}`} className="flex items-center gap-2 p-1.5 rounded-lg opacity-60">
                 <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
-                <span className="text-[10px] line-through truncate">
+                <span className="text-[11px] line-through truncate">
                   {String(a.description || a.action || a.title || '已完成')}
                 </span>
               </div>
@@ -421,7 +421,7 @@ export function TrendChart({ snapshots, metricKey, label, color = '#6366f1', hei
             {Number.isInteger(last) ? last : last.toFixed(2)}
           </span>
           {Math.abs(change) > 0.5 && (
-            <span className={`text-[10px] ${change > 0 ? 'text-green-500' : 'text-red-500'}`}>
+            <span className={`text-[11px] ${change > 0 ? 'text-green-500' : 'text-red-500'}`}>
               {change > 0 ? '+' : ''}{change.toFixed(1)}%
             </span>
           )}

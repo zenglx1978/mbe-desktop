@@ -109,7 +109,7 @@ function WechatNativeModal({
             <QRCodeSVG value={codeUrl} size={200} level="M" />
           </div>
         </div>
-        <details className="text-[10px] text-muted-foreground">
+        <details className="text-[11px] text-muted-foreground">
           <summary className="cursor-pointer hover:text-foreground">无法扫码？复制支付链接</summary>
           <div className="mt-1 rounded-lg bg-secondary/40 p-2 font-mono break-all max-h-20 overflow-y-auto border border-border/50 select-all">
             {codeUrl}
@@ -507,7 +507,7 @@ export default function CostPanel({ solution }: Props) {
                     }`}
                   >
                     {p.popular && (
-                      <span className="absolute -top-2 right-2 text-[10px] px-1.5 py-0.5 rounded bg-primary text-primary-foreground">
+                      <span className="absolute -top-2 right-2 text-[11px] px-1.5 py-0.5 rounded bg-primary text-primary-foreground">
                         推荐
                       </span>
                     )}
@@ -558,7 +558,7 @@ export default function CostPanel({ solution }: Props) {
                 充值下单
               </button>
             </div>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-[11px] text-muted-foreground">
               支付走统一网关（微信 Native 等）；桌面端将打开系统浏览器或使用扫码链接。
               {isElectron() ? '' : ' （当前非 Electron 环境，将使用新窗口打开链接。）'}
             </p>
@@ -661,7 +661,7 @@ function StatCard({ icon, label, value, cls }: { icon: React.ReactNode; label: s
       <div className={cls}>{icon}</div>
       <div>
         <p className="text-lg font-bold">{value}</p>
-        <p className="text-[10px] text-muted-foreground">{label}</p>
+        <p className="text-[11px] text-muted-foreground">{label}</p>
       </div>
     </div>
   )

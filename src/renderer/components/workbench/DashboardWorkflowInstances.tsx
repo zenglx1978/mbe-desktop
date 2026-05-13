@@ -51,7 +51,7 @@ export function DashboardWorkflowInstances({
                       <p className="text-xs text-muted-foreground mt-0.5">
                         步骤「{a.step_name}」需要您的审批确认
                       </p>
-                      <p className="text-[10px] text-muted-foreground/60 mt-1">
+                      <p className="text-[11px] text-muted-foreground/60 mt-1">
                         {a.created_at && new Date(a.created_at).toLocaleString('zh-CN')}
                       </p>
                     </div>
@@ -155,7 +155,7 @@ export function DashboardWorkflowInstances({
               </>
             )}
           </div>
-          <p className="text-[10px] text-muted-foreground/60 mt-1">
+          <p className="text-[11px] text-muted-foreground/60 mt-1">
             每个工作流的数据沉淀让 AI 越来越懂你的业务。
           </p>
         </div>

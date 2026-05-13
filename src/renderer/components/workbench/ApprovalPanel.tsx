@@ -56,7 +56,7 @@ export default function ApprovalPanel() {
             )}
           </div>
           <div className="flex items-center gap-2">
-            <span className={`flex items-center gap-1 text-[10px] ${wsConnected ? 'text-green-500' : 'text-muted-foreground'}`}>
+            <span className={`flex items-center gap-1 text-[11px] ${wsConnected ? 'text-green-500' : 'text-muted-foreground'}`}>
               <span className={`w-1.5 h-1.5 rounded-full ${wsConnected ? 'bg-green-500' : 'bg-muted-foreground/50'}`} />
               {wsConnected ? '实时' : '轮询'}
             </span>
@@ -81,7 +81,7 @@ export default function ApprovalPanel() {
                 <span className={meta.color}>{riskIcon(level)}</span>
                 <div>
                   <p className="text-lg font-bold">{count}</p>
-                  <p className="text-[10px] text-muted-foreground">{meta.label}风险</p>
+                  <p className="text-[11px] text-muted-foreground">{meta.label}风险</p>
                 </div>
               </div>
             )
@@ -110,17 +110,17 @@ export default function ApprovalPanel() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{item.action}</p>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] text-muted-foreground">{item.agent_name}</span>
-                        {item.expert_id && <span className="text-[10px] text-muted-foreground">· {item.expert_id}</span>}
-                        <span className={`text-[10px] flex items-center gap-0.5 ${isUrgent ? 'text-red-500 font-medium' : 'text-muted-foreground'}`}>
+                        <span className="text-[11px] text-muted-foreground">{item.agent_name}</span>
+                        {item.expert_id && <span className="text-[11px] text-muted-foreground">· {item.expert_id}</span>}
+                        <span className={`text-[11px] flex items-center gap-0.5 ${isUrgent ? 'text-red-500 font-medium' : 'text-muted-foreground'}`}>
                           <Clock className="w-3 h-3" /> {remaining}
                         </span>
                       </div>
                     </div>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] ${risk.bg} ${risk.color}`}>
+                    <span className={`px-2 py-0.5 rounded-full text-[11px] ${risk.bg} ${risk.color}`}>
                       {risk.label}
                     </span>
-                    <span className={`text-[10px] ${statusMeta.cls}`}>{statusMeta.label}</span>
+                    <span className={`text-[11px] ${statusMeta.cls}`}>{statusMeta.label}</span>
                     {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />}
                   </button>
 
@@ -186,7 +186,7 @@ export default function ApprovalPanel() {
               </p>
             </div>
             {lastRefreshed > 0 && (
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-[11px] text-muted-foreground">
                 上次检查：{new Date(lastRefreshed).toLocaleTimeString('zh-CN')}
               </p>
             )}

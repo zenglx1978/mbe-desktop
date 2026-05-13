@@ -48,14 +48,14 @@ export function DashboardCharts({
                   <span className="text-lg">{item.icon || '\u{1F4CB}'}</span>
                   <span className="text-xs font-medium truncate flex-1">{item.title}</span>
                 </div>
-                <p className="text-[10px] text-muted-foreground line-clamp-2">{item.description}</p>
+                <p className="text-[11px] text-muted-foreground line-clamp-2">{item.description}</p>
                 <div className="flex items-center justify-between mt-auto pt-1">
-                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
                     <span>{item.avg_rating > 0 ? `${'★'.repeat(Math.round(item.avg_rating))} ${item.avg_rating}` : '暂无评分'}</span>
                     <span>{item.install_count} 次安装</span>
                   </div>
                   <button
-                    className="text-[10px] px-2 py-0.5 rounded bg-blue-600 text-white hover:bg-blue-700"
+                    className="text-[11px] px-2 py-0.5 rounded bg-blue-600 text-white hover:bg-blue-700"
                     onClick={async () => {
                       const ok = await installFromMarketplace(agentName, item.listing_id)
                       if (ok) alert('安装成功')
@@ -85,7 +85,7 @@ export function DashboardCharts({
             ].map((s) => (
               <div key={s.label} className="text-center">
                 <div className="text-lg font-bold text-neutral-900 dark:text-neutral-100">{s.value}</div>
-                <div className="text-[10px] text-muted-foreground">{s.label}</div>
+                <div className="text-[11px] text-muted-foreground">{s.label}</div>
               </div>
             ))}
           </div>

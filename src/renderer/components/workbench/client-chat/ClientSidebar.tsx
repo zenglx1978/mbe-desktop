@@ -90,12 +90,12 @@ export default function ClientSidebar({ copiedCode, onCopyLink }: ClientSidebarP
                 <span className={`text-sm font-medium truncate ${unread > 0 ? 'text-foreground' : ''}`}>{inv.client_name}</span>
                 <div className="flex items-center gap-1">
                   {unread > 0 && (
-                    <span className="min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-bold rounded-full bg-red-500 text-white px-1">
+                    <span className="min-w-[18px] h-[18px] flex items-center justify-center text-[11px] font-bold rounded-full bg-red-500 text-white px-1">
                       {unread > 99 ? '99+' : unread}
                     </span>
                   )}
                   {inv.member_count && inv.member_count > 1 && (
-                    <span className="text-[10px] text-muted-foreground bg-muted px-1 rounded">
+                    <span className="text-[11px] text-muted-foreground bg-muted px-1 rounded">
                       {inv.member_count}人
                     </span>
                   )}

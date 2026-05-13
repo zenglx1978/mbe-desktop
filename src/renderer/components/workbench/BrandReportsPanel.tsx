@@ -154,9 +154,9 @@ function AgingReport({ settlements, fmt }: any) {
           const pct = total > 0 ? ((d.amount / total) * 100).toFixed(0) : '0'
           return (
             <div key={d.status} className="p-3 rounded-xl border border-border/30 bg-card">
-              <p className={`text-[10px] font-medium ${meta.cls}`}>{meta.label}</p>
+              <p className={`text-[11px] font-medium ${meta.cls}`}>{meta.label}</p>
               <p className="text-lg font-bold mt-1">{fmt(d.amount)}</p>
-              <p className="text-[10px] text-muted-foreground">{d.count} 笔 · {pct}%</p>
+              <p className="text-[11px] text-muted-foreground">{d.count} 笔 · {pct}%</p>
             </div>
           )
         })}
@@ -200,7 +200,7 @@ function RankingReport({ brands, settlements, fmt, color }: any) {
           </span>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold truncate">{r.name}</p>
-            <p className="text-[10px] text-muted-foreground">{r.months} 月 · GMV {fmt(r.gmv)}</p>
+            <p className="text-[11px] text-muted-foreground">{r.months} 月 · GMV {fmt(r.gmv)}</p>
           </div>
           <div className="w-32">
             <div className="h-2 bg-secondary/30 rounded-full overflow-hidden">
@@ -238,7 +238,7 @@ function ProgressReport({ brands, settlements, color }: any) {
         <div key={d.name} className="flex items-center gap-3 p-3 rounded-xl border border-border/30 bg-card">
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold truncate">{d.name}</p>
-            <p className="text-[10px] text-muted-foreground">{d.paid}/{d.total} 笔已收款</p>
+            <p className="text-[11px] text-muted-foreground">{d.paid}/{d.total} 笔已收款</p>
           </div>
           <div className="w-40">
             <div className="h-2 bg-secondary/30 rounded-full overflow-hidden">

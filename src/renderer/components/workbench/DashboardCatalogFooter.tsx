@@ -57,8 +57,10 @@ export function DashboardCatalogFooter({
       )}
 
       {loading && !dashboardLoaded && (
-        <div className="text-center py-8 text-muted-foreground text-sm">
-          加载工作流数据...
+        <div className="py-8 space-y-2">
+          <div className="h-3 bg-muted/50 rounded animate-pulse w-3/4 mx-auto" />
+          <div className="h-3 bg-muted/50 rounded animate-pulse w-1/2 mx-auto" />
+          <div className="h-3 bg-muted/50 rounded animate-pulse w-2/3 mx-auto" />
         </div>
       )}
 
@@ -88,7 +90,7 @@ export function DashboardCatalogFooter({
                 {' → MBE '}
                 <strong className="text-foreground">{solution.valueEquivalent.mbeMinutes}min</strong>
               </span>
-              <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-primary/10 text-primary ml-auto">
+              <span className="text-[11px] font-mono font-semibold px-1.5 py-0.5 rounded bg-primary/10 text-primary ml-auto">
                 {solution.valueEquivalent.acceleration}
               </span>
             </div>

@@ -80,7 +80,7 @@ export default function WorkflowChapter({ progress, scenarios }: Props) {
                   className="mt-2 max-w-[160px]"
                   style={{ opacity: detailP, transform: `translateY(${(1 - detailP) * 8}px)` }}
                 >
-                  <p className="text-[10px] text-muted-foreground/50 text-center leading-relaxed">
+                  <p className="text-[11px] text-muted-foreground/50 text-center leading-relaxed">
                     {scenario.expectedOutcome}
                   </p>
                   {scenario.profitImpact && (

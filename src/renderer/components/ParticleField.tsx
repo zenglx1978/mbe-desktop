@@ -95,6 +95,10 @@ export default function ParticleField({
   particleDensity = 40,
   className = '',
 }: ParticleFieldProps) {
+  // C2: respect prefers-reduced-motion
+  if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    return null
+  }
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animRef = useRef<number>(0)
   const colorRef = useRef<{ r: number; g: number; b: number }>({ r: 100, g: 160, b: 220 })

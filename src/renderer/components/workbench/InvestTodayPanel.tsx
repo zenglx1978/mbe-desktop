@@ -139,7 +139,7 @@ export default function InvestTodayPanel({ solution }: Props) {
                   <div className="text-sm font-medium text-foreground">{item.name}</div>
                   <div className="text-xs text-muted-foreground">{item.date}</div>
                 </div>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full ${item.type === 'earnings' ? 'bg-blue-500/10 text-blue-500' : item.type === 'report' ? 'bg-violet-500/10 text-violet-500' : item.type === 'macro' ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                <span className={`text-[11px] px-2 py-0.5 rounded-full ${item.type === 'earnings' ? 'bg-blue-500/10 text-blue-500' : item.type === 'report' ? 'bg-violet-500/10 text-violet-500' : item.type === 'macro' ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
                   {item.type === 'earnings' ? '财报' : item.type === 'report' ? '研报' : item.type === 'macro' ? '宏观' : '检视'}
                 </span>
                 <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${item.urgent ? 'bg-red-500/10 text-red-500' : item.daysLeft <= 7 ? 'bg-amber-500/10 text-amber-500' : 'bg-muted text-muted-foreground'}`}>

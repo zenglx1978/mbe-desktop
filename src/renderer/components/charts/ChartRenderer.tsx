@@ -37,14 +37,14 @@ function SimpleBarChart({ spec }: { spec: ChartSpec }) {
         const pct = (value / maxVal) * 100
         return (
           <div key={label} className="flex items-center gap-2">
-            <span className="text-[10px] text-muted-foreground w-20 text-right truncate">{label}</span>
+            <span className="text-[11px] text-muted-foreground w-20 text-right truncate">{label}</span>
             <div className="flex-1 h-5 bg-muted/30 rounded-sm overflow-hidden">
               <div
                 className="h-full bg-primary/60 rounded-sm transition-all"
                 style={{ width: `${pct}%` }}
               />
             </div>
-            <span className="text-[10px] tabular-nums text-foreground/70 w-12 text-right">
+            <span className="text-[11px] tabular-nums text-foreground/70 w-12 text-right">
               {value.toLocaleString()}
             </span>
           </div>
@@ -92,7 +92,7 @@ function SimplePieChart({ spec }: { spec: ChartSpec }) {
           <div key={item.name} className="flex items-center gap-2">
             <div className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ backgroundColor: colors[i % colors.length] }} />
             <span className="text-[11px] text-foreground/70">{item.name}</span>
-            <span className="text-[10px] tabular-nums text-muted-foreground ml-auto">
+            <span className="text-[11px] tabular-nums text-muted-foreground ml-auto">
               {((item.value / total) * 100).toFixed(1)}%
             </span>
           </div>
@@ -232,7 +232,7 @@ export default function ChartRenderer({ spec, className = '' }: ChartRendererPro
       {(spec.title || spec.subtitle) && (
         <div className="mb-3">
           {spec.title && <h3 className="text-sm font-semibold">{spec.title}</h3>}
-          {spec.subtitle && <p className="text-[10px] text-muted-foreground">{spec.subtitle}</p>}
+          {spec.subtitle && <p className="text-[11px] text-muted-foreground">{spec.subtitle}</p>}
         </div>
       )}
       <Renderer spec={spec} />

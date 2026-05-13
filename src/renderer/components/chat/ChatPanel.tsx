@@ -51,6 +51,7 @@ export default function ChatPanel() {
   const [showSlashMenu, setShowSlashMenu] = useState(false)
   const [slashQuery, setSlashQuery] = useState('')
   const [showHistory, setShowHistory] = useState(false)
+  const [sendError, setSendError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const sendAbortRef = useRef<AbortController | null>(null)
@@ -132,7 +133,6 @@ export default function ChatPanel() {
     }
   }, [runDoctor]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 从快捷操作跳转过来时自动发送 pendingPrompt
   const pendingPrompt = useToolStore((s) => s.pendingPrompt)
   useEffect(() => {
     if (!solution || !pendingPrompt) return
@@ -163,6 +163,8 @@ export default function ChatPanel() {
       })
     } catch {
       useChatStore.getState().setLoading(false)
+      setSendError('发送失败，请重试')
+      setTimeout(() => setSendError(null), 4000)
     } finally {
       textareaRef.current?.focus()
     }
@@ -201,6 +203,8 @@ export default function ChatPanel() {
       })
     } catch {
       useChatStore.getState().setLoading(false)
+      setSendError('发送失败，请重试')
+      setTimeout(() => setSendError(null), 4000)
     } finally {
       textareaRef.current?.focus()
     }
@@ -218,7 +222,7 @@ export default function ChatPanel() {
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      {/* 顶部工具栏：对话历史切换 + 新对话 */}
+      {/* toolbar */}
       <div className="flex items-center justify-between px-3 py-1.5 border-b border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm shrink-0">
         <button
           onClick={() => setShowHistory(v => !v)}
@@ -251,7 +255,7 @@ export default function ChatPanel() {
         )}
       </div>
 
-      {/* 主体区域：可选的对话历史侧面板 + 聊天区域 */}
+      {/* main area */}
       <div className="flex-1 flex min-h-0">
         {showHistory && solution && (
           <div className="w-64 border-r border-gray-200 dark:border-gray-700 shrink-0 overflow-hidden">
@@ -277,6 +281,17 @@ export default function ChatPanel() {
                 onSelect={handleSlashSelect}
                 onClose={() => setShowSlashMenu(false)}
               />
+            )}
+            {/* C5: send failure toast */}
+            {sendError && (
+              <div
+                role="alert"
+                aria-live="assertive"
+                className="absolute bottom-full left-0 right-0 mx-3 mb-1 px-3 py-2 rounded-lg
+                  bg-destructive/10 border border-destructive/30 text-destructive text-xs"
+              >
+                {sendError}
+              </div>
             )}
             <ChatInputBar
               input={input}

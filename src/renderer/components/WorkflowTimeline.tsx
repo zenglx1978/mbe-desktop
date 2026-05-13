@@ -89,7 +89,7 @@ function StepNode({ step, index, total }: {
       <div
         className={`
           w-6 h-6 rounded-full border-2 flex items-center justify-center
-          text-[10px] font-bold text-white shrink-0
+          text-[11px] font-bold text-white shrink-0
           transition-all duration-300
           ${style.node}
         `}
@@ -98,14 +98,14 @@ function StepNode({ step, index, total }: {
         {step.status === 'pending' ? (
           <span className="text-[8px] text-gray-400">{index + 1}</span>
         ) : (
-          <span className="text-[10px]">{style.icon}</span>
+          <span className="text-[11px]">{style.icon}</span>
         )}
       </div>
 
       {/* 步骤名称 */}
       <span
         className={`
-          mt-1.5 text-[10px] leading-tight text-center max-w-[72px] truncate
+          mt-1.5 text-[11px] leading-tight text-center max-w-[72px] truncate
           ${style.label}
           ${step.status === 'running' ? 'font-semibold' : ''}
         `}
@@ -165,7 +165,7 @@ export function WorkflowInstanceTimeline({
           <span className="font-medium text-foreground/90">{instance.workflow_name}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-muted-foreground/50 tabular-nums">
+          <span className="text-[11px] text-muted-foreground/50 tabular-nums">
             {completedCount}/{steps.length}
           </span>
           <StatusBadge status={instance.status} />
@@ -186,7 +186,7 @@ export function WorkflowInstanceTimeline({
 
       {/* 当前执行提示 */}
       {runningStep && (
-        <div className="mt-2 flex items-center gap-1.5 text-[10px] text-primary/70">
+        <div className="mt-2 flex items-center gap-1.5 text-[11px] text-primary/70">
           <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
           正在执行: {runningStep.name}
         </div>

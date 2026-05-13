@@ -221,7 +221,7 @@ export default function AutomationPanel() {
             >
               {t.label}
               {t.count > 0 && (
-                <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] ${
+                <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[11px] ${
                   tab === t.key ? 'bg-primary/15 text-primary' : 'bg-secondary text-muted-foreground'
                 }`}>
                   {t.count}
@@ -367,10 +367,10 @@ function PatternCard({ pattern, onAccept, onDismiss, onAutomate }: {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <p className="text-sm font-semibold text-foreground">{pattern.label}</p>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-medium">
+            <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-medium">
               {typeLabel}
             </span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+            <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
               {Math.round(pattern.confidence * 100)}% 置信
             </span>
           </div>

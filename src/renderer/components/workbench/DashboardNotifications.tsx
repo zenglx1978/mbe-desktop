@@ -33,7 +33,7 @@ export function DashboardNotifications({
         >
           <span className="text-lg">🔔</span>
           {unreadCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold px-1">
+            <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-red-500 text-white text-[11px] font-bold px-1">
               {unreadCount > 99 ? '99+' : unreadCount}
             </span>
           )}
@@ -80,7 +80,7 @@ export function DashboardNotifications({
                     <p className={`text-sm ${!n.read ? 'font-semibold' : 'font-medium'} truncate`}>{n.title}</p>
                     {n.body && <p className="text-xs text-muted-foreground mt-0.5 truncate">{n.body}</p>}
                   </div>
-                  <span className="text-[10px] text-muted-foreground shrink-0 mt-0.5">
+                  <span className="text-[11px] text-muted-foreground shrink-0 mt-0.5">
                     {new Date(n.created_at).toLocaleString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>

@@ -41,7 +41,7 @@ export default function ScrollyNav({
               title={label}
             >
               {/* 标签（hover 显示） */}
-              <span className="text-[10px] text-muted-foreground/0 group-hover:text-muted-foreground/70 transition-colors duration-200 whitespace-nowrap">
+              <span className="text-[11px] text-muted-foreground/0 group-hover:text-muted-foreground/70 transition-colors duration-200 whitespace-nowrap">
                 {label}
               </span>
               {/* 圆点 */}

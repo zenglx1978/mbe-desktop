@@ -41,7 +41,7 @@ export default function ClientQuickReply() {
           <div className="p-1.5 border-b border-border flex gap-1 flex-wrap">
             {QR_CATEGORIES.map(c => (
               <button key={c.id} onClick={() => { setQrCategory(c.id); fetchQuickReplies(c.id || undefined) }}
-                className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${qrCategory === c.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+                className={`px-2 py-0.5 text-[11px] rounded-full transition-colors ${qrCategory === c.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
               >{c.label}</button>
             ))}
           </div>
@@ -50,7 +50,7 @@ export default function ClientQuickReply() {
               <input className="w-full px-2 py-1 text-xs border border-border rounded bg-background" placeholder="标题" value={newQRTitle} onChange={e => setNewQRTitle(e.target.value)} />
               <textarea className="w-full px-2 py-1 text-xs border border-border rounded bg-background resize-none" placeholder="内容" rows={2} value={newQRContent} onChange={e => setNewQRContent(e.target.value)} />
               <div className="flex items-center gap-1.5">
-                <select className="flex-1 text-[10px] px-1.5 py-0.5 border border-border rounded bg-background" value={newQRCat} onChange={e => setNewQRCat(e.target.value)}>
+                <select className="flex-1 text-[11px] px-1.5 py-0.5 border border-border rounded bg-background" value={newQRCat} onChange={e => setNewQRCat(e.target.value)}>
                   <option value="general">通用</option>
                   <option value="greeting">问候语</option>
                   <option value="faq">常见问答</option>
@@ -65,7 +65,7 @@ export default function ClientQuickReply() {
                       resetQuickReplyForm()
                     }
                   }}
-                  className="px-2 py-0.5 text-[10px] bg-primary text-primary-foreground rounded hover:bg-primary/90"
+                  className="px-2 py-0.5 text-[11px] bg-primary text-primary-foreground rounded hover:bg-primary/90"
                 >保存</button>
               </div>
             </div>
@@ -85,7 +85,7 @@ export default function ClientQuickReply() {
                     <span className="text-xs font-medium truncate">{qr.title}</span>
                     {qr.shortcut && <code className="text-[9px] bg-muted px-1 rounded">{qr.shortcut}</code>}
                   </div>
-                  <p className="text-[10px] text-muted-foreground truncate mt-0.5">{qr.content.slice(0, 60)}</p>
+                  <p className="text-[11px] text-muted-foreground truncate mt-0.5">{qr.content.slice(0, 60)}</p>
                 </div>
                 <button
                   onClick={e => { e.stopPropagation(); deleteQuickReply(qr.reply_id) }}

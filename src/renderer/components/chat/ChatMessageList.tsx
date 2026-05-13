@@ -23,7 +23,7 @@ function isNearBottom(el: HTMLElement | null, threshold = 60): boolean {
   return el.scrollHeight - el.scrollTop - el.clientHeight < threshold
 }
 
-function VirtualizedMessages({ messages }: { messages: ChatMessage[] }) {
+function VirtualizedMessages({ messages, messagesEndRef }: { messages: ChatMessage[]; messagesEndRef: RefObject<HTMLDivElement | null> }) {
   const parentRef = useRef<HTMLDivElement>(null)
   const prevCountRef = useRef(messages.length)
   const isStreamingRef = useRef(false)
@@ -107,6 +107,7 @@ function VirtualizedMessages({ messages }: { messages: ChatMessage[] }) {
             <MemoizedBubble message={messages[virtualRow.index]} />
           </div>
         ))}
+        <div ref={messagesEndRef as React.RefObject<HTMLDivElement>} />
       </div>
     </div>
   )
@@ -199,7 +200,7 @@ export function ChatMessageList({
   }
 
   if (messages.length >= VIRTUAL_THRESHOLD) {
-    return <VirtualizedMessages messages={messages} />
+    return <VirtualizedMessages messages={messages} messagesEndRef={messagesEndRef} />
   }
 
   return <PlainMessages messages={messages} messagesEndRef={messagesEndRef} />

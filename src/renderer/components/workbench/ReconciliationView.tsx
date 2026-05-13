@@ -114,7 +114,7 @@ export default function ReconciliationView({
                 <div key={`${item.label}-internal`} className="px-3 py-2.5 border-t border-border/20 text-right font-mono">{fmt(item.internal)}</div>
                 <div key={`${item.label}-arrow`} className="px-3 py-2.5 border-t border-border/20 text-center">
                   {item.status === 'diff' && (
-                    <span className={`text-[10px] font-mono ${item.diff > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    <span className={`text-[11px] font-mono ${item.diff > 0 ? 'text-green-500' : 'text-red-500'}`}>
                       {item.diff > 0 ? '+' : ''}{fmt(item.diff)}
                     </span>
                   )}
@@ -149,22 +149,22 @@ export default function ReconciliationView({
           <p className="text-xs font-semibold text-muted-foreground uppercase">录入品牌方对账数据</p>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] text-muted-foreground">品牌方 GMV</label>
+              <label className="text-[11px] text-muted-foreground">品牌方 GMV</label>
               <input type="number" value={formData.gmv || ''} onChange={(e) => setFormData({ ...formData, gmv: +e.target.value })}
                 className="w-full mt-1 px-3 py-1.5 rounded-lg border border-border/50 bg-secondary/20 text-sm outline-none focus:border-primary/50" />
             </div>
             <div>
-              <label className="text-[10px] text-muted-foreground">品牌方佣金额</label>
+              <label className="text-[11px] text-muted-foreground">品牌方佣金额</label>
               <input type="number" value={formData.commission || ''} onChange={(e) => setFormData({ ...formData, commission: +e.target.value })}
                 className="w-full mt-1 px-3 py-1.5 rounded-lg border border-border/50 bg-secondary/20 text-sm outline-none focus:border-primary/50" />
             </div>
             <div>
-              <label className="text-[10px] text-muted-foreground">扣款/调整</label>
+              <label className="text-[11px] text-muted-foreground">扣款/调整</label>
               <input type="number" value={formData.deductions || ''} onChange={(e) => setFormData({ ...formData, deductions: +e.target.value })}
                 className="w-full mt-1 px-3 py-1.5 rounded-lg border border-border/50 bg-secondary/20 text-sm outline-none focus:border-primary/50" />
             </div>
             <div>
-              <label className="text-[10px] text-muted-foreground">品牌方应付金额</label>
+              <label className="text-[11px] text-muted-foreground">品牌方应付金额</label>
               <input type="number" value={formData.finalPayable || ''} onChange={(e) => setFormData({ ...formData, finalPayable: +e.target.value })}
                 className="w-full mt-1 px-3 py-1.5 rounded-lg border border-border/50 bg-secondary/20 text-sm outline-none focus:border-primary/50" />
             </div>

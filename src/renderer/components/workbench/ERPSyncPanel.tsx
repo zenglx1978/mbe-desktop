@@ -282,7 +282,7 @@ export default function ERPSyncPanel({ solution }: Props) {
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">{provider.description}</p>
                       {conn.lastSyncAt && (
-                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
                           上次同步: {new Date(conn.lastSyncAt).toLocaleString('zh-CN')}
                           {conn.config.rowCount && ` · ${conn.config.rowCount} 条`}
                         </p>
@@ -312,7 +312,7 @@ export default function ERPSyncPanel({ solution }: Props) {
                     <span className="text-sm font-medium">{provider.name}</span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">{provider.description}</p>
-                  <p className="text-[10px] text-muted-foreground/60 mt-1">需要 Electron 桌面端 + LocalAppBridge</p>
+                  <p className="text-[11px] text-muted-foreground/60 mt-1">需要 Electron 桌面端 + LocalAppBridge</p>
                 </div>
               ))}
             </div>
@@ -342,7 +342,7 @@ export default function ERPSyncPanel({ solution }: Props) {
                   <div className="flex items-center gap-2">
                     <Shield className="w-3.5 h-3.5 text-muted-foreground" />
                     <h4 className="text-sm font-semibold">{rule.name}</h4>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted/50 text-muted-foreground">
+                    <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-muted/50 text-muted-foreground">
                       {rule.type === 'tolerance' ? '容差' : rule.type === 'alert' ? '预警' : '匹配'}
                     </span>
                   </div>
@@ -399,7 +399,7 @@ export default function ERPSyncPanel({ solution }: Props) {
                         </div>
                       </div>
                       {r.triggeredRules.length > 0 && (
-                        <p className="text-[10px] text-muted-foreground mt-2">
+                        <p className="text-[11px] text-muted-foreground mt-2">
                           触发规则: {r.triggeredRules.join(' · ')}
                         </p>
                       )}
@@ -429,7 +429,7 @@ export default function ERPSyncPanel({ solution }: Props) {
 function SummaryCard({ label, value, color }: { label: string; value: string; color: string }) {
   return (
     <div className="p-3 rounded-xl border border-border/30 bg-card">
-      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</p>
+      <p className="text-[11px] text-muted-foreground uppercase tracking-wider">{label}</p>
       <p className="text-lg font-bold" style={{ color }}>{value}</p>
     </div>
   )

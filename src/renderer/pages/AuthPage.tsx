@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Eye, EyeOff } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import { useAppStore } from '@/stores/app-store'
 import { API_BASE } from '@/lib/api-client'
@@ -15,7 +16,6 @@ const GOOGLE_SVG = (
   </svg>
 )
 
-/** 登录/注册成功后的跳转目标：新用户 → /welcome，老用户 → /pick */
 function usePostAuthRedirect() {
   const hasCompletedOnboarding = useAppStore((s) => s.hasCompletedOnboarding)
   return hasCompletedOnboarding ? '/pick' : '/welcome'
@@ -34,8 +34,8 @@ export default function AuthPage() {
   const [successMsg, setSuccessMsg] = useState('')
   const [googleLoading, setGoogleLoading] = useState(false)
   const [showRefInput, setShowRefInput] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
-  // 从 URL 参数读取分享码（Web: ?ref=xxx 或 Electron 深链）
   useEffect(() => {
     const refFromUrl = searchParams.get('ref')
     if (refFromUrl) {
@@ -44,7 +44,6 @@ export default function AuthPage() {
     }
   }, [searchParams, setReferralCode])
 
-  // Electron 深链传入分享码
   useEffect(() => {
     const api = (window as any).electronAPI
     if (!api?.onReferralCode) return
@@ -57,7 +56,6 @@ export default function AuthPage() {
     return unsubscribe
   }, [setReferralCode])
 
-  // 监听 Desktop 深链 OAuth 回调
   useEffect(() => {
     const api = (window as any).electronAPI
     if (!api?.onAuthCallback) return
@@ -95,7 +93,6 @@ export default function AuthPage() {
           setSuccessMsg('注册成功！请查收邮箱完成验证，然后登录。')
           setMode('login')
         } else {
-          // 新注册用户：始终进入引导页（即便之前看过，注册新账号也需重新引导）
           navigate('/welcome', { replace: true })
         }
       }
@@ -112,7 +109,6 @@ export default function AuthPage() {
     } else {
       window.open(oauthUrl, '_blank')
     }
-    // 30 秒后自动取消等待状态
     setTimeout(() => setGoogleLoading(false), 30000)
   }, [clearError])
 
@@ -136,7 +132,7 @@ export default function AuthPage() {
         </div>
 
         {/* Tab */}
-        <div className="flex mb-6 bg-secondary/50 rounded-lg p-1" role="tablist" aria-label="登录或注册">
+        <div className="flex mb-6 bg-secondary/50 rounded-lg p-1" role="tablist" aria-label="auth-tabs">
           <button
             role="tab"
             aria-selected={mode === 'login'}
@@ -165,13 +161,13 @@ export default function AuthPage() {
           </button>
         </div>
 
-        {/* Google Login */}
+        {/* B4: Google button with theme tokens */}
         <button
           onClick={handleGoogleLogin}
           disabled={googleLoading}
           className="w-full flex items-center justify-center gap-2.5 py-2.5 px-4 text-sm font-medium
-            bg-white text-gray-700 border border-gray-300 rounded-lg
-            hover:bg-gray-50 transition-colors
+            bg-card text-foreground border border-border rounded-lg
+            hover:bg-secondary/50 transition-colors
             disabled:opacity-50 disabled:cursor-not-allowed mb-4"
         >
           {GOOGLE_SVG}
@@ -212,7 +208,6 @@ export default function AuthPage() {
                 />
               </div>
 
-              {/* 分享码 */}
               {referralCode ? (
                 <div className="flex items-center gap-2 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
                   <span className="text-xs text-emerald-400">分享码：</span>
@@ -271,6 +266,7 @@ export default function AuthPage() {
             />
           </div>
 
+          {/* B5: password show/hide toggle */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs font-medium text-muted-foreground">
@@ -286,19 +282,29 @@ export default function AuthPage() {
                 </button>
               )}
             </div>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={mode === 'register' ? '至少 6 位' : '输入密码'}
-              minLength={mode === 'register' ? 6 : undefined}
-              autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
-              className="w-full px-3 py-2.5 text-sm bg-card border border-border rounded-lg
-                text-foreground placeholder:text-muted-foreground/50
-                focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50
-                transition-colors"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={mode === 'register' ? '至少 6 位' : '输入密码'}
+                minLength={mode === 'register' ? 6 : undefined}
+                autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
+                className="w-full px-3 py-2.5 pr-10 text-sm bg-card border border-border rounded-lg
+                  text-foreground placeholder:text-muted-foreground/50
+                  focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50
+                  transition-colors"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'hide password' : 'show password'}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
           {error && (

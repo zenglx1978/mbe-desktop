@@ -64,7 +64,7 @@ export default function ClientStatsPanel({ analytics }: { analytics: ChannelAnal
                   if (!payload?.[0]) return null
                   const d = payload[0].payload as { day: string; total: number }
                   return (
-                    <div className="rounded-lg border border-border bg-popover px-2.5 py-1.5 text-[10px] shadow-lg">
+                    <div className="rounded-lg border border-border bg-popover px-2.5 py-1.5 text-[11px] shadow-lg">
                       {d.day}: <strong>{d.total}</strong>条
                     </div>
                   )
@@ -83,21 +83,21 @@ export default function ClientStatsPanel({ analytics }: { analytics: ChannelAnal
         <div className="grid grid-cols-4 gap-3 text-center">
           <div>
             <div className="text-lg font-semibold">{rt.avg_minutes ?? '—'}</div>
-            <div className="text-[10px] text-muted-foreground">平均(分)</div>
+            <div className="text-[11px] text-muted-foreground">平均(分)</div>
           </div>
           <div>
             <div className="text-lg font-semibold">{rt.median_minutes ?? '—'}</div>
-            <div className="text-[10px] text-muted-foreground">中位数(分)</div>
+            <div className="text-[11px] text-muted-foreground">中位数(分)</div>
           </div>
           <div>
             <div className="text-lg font-semibold">{rt.replied_count}</div>
-            <div className="text-[10px] text-muted-foreground">已回复</div>
+            <div className="text-[11px] text-muted-foreground">已回复</div>
           </div>
           <div>
             <div className="text-lg font-semibold text-green-500">
               {ms.client_msgs > 0 ? Math.round(rt.replied_count / ms.client_msgs * 100) : 0}%
             </div>
-            <div className="text-[10px] text-muted-foreground">回复率</div>
+            <div className="text-[11px] text-muted-foreground">回复率</div>
           </div>
         </div>
       </div>
@@ -130,7 +130,7 @@ export default function ClientStatsPanel({ analytics }: { analytics: ChannelAnal
                   if (!payload?.[0]) return null
                   const d = payload[0].payload as { name: string; msgs: number }
                   return (
-                    <div className="rounded-lg border border-border bg-popover px-2.5 py-1.5 text-[10px] shadow-lg">
+                    <div className="rounded-lg border border-border bg-popover px-2.5 py-1.5 text-[11px] shadow-lg">
                       {d.name}: <strong>{d.msgs}</strong> 条消息
                     </div>
                   )
@@ -149,19 +149,19 @@ export default function ClientStatsPanel({ analytics }: { analytics: ChannelAnal
         <div className="grid grid-cols-4 gap-3 text-center">
           <div>
             <div className="text-lg font-semibold">{ts.total_tasks}</div>
-            <div className="text-[10px] text-muted-foreground">总计</div>
+            <div className="text-[11px] text-muted-foreground">总计</div>
           </div>
           <div>
             <div className="text-lg font-semibold text-green-500">{ts.completed}</div>
-            <div className="text-[10px] text-muted-foreground">已完成</div>
+            <div className="text-[11px] text-muted-foreground">已完成</div>
           </div>
           <div>
             <div className="text-lg font-semibold text-blue-500">{ts.in_progress}</div>
-            <div className="text-[10px] text-muted-foreground">进行中</div>
+            <div className="text-[11px] text-muted-foreground">进行中</div>
           </div>
           <div>
             <div className="text-lg font-semibold text-muted-foreground">{ts.todo}</div>
-            <div className="text-[10px] text-muted-foreground">待办</div>
+            <div className="text-[11px] text-muted-foreground">待办</div>
           </div>
         </div>
       </div>
@@ -201,7 +201,7 @@ export function GlobalDashboardPanel({ data }: { data: GlobalDashboard }) {
                     className="w-full bg-primary/60 rounded-t hover:bg-primary"
                     style={{ height: `${(d.count / maxDaily) * 100}%`, minHeight: d.count > 0 ? '2px' : '0' }}
                   />
-                  <div className="absolute bottom-full mb-1 hidden group-hover:block bg-popover border border-border rounded px-2 py-1 text-[10px] whitespace-nowrap shadow-lg z-10">
+                  <div className="absolute bottom-full mb-1 hidden group-hover:block bg-popover border border-border rounded px-2 py-1 text-[11px] whitespace-nowrap shadow-lg z-10">
                     {d.day.slice(5)}: {d.count}条
                   </div>
                 </div>
@@ -216,7 +216,7 @@ export function GlobalDashboardPanel({ data }: { data: GlobalDashboard }) {
             <div className="space-y-2">
               {data.top_channels.map((ch, i) => (
                 <div key={ch.channel_id} className="flex items-center gap-3 text-xs">
-                  <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                  <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold ${
                     i < 3 ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
                   }`}>{i + 1}</span>
                   <span className="flex-1 truncate font-medium">{ch.channel_name}</span>
@@ -236,7 +236,7 @@ function KpiCard({ icon, label, value, color }: { icon: React.ReactNode; label: 
     <div className="bg-card/50 border border-border rounded-xl p-3 text-center">
       <div className={`flex items-center justify-center mb-1.5 ${color}`}>{icon}</div>
       <div className="text-lg font-semibold">{value}</div>
-      <div className="text-[10px] text-muted-foreground">{label}</div>
+      <div className="text-[11px] text-muted-foreground">{label}</div>
     </div>
   )
 }
@@ -249,7 +249,7 @@ function MsgBar({ label, count, total, color }: { label: string; count: number; 
         <div className={`w-6 ${color} rounded-t`} style={{ height: `${Math.max(pct, 2)}%` }} />
       </div>
       <div className="font-medium">{count}</div>
-      <div className="text-muted-foreground text-[10px]">{label} ({pct}%)</div>
+      <div className="text-muted-foreground text-[11px]">{label} ({pct}%)</div>
     </div>
   )
 }

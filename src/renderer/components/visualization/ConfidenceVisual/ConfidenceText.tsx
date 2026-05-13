@@ -90,7 +90,7 @@ export function ConfidenceFooter({
   const mode = fluency.interaction_mode ? modeLabel[fluency.interaction_mode] : null
 
   return (
-    <div className="mt-2 flex items-center gap-2 text-[10px] flex-wrap">
+    <div className="mt-2 flex items-center gap-2 text-[11px] flex-wrap">
       {/* 置信度标签 */}
       <div className="flex items-center gap-1">
         <span className={`h-2 w-2 rounded-full ${cfg.bar}`} />

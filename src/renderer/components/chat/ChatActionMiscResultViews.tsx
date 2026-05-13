@@ -36,7 +36,7 @@ export function MemorySaveResultView({ action, result }: { action: { params?: Re
         {key}: {value}
       </p>
       {!!result.saved && (
-        <p className="text-[10px] text-emerald-500/60 mt-1">下次对话时会自动使用这个信息</p>
+        <p className="text-[11px] text-emerald-500/60 mt-1">下次对话时会自动使用这个信息</p>
       )}
     </div>
   )
@@ -57,7 +57,7 @@ export function MemoryRecallResultView({ result }: { result: MemoryRecallOutput 
           <span>💭</span>
           <span>还没有记住任何用户信息</span>
         </div>
-        <p className="text-[10px] text-gray-400 mt-1">在对话中告诉我你的信息，我会自动记住</p>
+        <p className="text-[11px] text-gray-400 mt-1">在对话中告诉我你的信息，我会自动记住</p>
       </div>
     )
   }
@@ -121,18 +121,18 @@ export function OfflineInferenceResultView({ result }: { result: OfflineInferenc
         <span>{sourceInfo.icon}</span>
         <span>离线推理 · {sourceInfo.label}</span>
         {confidencePct > 0 && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-200/50 dark:bg-amber-800/30 text-amber-600 dark:text-amber-400">
+          <span className="text-[11px] px-1.5 py-0.5 rounded bg-amber-200/50 dark:bg-amber-800/30 text-amber-600 dark:text-amber-400">
             置信度 {confidencePct}%
           </span>
         )}
       </div>
       {result.references && result.references.length > 0 && (
-        <p className="text-[10px] text-amber-500/60 mt-1">
+        <p className="text-[11px] text-amber-500/60 mt-1">
           参考：{result.references.join(', ')}
         </p>
       )}
       {result.suggestOnline && (
-        <p className="text-[10px] text-amber-500/60 mt-1">
+        <p className="text-[11px] text-amber-500/60 mt-1">
           💡 连接网络后可获得更完整的 AI 专家分析
         </p>
       )}
@@ -156,7 +156,7 @@ export function SchedulerResultView({ result, actionType }: { result: SchedulerJ
       <div className="flex items-center gap-2 text-sm font-medium text-violet-700 dark:text-violet-300">
         <span>{icon}</span>
         <span>{typeLabel}已创建</span>
-        <span className={`text-[10px] px-1.5 py-0.5 rounded ${statusColor} bg-white/60 dark:bg-black/20`}>
+        <span className={`text-[11px] px-1.5 py-0.5 rounded ${statusColor} bg-white/60 dark:bg-black/20`}>
           {({ active: '运行中', failed: '失败', paused: '已暂停', completed: '已完成' } as Record<string, string>)[result.status ?? 'active'] || result.status || '运行中'}
         </span>
       </div>
@@ -187,7 +187,7 @@ export function SchedulerResultView({ result, actionType }: { result: SchedulerJ
         {result.id && (
           <div className="flex items-center gap-1.5">
             <span className="text-gray-400">🆔</span>
-            <span className="font-mono text-[10px] text-gray-400">{result.id.slice(0, 8)}...</span>
+            <span className="font-mono text-[11px] text-gray-400">{result.id.slice(0, 8)}...</span>
           </div>
         )}
       </div>

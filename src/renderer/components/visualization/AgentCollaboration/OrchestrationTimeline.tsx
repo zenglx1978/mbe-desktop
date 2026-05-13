@@ -45,10 +45,10 @@ function StepNode({ step, isLast, compact }: { step: WorkflowStep; isLast: boole
             {step.expert_name}
           </p>
           {step.elapsed_ms != null && step.status === 'done' && (
-            <p className="text-[10px] tabular-nums text-gray-400 mt-0.5">{formatMs(step.elapsed_ms)}</p>
+            <p className="text-[11px] tabular-nums text-gray-400 mt-0.5">{formatMs(step.elapsed_ms)}</p>
           )}
           {step.status === 'running' && (
-            <p className="text-[10px] text-blue-500 mt-0.5">处理中...</p>
+            <p className="text-[11px] text-blue-500 mt-0.5">处理中...</p>
           )}
         </div>
 
@@ -102,10 +102,10 @@ export function OrchestrationTimeline({ timeline, className = '', compact = fals
             <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
               {timeline.workflow_name}
             </p>
-            <p className="text-[10px] text-gray-400">{timeline.trigger_time}</p>
+            <p className="text-[11px] text-gray-400">{timeline.trigger_time}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3 text-[10px]">
+        <div className="flex items-center gap-3 text-[11px]">
           <span className="text-gray-400">{doneCount}/{totalCount} 步完成</span>
           {timeline.total_elapsed_ms != null && (
             <span className="tabular-nums text-gray-400">总耗时: {formatMs(timeline.total_elapsed_ms)}</span>
@@ -121,7 +121,7 @@ export function OrchestrationTimeline({ timeline, className = '', compact = fals
             style={{ width: `${progressPct}%` }}
           />
         </div>
-        <span className="text-[10px] tabular-nums text-gray-500 shrink-0">{progressPct}%</span>
+        <span className="text-[11px] tabular-nums text-gray-500 shrink-0">{progressPct}%</span>
       </div>
 
       {/* 时间线 */}
@@ -132,7 +132,7 @@ export function OrchestrationTimeline({ timeline, className = '', compact = fals
             <div className="flex items-center justify-center h-8 w-8 rounded-full bg-gray-800 dark:bg-gray-200">
               <span className="text-sm text-white dark:text-gray-800">▶</span>
             </div>
-            <p className="text-[10px] text-gray-400 mt-2">触发</p>
+            <p className="text-[11px] text-gray-400 mt-2">触发</p>
           </div>
           <div className="flex items-center mx-1 -mt-8">
             <div className="h-px w-6 bg-gray-300 dark:bg-gray-600" />

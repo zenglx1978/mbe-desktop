@@ -106,7 +106,7 @@ export default function ClientTaskBoard({
                 <div key={col.key} className="flex flex-col">
                   <div className={`text-xs font-medium mb-2 flex items-center gap-1.5 ${col.color}`}>
                     {col.label}
-                    <span className="text-[10px] bg-muted px-1.5 rounded-full text-muted-foreground">{colTasks.length}</span>
+                    <span className="text-[11px] bg-muted px-1.5 rounded-full text-muted-foreground">{colTasks.length}</span>
                   </div>
                   <div className="flex-1 space-y-1.5 overflow-y-auto">
                     {colTasks.map(t => {
@@ -118,29 +118,29 @@ export default function ClientTaskBoard({
                             <div className="flex-1 min-w-0">
                               <div className="text-xs font-medium leading-snug">{t.title}</div>
                               {t.assignee_name && (
-                                <div className="text-[10px] text-muted-foreground mt-0.5">👤 {t.assignee_name}</div>
+                                <div className="text-[11px] text-muted-foreground mt-0.5">👤 {t.assignee_name}</div>
                               )}
                               {t.due_date && (
-                                <div className="text-[10px] text-muted-foreground">📅 {t.due_date}</div>
+                                <div className="text-[11px] text-muted-foreground">📅 {t.due_date}</div>
                               )}
                             </div>
                           </div>
                           <div className="flex items-center gap-1 mt-1.5">
                             {col.key === 'todo' && (
                               <button onClick={() => onUpdate(t.task_id, { status: 'in_progress' })}
-                                className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-400 hover:bg-blue-500/25">
+                                className="text-[11px] px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-400 hover:bg-blue-500/25">
                                 开始
                               </button>
                             )}
                             {col.key === 'in_progress' && (
                               <button onClick={() => onUpdate(t.task_id, { status: 'done' })}
-                                className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/15 text-green-400 hover:bg-green-500/25">
+                                className="text-[11px] px-1.5 py-0.5 rounded bg-green-500/15 text-green-400 hover:bg-green-500/25">
                                 完成
                               </button>
                             )}
                             {col.key !== 'done' && (
                               <button onClick={() => onUpdate(t.task_id, { status: 'cancelled' })}
-                                className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-500/10 text-zinc-500 hover:bg-zinc-500/20">
+                                className="text-[11px] px-1.5 py-0.5 rounded bg-zinc-500/10 text-zinc-500 hover:bg-zinc-500/20">
                                 取消
                               </button>
                             )}

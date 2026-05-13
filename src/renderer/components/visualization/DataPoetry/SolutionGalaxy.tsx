@@ -122,7 +122,7 @@ export function SolutionGalaxy({ apiBase, className = '', dark = false }: Soluti
               </span>
             </div>
             {hovered === sol.id && (
-              <div className="mt-1 flex items-center gap-3 text-[10px] text-gray-500">
+              <div className="mt-1 flex items-center gap-3 text-[11px] text-gray-500">
                 <span>{sol.expert_count} 位专家</span>
                 <span>{sol.active_workflows} 进行中</span>
                 <span className="font-medium text-emerald-600">{sol.completed_today} 已完成</span>
@@ -136,17 +136,17 @@ export function SolutionGalaxy({ apiBase, className = '', dark = false }: Soluti
       <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-4 rounded-full bg-white/70 dark:bg-[#1e1e1e]/70 backdrop-blur-sm px-5 py-2">
         <div className="text-center">
           <p className="text-lg font-bold tabular-nums text-gray-800 dark:text-gray-200">{totalCompleted}</p>
-          <p className="text-[10px] text-gray-500">今日完成</p>
+          <p className="text-[11px] text-gray-500">今日完成</p>
         </div>
         <div className="h-5 w-px bg-gray-200 dark:bg-gray-700" />
         <div className="text-center">
           <p className="text-lg font-bold tabular-nums text-blue-600">{totalActive}</p>
-          <p className="text-[10px] text-gray-500">进行中</p>
+          <p className="text-[11px] text-gray-500">进行中</p>
         </div>
         <div className="h-5 w-px bg-gray-200 dark:bg-gray-700" />
         <div className="text-center">
           <p className="text-lg font-bold tabular-nums text-gray-800 dark:text-gray-200">{solutions.length}</p>
-          <p className="text-[10px] text-gray-500">行业方案</p>
+          <p className="text-[11px] text-gray-500">行业方案</p>
         </div>
       </div>
     </div>

@@ -1,4 +1,5 @@
-import { useCallback, type Dispatch, type RefObject, type SetStateAction } from 'react'
+import { useCallback, useEffect, type Dispatch, type RefObject, type SetStateAction } from 'react'
+import { Send, Loader2 } from 'lucide-react'
 import { VoiceInput, ScreenshotInput, FileAttachInput, type AttachedFile } from '@/components/io'
 
 export interface ChatInputBarProps {
@@ -13,9 +14,9 @@ export interface ChatInputBarProps {
   isLoading: boolean
 }
 
-/** 单次对话输入最大字符数 */
+/** max chars per message */
 const MAX_CHARS = 4_000
-/** 字数达到此阈值时开始显示计数器 */
+/** show counter when above this */
 const CHAR_WARN_THRESHOLD = 300
 
 function fmtFileSize(bytes: number): string {
@@ -50,7 +51,6 @@ export function ChatInputBar({
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      // 超过上限时截断，不允许继续输入
       if (e.target.value.length <= MAX_CHARS) {
         setInput(e.target.value)
       }
@@ -58,10 +58,18 @@ export function ChatInputBar({
     [setInput],
   )
 
+  // B7: dynamic textarea height (replaces experimental fieldSizing CSS)
+  useEffect(() => {
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${Math.min(el.scrollHeight, 128)}px`
+  }, [input, textareaRef])
+
   return (
     <div className="border-t border-border/50 p-4">
       <div className="max-w-3xl mx-auto space-y-1.5">
-        {/* 附件列表 */}
+        {/* attached files list */}
         {attachedFiles && attachedFiles.length > 0 && (
           <div className="flex flex-wrap gap-1.5 px-1">
             {attachedFiles.map((f, i) => (
@@ -76,11 +84,11 @@ export function ChatInputBar({
                 )}
               </div>
             ))}
-            <span className="self-center text-[10px] text-muted-foreground/40">最大 10MB/文件</span>
+            <span className="self-center text-[11px] text-muted-foreground/40">最大 10MB/文件</span>
           </div>
         )}
 
-        {/* 输入区 */}
+        {/* input area */}
         <div className={`flex items-end gap-3 bg-secondary/30 rounded-xl border px-4 py-3 focus-within:border-primary/50 transition-colors ${
           isOverLimit ? 'border-red-500/50' : 'border-border/50'
         }`}>
@@ -92,29 +100,31 @@ export function ChatInputBar({
             placeholder="输入问题，或用 📎 上传发票/文件..."
             rows={1}
             maxLength={MAX_CHARS}
-            className="flex-1 bg-transparent border-none outline-none resize-none text-sm leading-relaxed max-h-32 placeholder:text-muted-foreground/50"
-            style={{ fieldSizing: 'content' } as React.CSSProperties}
+            className="flex-1 bg-transparent border-none outline-none resize-none text-sm leading-relaxed overflow-y-auto placeholder:text-muted-foreground/50"
           />
           {onAttach && <FileAttachInput onAttach={onAttach} />}
           <VoiceInput onTranscript={handleTranscript} />
           {onImage && <ScreenshotInput onImage={onImage} />}
+          {/* A1: Lucide Send / Loader2 icons + aria labels */}
           <button
             onClick={() => onSend()}
             disabled={!hasContent || isLoading}
+            aria-label={isLoading ? 'sending' : 'send message'}
+            aria-busy={isLoading}
             className="shrink-0 w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
           >
             {isLoading ? (
-              <span className="animate-spin text-xs">⏳</span>
+              <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
-              <span className="text-sm">↑</span>
+              <Send className="w-4 h-4" />
             )}
           </button>
         </div>
 
-        {/* 字数计数器 — 仅在接近上限时显示 */}
+        {/* char counter — only near limit */}
         {showCounter && (
           <div className="flex justify-end pr-1">
-            <span className={`text-[10px] tabular-nums transition-colors ${
+            <span className={`text-[11px] tabular-nums transition-colors ${
               isOverLimit ? 'text-red-500 font-medium' :
               isNearLimit ? 'text-amber-500' :
               'text-muted-foreground/40'

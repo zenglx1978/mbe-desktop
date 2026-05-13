@@ -135,17 +135,17 @@ function CaseCardItem({ card, onOpen }: { card: CaseCard; onOpen: () => void }) 
 
       <div className="flex items-center gap-2 flex-wrap">
         {card.daysLeft !== undefined && (
-          <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full ${card.urgent ? 'bg-red-500/10 text-red-500' : card.daysLeft <= 7 ? 'bg-amber-500/10 text-amber-500' : 'bg-muted text-muted-foreground'}`}>
+          <span className={`inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-full ${card.urgent ? 'bg-red-500/10 text-red-500' : card.daysLeft <= 7 ? 'bg-amber-500/10 text-amber-500' : 'bg-muted text-muted-foreground'}`}>
             <Clock className="w-2.5 h-2.5" />
             {card.daysLeft}天
           </span>
         )}
         {card.amount && (
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-[11px] text-muted-foreground">
             ¥{card.amount}
           </span>
         )}
-        <span className="ml-auto inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+        <span className="ml-auto inline-flex items-center gap-1 text-[11px] text-muted-foreground">
           <User className="w-2.5 h-2.5" />
           {card.lawyer}
         </span>

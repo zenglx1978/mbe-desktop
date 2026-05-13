@@ -42,7 +42,7 @@ export function DirScanResultView({ result }: { result: DirScanOutput }) {
       {result.typeSummary && Object.keys(result.typeSummary).length > 1 && (
         <div className="flex gap-2 mb-1.5 flex-wrap">
           {Object.entries(result.typeSummary).map(([type, count]) => (
-            <span key={type} className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300">
+            <span key={type} className="text-[11px] px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300">
               {typeIcons[type] ?? '📁'} {type} {count}
             </span>
           ))}
@@ -50,7 +50,7 @@ export function DirScanResultView({ result }: { result: DirScanOutput }) {
       )}
       <div className="space-y-0.5">
         {visibleFiles.map((file, i) => (
-          <div key={i} className="flex items-center gap-2 text-[10px] text-blue-600/80 dark:text-blue-400/80 py-0.5">
+          <div key={i} className="flex items-center gap-2 text-[11px] text-blue-600/80 dark:text-blue-400/80 py-0.5">
             <span>{typeIcons[file.type] ?? '📁'}</span>
             <span className="truncate flex-1" title={file.path}>{file.name}</span>
             <span className="shrink-0 text-blue-400/60">{file.sizeHuman}</span>
@@ -60,7 +60,7 @@ export function DirScanResultView({ result }: { result: DirScanOutput }) {
       {result.files.length > 8 && (
         <button
           onClick={() => setExpanded(!expanded)}
-          className="mt-1 text-[10px] text-blue-500 hover:text-blue-700 transition-colors"
+          className="mt-1 text-[11px] text-blue-500 hover:text-blue-700 transition-colors"
         >
           {expanded ? '收起' : `显示全部 ${result.files.length} 个文件`}
         </button>
@@ -116,7 +116,7 @@ export function BatchAnalyzeResultView({ result }: { result: BatchAnalyzeOutput 
       {Object.keys(grouped).length > 1 && (
         <div className="flex gap-2 mb-1.5 flex-wrap">
           {Object.entries(grouped).map(([cat, items]) => (
-            <span key={cat} className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-300">
+            <span key={cat} className="text-[11px] px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-300">
               {cat} ({items.length})
             </span>
           ))}
@@ -125,7 +125,7 @@ export function BatchAnalyzeResultView({ result }: { result: BatchAnalyzeOutput 
 
       <div className="space-y-1">
         {visible.map((item, i) => (
-          <div key={i} className={`text-[10px] px-1.5 py-1 rounded ${
+          <div key={i} className={`text-[11px] px-1.5 py-1 rounded ${
             item.status === 'done'
               ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300'
               : 'bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-300'
@@ -152,7 +152,7 @@ export function BatchAnalyzeResultView({ result }: { result: BatchAnalyzeOutput 
       {result.results.length > 10 && (
         <button
           onClick={() => setExpanded(!expanded)}
-          className="mt-1 text-[10px] text-amber-500 hover:text-amber-700 transition-colors"
+          className="mt-1 text-[11px] text-amber-500 hover:text-amber-700 transition-colors"
         >
           {expanded ? '收起' : `显示全部 ${result.results.length} 个文件`}
         </button>
@@ -232,7 +232,7 @@ export function PipelineResultView({ result }: { result: PipelineOutput }) {
           {(expanded ? result.stepResults : result.stepResults.slice(0, 5)).map((step) => (
             <div
               key={step.stepIndex}
-              className={`flex items-center gap-1.5 text-[10px] px-1.5 py-1 rounded ${
+              className={`flex items-center gap-1.5 text-[11px] px-1.5 py-1 rounded ${
                 step.status === 'done'
                   ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300'
                   : step.status === 'running'
@@ -263,7 +263,7 @@ export function PipelineResultView({ result }: { result: PipelineOutput }) {
       {result.stepResults && result.stepResults.length > 5 && (
         <button
           onClick={() => setExpanded(!expanded)}
-          className="mt-1 text-[10px] text-indigo-500 hover:text-indigo-700 transition-colors"
+          className="mt-1 text-[11px] text-indigo-500 hover:text-indigo-700 transition-colors"
         >
           {expanded ? '收起' : `显示全部 ${result.stepResults.length} 个步骤`}
         </button>
@@ -272,11 +272,11 @@ export function PipelineResultView({ result }: { result: PipelineOutput }) {
       {/* 输出文件 */}
       {result.outputFiles && result.outputFiles.length > 0 && (
         <div className="mt-1.5 pt-1.5 border-t border-indigo-200/50 dark:border-indigo-800/50">
-          <span className="text-[10px] font-medium text-indigo-600 dark:text-indigo-400">输出文件：</span>
+          <span className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400">输出文件：</span>
           {result.outputFiles.map((f, i) => {
             const fileName = f.split(/[/\\]/).pop() ?? f
             return (
-              <span key={i} className="text-[10px] text-indigo-500 dark:text-indigo-400 ml-1.5">
+              <span key={i} className="text-[11px] text-indigo-500 dark:text-indigo-400 ml-1.5">
                 📄 {fileName}
               </span>
             )
@@ -286,7 +286,7 @@ export function PipelineResultView({ result }: { result: PipelineOutput }) {
 
       {/* 错误信息 */}
       {result.error && (
-        <div className="mt-1.5 text-[10px] text-red-600 dark:text-red-400 bg-red-50/50 dark:bg-red-950/30 rounded px-2 py-1">
+        <div className="mt-1.5 text-[11px] text-red-600 dark:text-red-400 bg-red-50/50 dark:bg-red-950/30 rounded px-2 py-1">
           ⚠ {result.error}
         </div>
       )}

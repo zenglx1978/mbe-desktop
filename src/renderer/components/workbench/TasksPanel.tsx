@@ -192,7 +192,7 @@ function StatBadge({ icon, label, count, cls }: { icon: React.ReactNode; label: 
       <div className={cls}>{icon}</div>
       <div>
         <p className="text-lg font-bold">{count}</p>
-        <p className="text-[10px] text-muted-foreground">{label}</p>
+        <p className="text-[11px] text-muted-foreground">{label}</p>
       </div>
     </div>
   )
@@ -218,20 +218,20 @@ function TaskRow({ task, onCycleStatus, onDelete, dimmed }: {
           {task.title}
         </p>
         <div className="flex items-center gap-2 mt-0.5">
-          <span className={`flex items-center gap-1 text-[10px] ${prio.cls}`}>
+          <span className={`flex items-center gap-1 text-[11px] ${prio.cls}`}>
             <span className={`w-1.5 h-1.5 rounded-full ${prio.dot}`} /> {prio.label}
           </span>
           {task.dueDate && (
-            <span className={`text-[10px] flex items-center gap-0.5 ${isOverdue ? 'text-red-500 font-medium' : 'text-muted-foreground'}`}>
+            <span className={`text-[11px] flex items-center gap-0.5 ${isOverdue ? 'text-red-500 font-medium' : 'text-muted-foreground'}`}>
               {isOverdue && <AlertCircle className="w-3 h-3" />}
               {new Date(task.dueDate).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })}
             </span>
           )}
-          {task.note && <span className="text-[10px] text-muted-foreground truncate max-w-[200px]">{task.note}</span>}
+          {task.note && <span className="text-[11px] text-muted-foreground truncate max-w-[200px]">{task.note}</span>}
         </div>
       </div>
       {task.status === 'done' && task.completedAt && (
-        <span className="text-[10px] text-green-500 shrink-0">
+        <span className="text-[11px] text-green-500 shrink-0">
           {new Date(task.completedAt).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })}
         </span>
       )}

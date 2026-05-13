@@ -60,11 +60,11 @@ export default function KnowledgeGraphPage() {
             <ArrowLeft className="w-4 h-4" />
           </button>
           <h1 className="text-sm font-semibold">知识图谱</h1>
-          <span className="text-[10px] text-muted-foreground/50 px-2 py-0.5 rounded-full bg-muted/30">
+          <span className="text-[11px] text-muted-foreground/50 px-2 py-0.5 rounded-full bg-muted/30">
             开发者工具
           </span>
         </div>
-        <div className="flex items-center gap-4 text-[10px] text-muted-foreground/50">
+        <div className="flex items-center gap-4 text-[11px] text-muted-foreground/50">
           <span>{totalNodes} 节点</span>
           <span>{totalEdges} 连接</span>
           <span>{agentStats.length} 个 Agent</span>
@@ -81,7 +81,7 @@ export default function KnowledgeGraphPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* 左侧：Agent 筛选 */}
         <aside className="w-48 shrink-0 border-r border-border/20 bg-card/30 p-3 overflow-y-auto">
-          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/60 mb-3">
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/60 mb-3">
             <Filter className="w-3 h-3" />
             <span>智能体筛选</span>
           </div>
@@ -112,7 +112,7 @@ export default function KnowledgeGraphPage() {
 
           {/* 图例 */}
           <div className="mt-6 pt-4 border-t border-border/20">
-            <div className="text-[10px] text-muted-foreground/60 mb-2">图例</div>
+            <div className="text-[11px] text-muted-foreground/60 mb-2">图例</div>
             <div className="space-y-1.5">
               <LegendItem icon={<Circle className="w-3 h-3" />} color="#6366f1" label="智能体" />
               <LegendItem icon={<Circle className="w-2.5 h-2.5" />} color="#3b82f6" label="知识文件" />
@@ -152,7 +152,7 @@ export default function KnowledgeGraphPage() {
           {/* 统计面板 */}
           {showStats && (
             <div className="absolute bottom-3 left-3 right-3 max-w-lg mx-auto p-3 rounded-xl bg-card/95 border border-border/30 backdrop-blur-sm z-10">
-              <div className="text-[10px] text-muted-foreground/50 mb-2 flex items-center gap-1">
+              <div className="text-[11px] text-muted-foreground/50 mb-2 flex items-center gap-1">
                 <BarChart3 className="w-3 h-3" /> 知识库概览
               </div>
               <div className="grid grid-cols-4 gap-2">
@@ -181,13 +181,13 @@ export default function KnowledgeGraphPage() {
         {selectedNode && (
           <aside className="w-64 shrink-0 border-l border-border/20 bg-card/30 p-4 overflow-y-auto animate-fade-in">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/60">
+              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/60">
                 <Info className="w-3 h-3" />
                 <span>节点详情</span>
               </div>
               <button
                 onClick={() => setSelectedNode(null)}
-                className="text-[10px] text-muted-foreground/40 hover:text-foreground"
+                className="text-[11px] text-muted-foreground/40 hover:text-foreground"
               >
                 ✕
               </button>
@@ -215,7 +215,7 @@ export default function KnowledgeGraphPage() {
               )}
               {selectedNode.triggers && selectedNode.triggers.length > 0 && (
                 <div>
-                  <div className="text-[10px] text-muted-foreground/50 mb-1">触发词</div>
+                  <div className="text-[11px] text-muted-foreground/50 mb-1">触发词</div>
                   <div className="flex flex-wrap gap-1">
                     {selectedNode.triggers.map((t) => (
                       <span key={t} className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500/80">
@@ -229,7 +229,7 @@ export default function KnowledgeGraphPage() {
 
             {/* 相关连接 */}
             <div className="mt-6 pt-4 border-t border-border/20">
-              <div className="text-[10px] text-muted-foreground/50 mb-2">连接关系</div>
+              <div className="text-[11px] text-muted-foreground/50 mb-2">连接关系</div>
               <div className="space-y-1">
                 {graphData.edges
                   .filter((e) => e.source === selectedNode.id || e.target === selectedNode.id)
@@ -241,7 +241,7 @@ export default function KnowledgeGraphPage() {
                     return (
                       <button
                         key={i}
-                        className="w-full text-left text-[10px] px-2 py-1 rounded-md hover:bg-muted/30 transition-colors flex items-center gap-2"
+                        className="w-full text-left text-[11px] px-2 py-1 rounded-md hover:bg-muted/30 transition-colors flex items-center gap-2"
                         onClick={() => setSelectedNode(other)}
                       >
                         <span
@@ -266,7 +266,7 @@ export default function KnowledgeGraphPage() {
 
 function LegendItem({ icon, color, label }: { icon: React.ReactNode; color: string; label: string }) {
   return (
-    <div className="flex items-center gap-2 text-[10px]">
+    <div className="flex items-center gap-2 text-[11px]">
       <span style={{ color }}>{icon}</span>
       <span className="text-muted-foreground/60">{label}</span>
     </div>

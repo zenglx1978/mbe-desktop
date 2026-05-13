@@ -72,7 +72,7 @@ export default function ClientDigestPanel({
                   <Icon className="w-3.5 h-3.5 text-primary" />
                   <span className="text-xs font-medium">{dt.label}</span>
                 </div>
-                <span className="text-[10px] text-muted-foreground leading-tight">{dt.desc}</span>
+                <span className="text-[11px] text-muted-foreground leading-tight">{dt.desc}</span>
               </button>
             )
           })}
@@ -90,7 +90,7 @@ export default function ClientDigestPanel({
             </button>
             <div className="flex items-center gap-2 mb-3">
               <h3 className="text-sm font-medium flex-1">{previewDigest.title}</h3>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${STATUS_MAP[previewDigest.status]?.color ?? ''}`}>
+              <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${STATUS_MAP[previewDigest.status]?.color ?? ''}`}>
                 {STATUS_MAP[previewDigest.status]?.label ?? previewDigest.status}
               </span>
               {previewDigest.status === 'draft' && (
@@ -133,9 +133,9 @@ export default function ClientDigestPanel({
                   <div className="flex items-center gap-2">
                     <Icon className="w-4 h-4 text-primary shrink-0" />
                     <span className="text-xs font-medium flex-1 truncate">{d.title}</span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full shrink-0 ${st.color}`}>{st.label}</span>
+                    <span className={`text-[11px] px-1.5 py-0.5 rounded-full shrink-0 ${st.color}`}>{st.label}</span>
                   </div>
-                  <div className="flex items-center gap-2 mt-1.5 text-[10px] text-muted-foreground">
+                  <div className="flex items-center gap-2 mt-1.5 text-[11px] text-muted-foreground">
                     <span>{typeInfo?.label}</span>
                     <span>·</span>
                     <span>{formatTime(d.created_at)}</span>

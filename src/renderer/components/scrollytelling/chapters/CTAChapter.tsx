@@ -71,7 +71,7 @@ export default function CTAChapter({
         style={{ opacity: subProgress(progress, 0.5, 0.7) }}
       >
         {['🔒 数据本地化', '📴 断线可用', '🛡️ 可溯源可靠'].map((badge) => (
-          <span key={badge} className="text-[10px] text-muted-foreground/40">
+          <span key={badge} className="text-[11px] text-muted-foreground/40">
             {badge}
           </span>
         ))}

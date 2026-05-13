@@ -149,7 +149,7 @@ export default function DeepMindInsights() {
           <h1 className="text-sm font-semibold flex items-center gap-2">
             实验洞察仪表盘
           </h1>
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-[11px] text-muted-foreground">
             P0-P5 + I1-I4 | 进化调度 · 博弈收敛 · 波动自适应
             {useMock && <span className="ml-2 text-amber-500">（示例数据 — 启动 dashboard_server.py 获取实时数据）</span>}
           </p>
@@ -212,7 +212,7 @@ export default function DeepMindInsights() {
                   formatter={(v: string) => {
                     const envMap: Record<string, string> = { default: '默认', development: '开发', production: '生产' }
                     const h = annealData[v]?.horizon
-                    return <span className="text-muted-foreground text-[10px]">{envMap[v] || v}{h ? ` (范围=${h})` : ''}</span>
+                    return <span className="text-muted-foreground text-[11px]">{envMap[v] || v}{h ? ` (范围=${h})` : ''}</span>
                   }}
                 />
                 {Object.keys(annealData).map(env => (
@@ -228,7 +228,7 @@ export default function DeepMindInsights() {
                 ))}
               </LineChart>
             </ResponsiveContainer>
-            <p className="text-[10px] text-muted-foreground mt-2">
+            <p className="text-[11px] text-muted-foreground mt-2">
               开发环境探索更多，生产环境更快收敛
             </p>
           </section>
@@ -273,7 +273,7 @@ export default function DeepMindInsights() {
                   wrapperStyle={{ fontSize: 10 }}
                   formatter={(v: string) => {
                     const vol = volData.expert_volatility[v]?.volatility
-                    return <span className="text-muted-foreground text-[10px]">{v}{vol != null ? ` (波动=${vol.toFixed(3)})` : ''}</span>
+                    return <span className="text-muted-foreground text-[11px]">{v}{vol != null ? ` (波动=${vol.toFixed(3)})` : ''}</span>
                   }}
                 />
                 {expertNames.map((eid, i) => (
@@ -289,7 +289,7 @@ export default function DeepMindInsights() {
                 ))}
               </LineChart>
             </ResponsiveContainer>
-            <p className="text-[10px] text-muted-foreground mt-2">
+            <p className="text-[11px] text-muted-foreground mt-2">
               领域平均波动率：{volData.domain_avg_volatility.toFixed(4)}
               {' · '}
               {Object.values(volData.expert_volatility).filter(v => v.iteration_priority !== 'low').length} 位专家需迭代
@@ -390,7 +390,7 @@ export default function DeepMindInsights() {
                 />
               </AreaChart>
             </ResponsiveContainer>
-            <p className="text-[10px] text-muted-foreground mt-2">
+            <p className="text-[11px] text-muted-foreground mt-2">
               成熟度：{warmup.maturity === 'production' ? '生产' : warmup.maturity} | 冷却：{(warmup.gate as Record<string, number>).cooldown_turns ?? '?'} 轮
             </p>
           </section>

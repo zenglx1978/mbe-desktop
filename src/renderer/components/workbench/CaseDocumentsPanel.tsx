@@ -192,7 +192,7 @@ export default function CaseDocumentsPanel({ solution }: Props) {
               <Briefcase className="w-4 h-4 text-primary shrink-0" />
               <span className="truncate flex-1">{selectedCase?.title || '选择案件'}</span>
               {selectedCase?.status && (
-                <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] bg-primary/10 text-primary">
+                <span className="shrink-0 px-1.5 py-0.5 rounded text-[11px] bg-primary/10 text-primary">
                   {selectedCase.status}
                 </span>
               )}
@@ -209,7 +209,7 @@ export default function CaseDocumentsPanel({ solution }: Props) {
                     }`}
                   >
                     <span className="truncate block">{c.title}</span>
-                    {c.client_name && <span className="text-[10px] text-muted-foreground">{c.client_name}</span>}
+                    {c.client_name && <span className="text-[11px] text-muted-foreground">{c.client_name}</span>}
                   </button>
                 ))}
               </div>
@@ -294,7 +294,7 @@ export default function CaseDocumentsPanel({ solution }: Props) {
                     <span className="text-xl shrink-0">{meta.icon}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{att.file_name}</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
                         {att.file_size_display}
                         {att.created_at && (
                           <span className="ml-1.5">
@@ -304,7 +304,7 @@ export default function CaseDocumentsPanel({ solution }: Props) {
                         {att.has_text && <span className="ml-1.5 text-green-500">· 已提取文本</span>}
                       </p>
                     </div>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] shrink-0 ${meta.cls}`}>
+                    <span className={`px-2 py-0.5 rounded-full text-[11px] shrink-0 ${meta.cls}`}>
                       {att.category_label}
                     </span>
                     {isExpanded
@@ -325,7 +325,7 @@ export default function CaseDocumentsPanel({ solution }: Props) {
                       {att.ai_tags.length > 0 && (
                         <div className="flex flex-wrap gap-1">
                           {att.ai_tags.map((tag, i) => (
-                            <span key={i} className="px-2 py-0.5 rounded-full text-[10px] bg-secondary/50 text-muted-foreground">{tag}</span>
+                            <span key={i} className="px-2 py-0.5 rounded-full text-[11px] bg-secondary/50 text-muted-foreground">{tag}</span>
                           ))}
                         </div>
                       )}
@@ -336,7 +336,7 @@ export default function CaseDocumentsPanel({ solution }: Props) {
                         >
                           <Download className="w-3 h-3" /> 下载
                         </button>
-                        <span className="text-[10px] text-muted-foreground ml-auto">
+                        <span className="text-[11px] text-muted-foreground ml-auto">
                           {att.mime_type}
                         </span>
                       </div>

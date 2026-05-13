@@ -79,7 +79,7 @@ function TenEightyTen({
     <div className="rounded-xl border border-border/50 bg-card p-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-foreground">10-80-10 执行分布</h3>
-        <span className="text-[10px] text-muted-foreground">本周 · Dan Martell 法则</span>
+        <span className="text-[11px] text-muted-foreground">本周 · Dan Martell 法则</span>
       </div>
 
       {/* 三段条形 */}
@@ -94,7 +94,7 @@ function TenEightyTen({
         </div>
         {/* 80% 执行 — AI */}
         <div
-          className="flex items-center justify-center text-[10px] font-bold text-white bg-primary rounded-none transition-all relative"
+          className="flex items-center justify-center text-[11px] font-bold text-white bg-primary rounded-none transition-all relative"
           style={{ width: `${seg2}%` }}
           title="80% 执行（AI）：搜索/预审/提案/复盘"
         >
@@ -113,7 +113,7 @@ function TenEightyTen({
       </div>
 
       {/* 图例 */}
-      <div className="flex gap-4 text-[10px] text-muted-foreground mb-3">
+      <div className="flex gap-4 text-[11px] text-muted-foreground mb-3">
         <span className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-sm bg-violet-600/80 inline-block" />
           人工判断（构想 + 整合）
@@ -128,17 +128,17 @@ function TenEightyTen({
       <div className="grid grid-cols-2 gap-3">
         <div className="text-center p-2 rounded-lg bg-primary/5">
           <p className="text-xl font-bold text-primary tabular-nums">{aiTasks}</p>
-          <p className="text-[10px] text-muted-foreground mt-0.5">AI 自动完成任务</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">AI 自动完成任务</p>
         </div>
         <div className="text-center p-2 rounded-lg bg-violet-500/5">
           <p className="text-xl font-bold text-violet-400 tabular-nums">{humanInterventions}</p>
-          <p className="text-[10px] text-muted-foreground mt-0.5">人工介入次数</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">人工介入次数</p>
         </div>
       </div>
 
       {/* 实际比例提示 */}
       {total > 0 && (
-        <p className="text-[10px] text-muted-foreground/60 mt-2 text-center">
+        <p className="text-[11px] text-muted-foreground/60 mt-2 text-center">
           本周实际 AI 占比 {aiPct}%
           {aiPct >= 70
             ? ' · ✓ 达到目标'
@@ -166,7 +166,7 @@ function PipelineFunnel({ stages }: { stages: StageMetric[] }) {
     <div className="rounded-xl border border-border/50 bg-card p-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-foreground">销售漏斗</h3>
-        <span className="text-[10px] text-muted-foreground">实时数据</span>
+        <span className="text-[11px] text-muted-foreground">实时数据</span>
       </div>
 
       <div className="space-y-2">
@@ -184,12 +184,12 @@ function PipelineFunnel({ stages }: { stages: StageMetric[] }) {
                     style={{ width: `${widthPct}%` }}
                   />
                   <div className="absolute inset-0 flex items-center px-2">
-                    <span className="text-[10px] font-medium text-white/90">
+                    <span className="text-[11px] font-medium text-white/90">
                       {stage.count} 家
                     </span>
                   </div>
                 </div>
-                <span className="text-[10px] text-muted-foreground/70 tabular-nums w-16 text-right shrink-0">
+                <span className="text-[11px] text-muted-foreground/70 tabular-nums w-16 text-right shrink-0">
                   ¥{stage.amount >= 10000
                     ? `${(stage.amount / 10000).toFixed(1)}w`
                     : stage.amount.toLocaleString()}
@@ -224,7 +224,7 @@ function CallTrackingPanel({ stats }: { stats: CallStats }) {
     <div className="rounded-xl border border-border/50 bg-card p-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-foreground">通话追踪</h3>
-        <span className="text-[10px] text-muted-foreground">数据飞轮</span>
+        <span className="text-[11px] text-muted-foreground">数据飞轮</span>
       </div>
 
       <div className="grid grid-cols-4 gap-2 mb-3">
@@ -253,7 +253,7 @@ function CallTrackingPanel({ stats }: { stats: CallStats }) {
             const isPositive = key === 'connected_interested' || key === 'connected_demo'
             return (
               <div key={key} className="flex items-center gap-2">
-                <span className="text-[10px] text-muted-foreground w-16 shrink-0 truncate">
+                <span className="text-[11px] text-muted-foreground w-16 shrink-0 truncate">
                   {outcomeLabels[key] ?? key}
                 </span>
                 <div className="flex-1 h-4 bg-secondary/30 rounded overflow-hidden">
@@ -262,7 +262,7 @@ function CallTrackingPanel({ stats }: { stats: CallStats }) {
                     style={{ width: `${pct}%` }}
                   />
                 </div>
-                <span className="text-[10px] text-muted-foreground/70 tabular-nums w-10 text-right">
+                <span className="text-[11px] text-muted-foreground/70 tabular-nums w-10 text-right">
                   {count}次
                 </span>
               </div>
@@ -289,7 +289,7 @@ function NurturePanel({ stats }: { stats: NurtureStats }) {
     <div className="rounded-xl border border-border/50 bg-card p-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-foreground">温线索培育</h3>
-        <span className="text-[10px] text-muted-foreground">销售 → 增长 协作</span>
+        <span className="text-[11px] text-muted-foreground">销售 → 增长 协作</span>
       </div>
 
       <div className="flex items-center gap-3 mb-3">
@@ -307,14 +307,14 @@ function NurturePanel({ stats }: { stats: NurtureStats }) {
       <div className="space-y-1.5">
         {stages.map(s => (
           <div key={s.key} className="flex items-center gap-2">
-            <span className="text-[10px] text-muted-foreground w-16 shrink-0">{s.label}</span>
+            <span className="text-[11px] text-muted-foreground w-16 shrink-0">{s.label}</span>
             <div className="flex-1 h-4 bg-secondary/30 rounded overflow-hidden">
               <div
                 className={`h-full ${s.color} opacity-70 rounded transition-all duration-500`}
                 style={{ width: `${Math.round((s.count / total) * 100)}%` }}
               />
             </div>
-            <span className="text-[10px] text-muted-foreground/70 tabular-nums w-8 text-right">{s.count}</span>
+            <span className="text-[11px] text-muted-foreground/70 tabular-nums w-8 text-right">{s.count}</span>
           </div>
         ))}
       </div>
@@ -353,7 +353,7 @@ function AutomationFeed({ events }: { events: AutomationEvent[] }) {
     <div className="rounded-xl border border-border/50 bg-card p-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-foreground">自动化事件流</h3>
-        <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+        <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
           实时
         </span>
@@ -362,7 +362,7 @@ function AutomationFeed({ events }: { events: AutomationEvent[] }) {
       {events.length === 0 ? (
         <div className="text-center py-6 text-muted-foreground/50">
           <p className="text-sm">暂无自动化事件</p>
-          <p className="text-[10px] mt-1">成交、线索发现、通话复盘等事件将在此显示</p>
+          <p className="text-[11px] mt-1">成交、线索发现、通话复盘等事件将在此显示</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -375,7 +375,7 @@ function AutomationFeed({ events }: { events: AutomationEvent[] }) {
                     {EVENT_LABELS[ev.type]}
                   </span>
                   {ev.company && (
-                    <span className="text-[10px] text-muted-foreground">· {ev.company}</span>
+                    <span className="text-[11px] text-muted-foreground">· {ev.company}</span>
                   )}
                   <span className={`
                     text-[9px] px-1 py-0.5 rounded font-medium ml-auto
@@ -386,7 +386,7 @@ function AutomationFeed({ events }: { events: AutomationEvent[] }) {
                     {ev.status === 'success' ? '完成' : ev.status === 'running' ? '执行中' : '等待'}
                   </span>
                 </div>
-                <p className="text-[10px] text-muted-foreground/70 mt-0.5 truncate">
+                <p className="text-[11px] text-muted-foreground/70 mt-0.5 truncate">
                   {ev.description}
                 </p>
               </div>
@@ -437,7 +437,7 @@ function MetricCards({ data }: { data: PipelineData | null }) {
         <div key={c.label} className="rounded-xl border border-border/50 bg-card p-3 text-center">
           <p className={`text-xl font-bold tabular-nums ${c.color}`}>{c.value}</p>
           <p className="text-[11px] text-foreground/80 font-medium mt-0.5">{c.label}</p>
-          <p className="text-[10px] text-muted-foreground/60">{c.sub}</p>
+          <p className="text-[11px] text-muted-foreground/60">{c.sub}</p>
         </div>
       ))}
     </div>
@@ -591,7 +591,7 @@ export default function SalesPipelinePanel({ solution }: { solution: SolutionLik
         </div>
         <button
           onClick={fetchData}
-          className="text-[10px] px-2 py-1 rounded-md bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+          className="text-[11px] px-2 py-1 rounded-md bg-secondary text-muted-foreground hover:text-foreground transition-colors"
         >
           刷新
         </button>
@@ -652,7 +652,7 @@ export default function SalesPipelinePanel({ solution }: { solution: SolutionLik
                   <p className="text-[11px] font-medium text-foreground group-hover:text-primary transition-colors">
                     {action.label}
                   </p>
-                  <p className="text-[10px] text-muted-foreground/60">{action.desc}</p>
+                  <p className="text-[11px] text-muted-foreground/60">{action.desc}</p>
                 </button>
               ))}
             </div>

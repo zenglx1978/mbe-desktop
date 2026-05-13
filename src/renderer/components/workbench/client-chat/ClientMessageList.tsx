@@ -50,7 +50,7 @@ export default function ClientMessageList() {
               autoFocus
             />
             {searchResults.length > 0 && (
-              <span className="text-[10px] text-muted-foreground shrink-0">{searchResults.length} 条结果</span>
+              <span className="text-[11px] text-muted-foreground shrink-0">{searchResults.length} 条结果</span>
             )}
             <button onClick={() => { closeSearchPanel(); clearSearch() }} className="p-1 hover:bg-muted rounded">
               <X className="w-3.5 h-3.5" />
@@ -115,7 +115,7 @@ function MsgBubble({ msg }: { msg: ClientMsg }) {
         <div className="text-[11px] text-muted-foreground mb-0.5 flex items-center gap-1">
           <span>{msg.sender_name}</span>
           {msg.sender_title && (
-            <span className="text-[10px] opacity-60">({msg.sender_title})</span>
+            <span className="text-[11px] opacity-60">({msg.sender_title})</span>
           )}
         </div>
         {isFile ? (
@@ -130,7 +130,7 @@ function MsgBubble({ msg }: { msg: ClientMsg }) {
         ) : (
           <div className="whitespace-pre-wrap">{msg.content}</div>
         )}
-        <div className="text-[10px] text-muted-foreground/60 mt-1 text-right flex items-center justify-end gap-1">
+        <div className="text-[11px] text-muted-foreground/60 mt-1 text-right flex items-center justify-end gap-1">
           {msg.visible_to && msg.visible_to !== 'all' && (
             <Lock className="w-2.5 h-2.5 text-amber-400 inline" />
           )}

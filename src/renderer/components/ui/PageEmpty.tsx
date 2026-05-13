@@ -38,7 +38,7 @@ export default function PageEmpty({
         {actionLabel && onAction && (
           <button
             onClick={onAction}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm hover:opacity-90 transition-opacity"
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             {actionLabel}
           </button>

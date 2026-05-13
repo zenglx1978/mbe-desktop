@@ -75,34 +75,34 @@ export function KnowledgeSourceBadge({ source }: { source: SourceCitationData })
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${reliability.badge}`}>
+            <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[11px] font-medium ${reliability.badge}`}>
               {reliability.label}
             </span>
             <p className="truncate text-xs font-medium text-gray-700 dark:text-gray-300">
               {source.title}
             </p>
             {source.expired && (
-              <span className="shrink-0 text-[10px] text-red-500 bg-red-50 dark:bg-red-900/20 rounded px-1">已过期</span>
+              <span className="shrink-0 text-[11px] text-red-500 bg-red-50 dark:bg-red-900/20 rounded px-1">已过期</span>
             )}
           </div>
           {source.authority && (
-            <p className="text-[10px] text-indigo-500 dark:text-indigo-400 mt-0.5 truncate" title={source.authority}>
+            <p className="text-[11px] text-indigo-500 dark:text-indigo-400 mt-0.5 truncate" title={source.authority}>
               📜 {source.authority}
             </p>
           )}
           {source.ref && !source.authority && (
-            <p className="truncate text-[10px] text-gray-400 mt-0.5">{source.ref}</p>
+            <p className="truncate text-[11px] text-gray-400 mt-0.5">{source.ref}</p>
           )}
         </div>
 
         {/* 匹配度 */}
         {source.confidence != null && (
-          <span className="shrink-0 text-[10px] tabular-nums font-medium text-gray-500">
+          <span className="shrink-0 text-[11px] tabular-nums font-medium text-gray-500">
             {(source.confidence * 100).toFixed(0)}%
           </span>
         )}
 
-        <span className={`shrink-0 text-[10px] text-gray-300 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}>
+        <span className={`shrink-0 text-[11px] text-gray-300 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}>
           ▾
         </span>
       </button>
@@ -111,7 +111,7 @@ export function KnowledgeSourceBadge({ source }: { source: SourceCitationData })
       {expanded && (
         <div className="px-3 pb-3 pt-0 border-t border-gray-100 dark:border-[#3c3c3c] space-y-2">
           {/* 匹配详情 */}
-          <div className="flex items-center gap-4 text-[10px] text-gray-400 pt-2">
+          <div className="flex items-center gap-4 text-[11px] text-gray-400 pt-2">
             <span>类型: <strong className="text-gray-600 dark:text-gray-300">{typeInfo.label}</strong></span>
             {source.retrieval_method && (
               <span>检索: <strong className="text-gray-600 dark:text-gray-300">
@@ -132,7 +132,7 @@ export function KnowledgeSourceBadge({ source }: { source: SourceCitationData })
 
           {/* 权威依据（C2PA 知识溯源） */}
           {source.authority && (
-            <div className="flex items-start gap-1 text-[10px]">
+            <div className="flex items-start gap-1 text-[11px]">
               <span className="text-gray-400 shrink-0">依据:</span>
               <span className="text-indigo-600 dark:text-indigo-400">{source.authority}</span>
             </div>
@@ -140,7 +140,7 @@ export function KnowledgeSourceBadge({ source }: { source: SourceCitationData })
 
           {/* 文件路径（深链接） */}
           {source.file_path && (
-            <div className="flex items-center gap-1 text-[10px]">
+            <div className="flex items-center gap-1 text-[11px]">
               <span className="text-gray-400">路径:</span>
               <code className="text-blue-500 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded px-1.5 py-0.5 truncate">
                 {source.file_path}
@@ -151,7 +151,7 @@ export function KnowledgeSourceBadge({ source }: { source: SourceCitationData })
           {/* URL */}
           {source.url && (
             <p
-              className="text-[10px] text-blue-500 dark:text-blue-400 truncate hover:underline cursor-pointer"
+              className="text-[11px] text-blue-500 dark:text-blue-400 truncate hover:underline cursor-pointer"
               onClick={(e) => { e.stopPropagation(); window.open(source.url, '_blank') }}
             >
               🔗 {source.url}
@@ -201,7 +201,7 @@ export function EnhancedSourceList({ sources }: { sources?: SourceCitationData[]
  */
 export function AIReasoningBadge() {
   return (
-    <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded px-1.5 py-0.5 border border-amber-200 dark:border-amber-800/40">
+    <span className="inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded px-1.5 py-0.5 border border-amber-200 dark:border-amber-800/40">
       ⚠ AI 推理，未匹配到知识源
     </span>
   )

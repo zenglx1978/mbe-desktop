@@ -124,7 +124,7 @@ export function ScenarioCard({ scenario, onClick }: ScenarioCardProps) {
       <div className="min-w-0">
         <span className="text-sm font-medium truncate block">{scenario.label}</span>
         {profit && dim && (
-          <span className={`text-[10px] ${dim.cls} block truncate mt-0.5`}>
+          <span className={`text-[11px] ${dim.cls} block truncate mt-0.5`}>
             {dim.prefix}: {profit.amount}
           </span>
         )}

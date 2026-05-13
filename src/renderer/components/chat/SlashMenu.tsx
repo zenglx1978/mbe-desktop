@@ -47,7 +47,7 @@ export default function SlashMenu({ commands, query, onSelect, onClose }: Props)
       className="absolute bottom-full left-0 mb-2 w-72 rounded-xl border border-border/50 bg-card shadow-xl overflow-hidden z-50"
     >
       <div className="px-3 py-2 border-b border-border/30">
-        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
+        <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">
           快捷工具
         </p>
       </div>

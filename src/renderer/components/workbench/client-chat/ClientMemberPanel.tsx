@@ -76,7 +76,7 @@ export default function ClientMemberPanel() {
       <div className="flex-1 overflow-y-auto">
         {professionals.length > 0 && (
           <div className="px-3 pt-3 pb-1">
-            <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">
+            <div className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">
               专业团队 ({professionals.length})
             </div>
             {professionals.map(m => (
@@ -90,7 +90,7 @@ export default function ClientMemberPanel() {
         )}
         {clients.length > 0 && (
           <div className="px-3 pt-3 pb-1">
-            <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">
+            <div className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">
               客户 ({clients.length})
             </div>
             {clients.map(m => (
@@ -118,10 +118,10 @@ function MemberRow({ member, onRemove }: { member: ChannelMember; onRemove?: () 
       <div className="flex-1 min-w-0">
         <div className="text-xs font-medium truncate">
           {member.display_name}
-          <span className={`ml-1 text-[10px] ${cfg.color}`}>({cfg.label})</span>
+          <span className={`ml-1 text-[11px] ${cfg.color}`}>({cfg.label})</span>
         </div>
         {member.title && (
-          <div className="text-[10px] text-muted-foreground truncate">{member.title}</div>
+          <div className="text-[11px] text-muted-foreground truncate">{member.title}</div>
         )}
       </div>
       {onRemove && member.role !== 'owner' && (

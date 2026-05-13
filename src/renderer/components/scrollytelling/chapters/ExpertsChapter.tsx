@@ -125,7 +125,7 @@ export default function ExpertsChapter({
           className="absolute inset-0"
         />
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-[10px] text-muted-foreground/40 bg-background/60 px-3 py-1 rounded-full">
+          <span className="text-[11px] text-muted-foreground/40 bg-background/60 px-3 py-1 rounded-full">
             AI 专家协作中
           </span>
         </div>

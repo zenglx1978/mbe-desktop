@@ -86,7 +86,7 @@ export default function HeatmapChart({
         {/* 列头 */}
         {cols.map(col => (
           <div key={col} className="flex items-end justify-center pb-1 px-0.5">
-            <span className="text-[10px] text-muted-foreground leading-tight text-center truncate max-w-full">
+            <span className="text-[11px] text-muted-foreground leading-tight text-center truncate max-w-full">
               {col}
             </span>
           </div>
@@ -96,7 +96,7 @@ export default function HeatmapChart({
         {rows.map(row => (
           <>
             <div key={`h-${row}`} className="flex items-center pr-2">
-              <span className="text-[10px] text-muted-foreground truncate">{row}</span>
+              <span className="text-[11px] text-muted-foreground truncate">{row}</span>
             </div>
             {cols.map(col => {
               const cell = cellMap.get(`${row}:${col}`)
@@ -116,7 +116,7 @@ export default function HeatmapChart({
                   onMouseLeave={() => setHovered(null)}
                   title={`${row} × ${col}: ${cell?.label || value}`}
                 >
-                  <span className={`text-[10px] font-medium tabular-nums ${
+                  <span className={`text-[11px] font-medium tabular-nums ${
                     t > 0.55 ? 'text-white' : 'text-foreground/70'
                   }`}>
                     {cell?.label ?? (value > 0 ? value.toFixed(1) : '')}
@@ -130,7 +130,7 @@ export default function HeatmapChart({
 
       {/* hover 提示 */}
       {hovered && (
-        <div className="mt-2 text-[10px] text-muted-foreground">
+        <div className="mt-2 text-[11px] text-muted-foreground">
           {hovered.row} × {hovered.col}:
           <span className="ml-1 font-medium text-foreground">{hovered.label || hovered.value}</span>
         </div>

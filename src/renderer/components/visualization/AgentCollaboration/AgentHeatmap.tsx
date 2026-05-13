@@ -152,7 +152,7 @@ export function AgentHeatmap({
             <React.Fragment key={row.id}>
               {/* 行头 */}
               <div className="flex items-center pr-2">
-                <span className="text-[10px] text-gray-600 dark:text-gray-400 truncate">{row.name}</span>
+                <span className="text-[11px] text-gray-600 dark:text-gray-400 truncate">{row.name}</span>
               </div>
 
               {/* 单元格 */}
@@ -192,7 +192,7 @@ export function AgentHeatmap({
 
       {/* Hover 提示 */}
       {hoveredCell && (
-        <div className="mt-2 flex items-center gap-2 text-[10px] text-gray-500">
+        <div className="mt-2 flex items-center gap-2 text-[11px] text-gray-500">
           <span>
             {data.row_labels.find(r => r.id === hoveredCell.row_id)?.name}
             {' × '}

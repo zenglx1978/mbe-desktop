@@ -69,7 +69,7 @@ export default function WatchlistPanel() {
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm font-semibold text-foreground">{card.name}</span>
-                        <span className="text-[10px] text-muted-foreground">{card.code}</span>
+                        <span className="text-[11px] text-muted-foreground">{card.code}</span>
                       </div>
                       <ChangeIndicator change={card.change} />
                     </div>

@@ -33,7 +33,7 @@ export function ConfidenceBadge({
   if (!cfg) return null
   const { style } = getDitherStyle(grade, dark)
 
-  const sizeClass = size === 'md' ? 'px-2.5 py-1 text-[11px]' : 'px-1.5 py-0.5 text-[10px]'
+  const sizeClass = size === 'md' ? 'px-2.5 py-1 text-[11px]' : 'px-1.5 py-0.5 text-[11px]'
 
   return (
     <span

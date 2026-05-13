@@ -57,7 +57,7 @@ export function RoleBadge({ role }: { role: string }) {
     auditor: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300',
   }
   return (
-    <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${styles[role] || styles.viewer}`}>
+    <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full ${styles[role] || styles.viewer}`}>
       {role}
     </span>
   )
@@ -128,7 +128,7 @@ export function InstanceRow({ inst, isSelected, onClick }: {
     >
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">{inst.workflow_name}</p>
-        <p className="text-[10px] text-muted-foreground mt-0.5">
+        <p className="text-[11px] text-muted-foreground mt-0.5">
           {inst.completed_steps}/{inst.total_steps} 步
           {inst.total_elapsed_ms > 0 && ` · ${(inst.total_elapsed_ms / 1000).toFixed(1)}s`}
         </p>
@@ -142,13 +142,13 @@ export function InstanceRow({ inst, isSelected, onClick }: {
         </div>
       </div>
       <span
-        className="text-[10px] px-2 py-0.5 rounded-full shrink-0"
+        className="text-[11px] px-2 py-0.5 rounded-full shrink-0"
         style={{ color: s.color, backgroundColor: `${s.color}15` }}
       >
         {s.text}
       </span>
       {inst.deliverable_count > 0 && (
-        <span className="text-[10px] text-muted-foreground shrink-0">
+        <span className="text-[11px] text-muted-foreground shrink-0">
           {inst.deliverable_count} 交付物
         </span>
       )}
@@ -175,7 +175,7 @@ export function InstanceDetail({ detail, loading, agentName }: { detail: Workflo
             href={getExportUrl(agentName, detail.instance_id, 'html')}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-2.5 py-1 text-[10px] rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+            className="px-2.5 py-1 text-[11px] rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
           >
             📄 HTML
           </a>
@@ -183,7 +183,7 @@ export function InstanceDetail({ detail, loading, agentName }: { detail: Workflo
             href={getExportUrl(agentName, detail.instance_id, 'excel')}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-2.5 py-1 text-[10px] rounded-md bg-green-500/10 text-green-600 hover:bg-green-500/20 transition-colors"
+            className="px-2.5 py-1 text-[11px] rounded-md bg-green-500/10 text-green-600 hover:bg-green-500/20 transition-colors"
           >
             📊 Excel
           </a>
@@ -191,7 +191,7 @@ export function InstanceDetail({ detail, loading, agentName }: { detail: Workflo
             href={getExportUrl(agentName, detail.instance_id, 'pdf')}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-2.5 py-1 text-[10px] rounded-md bg-red-500/10 text-red-600 hover:bg-red-500/20 transition-colors"
+            className="px-2.5 py-1 text-[11px] rounded-md bg-red-500/10 text-red-600 hover:bg-red-500/20 transition-colors"
           >
             📕 PDF
           </a>
@@ -199,7 +199,7 @@ export function InstanceDetail({ detail, loading, agentName }: { detail: Workflo
             href={getExportUrl(agentName, detail.instance_id, 'zip')}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-2.5 py-1 text-[10px] rounded-md bg-violet-500/10 text-violet-600 hover:bg-violet-500/20 transition-colors"
+            className="px-2.5 py-1 text-[11px] rounded-md bg-violet-500/10 text-violet-600 hover:bg-violet-500/20 transition-colors"
           >
             📦 ZIP 全包
           </a>
@@ -207,7 +207,7 @@ export function InstanceDetail({ detail, loading, agentName }: { detail: Workflo
             href={getExportUrl(agentName, detail.instance_id, 'markdown')}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-2.5 py-1 text-[10px] rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
+            className="px-2.5 py-1 text-[11px] rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
           >
             📝 MD
           </a>
@@ -221,15 +221,15 @@ export function InstanceDetail({ detail, loading, agentName }: { detail: Workflo
             const ss = getStatusDisplay(step.status)
             return (
               <div key={step.step_id} className="flex items-center gap-2 text-xs">
-                <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-mono shrink-0"
+                <span className="w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-mono shrink-0"
                   style={{ backgroundColor: `${ss.color}20`, color: ss.color }}
                 >
                   {step.status === 'completed' ? '✓' : step.status === 'failed' ? '✗' : i + 1}
                 </span>
                 <span className="flex-1 truncate">{step.step_name}</span>
-                <span className="text-[10px] shrink-0" style={{ color: ss.color }}>{ss.text}</span>
+                <span className="text-[11px] shrink-0" style={{ color: ss.color }}>{ss.text}</span>
                 {step.elapsed_ms > 0 && (
-                  <span className="text-[10px] text-muted-foreground font-mono shrink-0">
+                  <span className="text-[11px] text-muted-foreground font-mono shrink-0">
                     {(step.elapsed_ms / 1000).toFixed(1)}s
                   </span>
                 )}
@@ -248,7 +248,7 @@ export function InstanceDetail({ detail, loading, agentName }: { detail: Workflo
                 <span>{getDeliverableIcon(d.type)}</span>
                 <span className="flex-1 truncate">{d.title}</span>
                 {d.billable && d.billable_amount > 0 && (
-                  <span className="text-primary font-mono text-[10px]">¥{d.billable_amount}</span>
+                  <span className="text-primary font-mono text-[11px]">¥{d.billable_amount}</span>
                 )}
               </div>
             ))}
@@ -263,7 +263,7 @@ export function InstanceDetail({ detail, loading, agentName }: { detail: Workflo
       )}
 
       {detail.total_elapsed_ms > 0 && (
-        <p className="text-[10px] text-muted-foreground">
+        <p className="text-[11px] text-muted-foreground">
           总耗时 {(detail.total_elapsed_ms / 1000).toFixed(1)}s ·
           状态 <span style={{ color: s.color }}>{s.text}</span>
         </p>
@@ -281,11 +281,11 @@ export function DeliverableRow({ d }: { d: DeliverableItem }) {
       <div className="flex-1 min-w-0">
         <p className="text-sm truncate">{d.title}</p>
         {d.description && (
-          <p className="text-[10px] text-muted-foreground truncate">{d.description}</p>
+          <p className="text-[11px] text-muted-foreground truncate">{d.description}</p>
         )}
       </div>
       {d.billable && d.billable_amount > 0 && (
-        <span className="text-[10px] text-primary font-mono">¥{d.billable_amount}</span>
+        <span className="text-[11px] text-primary font-mono">¥{d.billable_amount}</span>
       )}
     </div>
   )

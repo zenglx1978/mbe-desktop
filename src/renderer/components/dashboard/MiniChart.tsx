@@ -37,7 +37,7 @@ export default function MiniChart({ data, color }: Props) {
         <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           近 7 天活动趋势
         </h4>
-        <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
           <span>💬 对话</span>
           <span>🧮 计算</span>
           <span>📋 任务</span>

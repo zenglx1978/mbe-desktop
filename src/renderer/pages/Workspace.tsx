@@ -76,7 +76,7 @@ function OnboardingDialog({ solution, onComplete }: { solution: SolutionConfig; 
     const next = { ...answers, [current.key]: value }
     setAnswers(next)
     if (isLast) {
-      try { localStorage.setItem(`mbe-onboarding-answers-${solution.id}`, JSON.stringify(next)) } catch {}
+      try { sessionStorage.setItem(`mbe-onboarding-answers-${solution.id}`, JSON.stringify(next)) } catch {}
       onComplete()
     } else {
       setStep(step + 1)

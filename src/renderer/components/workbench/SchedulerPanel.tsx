@@ -193,7 +193,7 @@ export default function SchedulerPanel({ solution }: Props) {
               <div key={key} className="p-3 rounded-xl border border-border/30 bg-card">
                 <div className="flex items-center gap-1.5 mb-1">
                   <div className="w-2 h-2 rounded-full" style={{ backgroundColor: meta.color }} />
-                  <span className="text-[10px] text-muted-foreground uppercase">{meta.label}</span>
+                  <span className="text-[11px] text-muted-foreground uppercase">{meta.label}</span>
                 </div>
                 <p className="text-lg font-bold">{count}<span className="text-xs text-muted-foreground font-normal">/{total}</span></p>
               </div>
@@ -256,7 +256,7 @@ export default function SchedulerPanel({ solution }: Props) {
                     <div className="flex items-center gap-2">
                       <h4 className="text-sm font-semibold truncate">{job.name}</h4>
                       {job.lastStatus === 'running' && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-500 animate-pulse">运行中</span>
+                        <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-500 animate-pulse">运行中</span>
                       )}
                       {job.lastStatus === 'success' && (
                         <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
@@ -266,7 +266,7 @@ export default function SchedulerPanel({ solution }: Props) {
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5 truncate">{job.description}</p>
-                    <div className="flex items-center gap-3 mt-1 text-[10px] text-muted-foreground">
+                    <div className="flex items-center gap-3 mt-1 text-[11px] text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {editingId === job.id ? (

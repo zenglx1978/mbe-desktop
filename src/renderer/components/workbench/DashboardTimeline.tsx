@@ -28,7 +28,7 @@ export function DashboardTimeline({ auditLogs, members }: DashboardTimelineProps
                     {log.actor_id} · {log.resource_type}/{log.resource_id.slice(0, 12)}
                   </span>
                 </div>
-                <span className="text-[10px] text-muted-foreground shrink-0">
+                <span className="text-[11px] text-muted-foreground shrink-0">
                   {new Date(log.timestamp).toLocaleString('zh-CN', { hour: '2-digit', minute: '2-digit', month: '2-digit', day: '2-digit' })}
                 </span>
               </div>
@@ -53,7 +53,7 @@ export function DashboardTimeline({ auditLogs, members }: DashboardTimelineProps
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{m.user_id}</p>
-                  <p className="text-[10px] text-muted-foreground">{m.permissions.length} 项权限</p>
+                  <p className="text-[11px] text-muted-foreground">{m.permissions.length} 项权限</p>
                 </div>
                 <RoleBadge role={m.role} />
               </div>

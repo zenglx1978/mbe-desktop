@@ -121,12 +121,12 @@ export default function DocumentsPanel({ solution }: Props) {
                     <span className="text-xl shrink-0">{meta.icon}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{doc.title}</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
                         {new Date(doc.updatedAt).toLocaleString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                         {doc.source && doc.source !== 'manual' && <span className="ml-1.5">· 来自 {doc.source}</span>}
                       </p>
                     </div>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] ${meta.cls}`}>
+                    <span className={`px-2 py-0.5 rounded-full text-[11px] ${meta.cls}`}>
                       {meta.label}
                     </span>
                     {isSelected ? <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />}

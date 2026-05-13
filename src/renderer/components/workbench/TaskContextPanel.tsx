@@ -458,7 +458,7 @@ export default function TaskContextPanel({ solution, taskId }: Props) {
                 <div key={item.label} className="p-3 rounded-lg border border-border/50 bg-card">
                   <div className="text-[11px] text-muted-foreground">{item.label}</div>
                   <div className={`text-lg font-bold mt-1 ${item.color}`}>{item.value}</div>
-                  <div className="text-[10px] text-muted-foreground mt-0.5">{item.sub}</div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5">{item.sub}</div>
                 </div>
               ))}
             </div>
@@ -474,7 +474,7 @@ export default function TaskContextPanel({ solution, taskId }: Props) {
                 <div key={stat.label} className="p-3 rounded-lg border border-border/50 bg-card">
                   <div className="text-[11px] text-muted-foreground">{stat.label}</div>
                   <div className={`text-lg font-bold mt-1 ${stat.color}`}>{stat.value}</div>
-                  <div className="text-[10px] text-muted-foreground mt-0.5">{stat.sub}</div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5">{stat.sub}</div>
                 </div>
               ))}
             </div>
@@ -520,7 +520,7 @@ export default function TaskContextPanel({ solution, taskId }: Props) {
                 <div key={stat.label} className="p-3 rounded-lg border border-border/50 bg-card">
                   <div className="text-[11px] text-muted-foreground">{stat.label}</div>
                   <div className={`text-lg font-bold mt-1 ${stat.color}`}>{stat.value}</div>
-                  <div className="text-[10px] text-muted-foreground mt-0.5">{stat.sub}</div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5">{stat.sub}</div>
                 </div>
               ))}
             </div>
@@ -553,7 +553,7 @@ export default function TaskContextPanel({ solution, taskId }: Props) {
                         style={{ width: `${s.score}%` }}
                       />
                     </div>
-                    <span className="text-[10px] text-muted-foreground">{s.score}</span>
+                    <span className="text-[11px] text-muted-foreground">{s.score}</span>
                   </div>
                 </div>
               ))}
@@ -710,14 +710,14 @@ function WorkflowCard({ workflow, expanded, onToggle, onStart, locale }: {
           <div className="space-y-2">
             {workflow.steps.map((step, i) => (
               <div key={step.id} className="flex items-start gap-2.5">
-                <div className="w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
+                <div className="w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[11px] font-bold shrink-0 mt-0.5">
                   {i + 1}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-medium text-foreground">{step.label}</div>
                   <div className="text-[11px] text-muted-foreground">{step.goal}</div>
                   {step.profitImpact && (
-                    <div className="text-[10px] text-primary mt-0.5">
+                    <div className="text-[11px] text-primary mt-0.5">
                       💰 {step.profitImpact.amount}
                     </div>
                   )}

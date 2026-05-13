@@ -115,7 +115,7 @@ export default function TokenQuotaWidget({ expanded }: { expanded: boolean }) {
           {planName || 'AI 用量'}
         </span>
         {isUnlimited && (
-          <span className="ml-auto text-[10px] text-blue-500 font-medium">不限量</span>
+          <span className="ml-auto text-[11px] text-blue-500 font-medium">不限量</span>
         )}
       </div>
 
@@ -124,7 +124,7 @@ export default function TokenQuotaWidget({ expanded }: { expanded: boolean }) {
         <>
           <div className="space-y-1">
             {/* 数字行 */}
-            <div className="flex items-end justify-between text-[10px]">
+            <div className="flex items-end justify-between text-[11px]">
               <span className="text-muted-foreground/70 tabular-nums">
                 已用 <span className="text-foreground font-medium">{fmtTokens(monthlyUsed)}</span>
               </span>
@@ -146,7 +146,7 @@ export default function TokenQuotaWidget({ expanded }: { expanded: boolean }) {
             </div>
 
             {/* 剩余 % + 重置倒计时 */}
-            <div className="flex items-center justify-between text-[10px] text-muted-foreground/50">
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground/50">
               <span>{remainPct.toFixed(0)}% 剩余</span>
               {daysLeft !== null && (
                 <span>{daysLeft} 天后重置</span>
@@ -158,14 +158,14 @@ export default function TokenQuotaWidget({ expanded }: { expanded: boolean }) {
 
       {/* 不限量套餐：仅显示已用量 */}
       {isUnlimited && (
-        <div className="text-[10px] text-muted-foreground/60 tabular-nums">
+        <div className="text-[11px] text-muted-foreground/60 tabular-nums">
           本月已用 {fmtTokens(monthlyUsed)}
         </div>
       )}
 
       {/* 超额警告 */}
       {overageTokens > 0 && allowOverage && (
-        <div className="flex items-center gap-1 text-[10px] text-amber-500">
+        <div className="flex items-center gap-1 text-[11px] text-amber-500">
           <AlertTriangle className="w-3 h-3 shrink-0" />
           <span>超额 {fmtTokens(overageTokens)}（¥{overageCostYuan.toFixed(2)}）</span>
         </div>

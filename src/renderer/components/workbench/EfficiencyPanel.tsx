@@ -542,7 +542,7 @@ function StatCard({ label, value, sublabel, icon, highlight }: {
       </div>
       <p className={`text-2xl font-bold ${highlight ? 'text-primary' : 'text-foreground'}`}>{value}</p>
       {sublabel && (
-        <p className="text-[10px] text-muted-foreground mt-1">{sublabel}</p>
+        <p className="text-[11px] text-muted-foreground mt-1">{sublabel}</p>
       )}
     </div>
   )

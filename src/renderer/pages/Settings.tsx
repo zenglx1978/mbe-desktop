@@ -418,7 +418,7 @@ export default function Settings() {
               >
                 <span className="text-base">🧠</span>
                 知识图谱可视化
-                <span className="text-[10px] text-muted-foreground/50 ml-auto">11 Agent · 577 文件</span>
+                <span className="text-[11px] text-muted-foreground/50 ml-auto">11 Agent · 577 文件</span>
               </button>
               <button
                 type="button"
@@ -427,7 +427,7 @@ export default function Settings() {
               >
                 <span className="text-base">🔥</span>
                 数据热力图分析
-                <span className="text-[10px] text-muted-foreground/50 ml-auto">法律风险 · 投资瓶颈 · 产业链</span>
+                <span className="text-[11px] text-muted-foreground/50 ml-auto">法律风险 · 投资瓶颈 · 产业链</span>
               </button>
               <button
                 type="button"
@@ -436,7 +436,7 @@ export default function Settings() {
               >
                 <span className="text-base">🔬</span>
                 实验洞察仪表盘
-                <span className="text-[10px] text-muted-foreground/50 ml-auto">退火 · 波动 · 策略 · 暖启动</span>
+                <span className="text-[11px] text-muted-foreground/50 ml-auto">退火 · 波动 · 策略 · 暖启动</span>
               </button>
             </div>
           </section>

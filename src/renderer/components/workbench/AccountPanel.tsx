@@ -344,10 +344,10 @@ function PricingSection({ currentPlanCode }: { currentPlanCode: string | null })
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-sm">{tier.name}</span>
                     {isCurrent && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground font-medium">当前套餐</span>
+                      <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground font-medium">当前套餐</span>
                     )}
                     {tier.popular && !isCurrent && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-600 font-medium">推荐</span>
+                      <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-600 font-medium">推荐</span>
                     )}
                   </div>
                   <div className="text-right">
@@ -416,11 +416,11 @@ function PricingSection({ currentPlanCode }: { currentPlanCode: string | null })
             >
               <ShoppingCart className={`w-4 h-4 ${topupLoading === pack.tokens ? 'animate-spin' : 'text-muted-foreground'}`} />
               <span className="text-xs font-semibold">{fmtTokens(pack.tokens)}</span>
-              <span className="text-[10px] text-muted-foreground">¥{pack.yuan}</span>
+              <span className="text-[11px] text-muted-foreground">¥{pack.yuan}</span>
             </button>
           ))}
         </div>
-        <p className="text-[10px] text-muted-foreground/50 mt-2 text-center">
+        <p className="text-[11px] text-muted-foreground/50 mt-2 text-center">
           加油包在当前套餐基础上叠加使用，当月内有效
         </p>
       </div>

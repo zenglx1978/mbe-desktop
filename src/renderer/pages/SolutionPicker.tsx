@@ -30,31 +30,31 @@ interface IntakeResult {
 
 const CATEGORIES: { label: string; ids: string[] }[] = [
   {
-    label: '專業服務',
+    label: '专业服务',
     ids: ['labor-dispatch', 'law-firm', 'finance-tax-service', 'hk-finance-tax', 'tax-agency', 'ip-agency'],
   },
   {
-    label: '工程 · 製造',
+    label: '工程 · 制造',
     ids: ['construction-cost', 'oem-manufacturing', 'legacy-erp-ai', 'logistics-supply-chain', 'government-procurement'],
   },
   {
-    label: '健康 · 醫療',
+    label: '健康 · 医疗',
     ids: ['clinic-respiratory', 'pharmaceutical-compliance'],
   },
   {
-    label: '企業經營',
+    label: '企业经营',
     ids: ['smb-operations', 'ecommerce-brand-service', 'real-estate-management', 'agriculture-tech'],
   },
   {
-    label: '教育 · 培訓',
+    label: '教育 · 培训',
     ids: ['study-abroad-consulting', 'education-training'],
   },
   {
-    label: '金融 · 保險',
+    label: '金融 · 保险',
     ids: ['insurance-operations', 'investment-research', 'capital-markets', 'acquisition-growth'],
   },
   {
-    label: '增長 · 行銷',
+    label: '增长 · 营销',
     ids: ['professional-service-marketing'],
   },
 ]
@@ -64,8 +64,8 @@ function findSolution(id: string): SolutionConfig | undefined {
 }
 
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
-  coming_soon: { label: '即將上線', className: 'bg-amber-500/15 text-amber-500 border-amber-500/20' },
-  draft: { label: '開發中', className: 'bg-slate-500/15 text-slate-400 border-slate-500/20' },
+  coming_soon: { label: '即将上线', className: 'bg-amber-500/15 text-amber-500 border-amber-500/20' },
+  draft: { label: '开发中', className: 'bg-slate-500/15 text-slate-400 border-slate-500/20' },
 }
 
 function SolutionCard({ solution, index, onPick, onLearnMore }: {
@@ -96,7 +96,7 @@ function SolutionCard({ solution, index, onPick, onLearnMore }: {
   return (
     <div
       className={`solution-card group relative flex flex-col p-5 rounded-xl bg-card border border-border/50 text-left animate-fade-in-up ${isClickable ? 'hover:-translate-y-0.5' : 'opacity-60'}`}
-      style={{ animationDelay: `${index * 50}ms` }}
+      style={{ animationDelay: `${Math.min(index * 50, 300)}ms` }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
@@ -123,11 +123,11 @@ function SolutionCard({ solution, index, onPick, onLearnMore }: {
           <span
             className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full"
             style={{ backgroundColor: color + '12', color }}
-            title={`人工 ${solution.valueEquivalent.humanHours} 小時 → MBE ${solution.valueEquivalent.mbeMinutes} 分鐘`}
-            aria-label={`效率提升：${solution.valueEquivalent.humanHours}小時→${solution.valueEquivalent.mbeMinutes}分鐘`}
+            title={`人工 ${solution.valueEquivalent.humanHours} 小时 → MBE ${solution.valueEquivalent.mbeMinutes} 分钟`}
+            aria-label={`效率提升：${solution.valueEquivalent.humanHours}小时→${solution.valueEquivalent.mbeMinutes}分钟`}
           >
             <Zap className="w-3 h-3 shrink-0" />
-            {solution.valueEquivalent.humanHours}小時→{solution.valueEquivalent.mbeMinutes}分鐘
+            {solution.valueEquivalent.humanHours}小时→{solution.valueEquivalent.mbeMinutes}分钟
           </span>
         ) : null}
       </div>
@@ -163,7 +163,7 @@ function SolutionCard({ solution, index, onPick, onLearnMore }: {
             onClick={() => onPick(solution.id)}
             className="flex-1 py-1.5 text-xs font-medium rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            選用方案
+            选用方案
           </button>
           <button
             onClick={() => onLearnMore(solution.id)}
@@ -178,16 +178,16 @@ function SolutionCard({ solution, index, onPick, onLearnMore }: {
 }
 
 const POPULAR_TAGS = [
-  { label: '勞務派遣', query: '我是勞務派遣公司' },
-  { label: '律所', query: '我是律師事務所' },
-  { label: '財稅服務', query: '我需要記賬報稅' },
-  { label: '電商品牌', query: '我做電商' },
-  { label: '中小企業', query: '我是中小企業老板' },
-  { label: '保險', query: '我做保險' },
-  { label: '工程造價', query: '我做工程造價' },
-  { label: '投資研究', query: '我做投資分析' },
-  { label: '留學', query: '我要出國留學' },
-  { label: '香港財稅', query: '我是香港會計師事務所' },
+  { label: '劳务派遣', query: '我是劳务派遣公司' },
+  { label: '律所', query: '我是律师事务所' },
+  { label: '财税服务', query: '我需要记账报税' },
+  { label: '电商品牌', query: '我做电商' },
+  { label: '中小企业', query: '我是中小企业老板' },
+  { label: '保险', query: '我做保险' },
+  { label: '工程造价', query: '我做工程造价' },
+  { label: '投资研究', query: '我做投资分析' },
+  { label: '留学', query: '我要出国留学' },
+  { label: '香港财税', query: '我是香港会计师事务所' },
 ]
 
 export default function SolutionPicker() {
@@ -270,12 +270,12 @@ export default function SolutionPicker() {
         }
       } else {
         setIntakeResults([])
-        setIntakeError('匹配服務暫時不可用，請從下方瀏覽全部方案')
+        setIntakeError('匹配服务暂时不可用，请从下方浏览全部方案')
         setShowAllSolutions(true)
       }
     } catch {
       setIntakeResults([])
-      setIntakeError('網絡連接失敗，請從下方瀏覽全部方案')
+        setIntakeError('网络连接失败，请从下方浏览全部方案')
       setShowAllSolutions(true)
     } finally {
       setIntakeLoading(false)
@@ -396,10 +396,10 @@ export default function SolutionPicker() {
           {/* 標題 + 副標題 — 先問再選 */}
           <div className="max-w-2xl mb-6 animate-fade-in-up">
             <h1 className="text-3xl font-bold text-foreground mb-2 tracking-tight">
-              告訴我們你的行業
+              告诉我们你的行业
             </h1>
             <p className="text-muted-foreground text-[15px] leading-relaxed">
-              一句話描述你做什麼，AI 立刻為你匹配最合適的專家團隊
+              一句话描述你做什么，AI 立刻为你匹配最合适的专家团队
             </p>
           </div>
 
@@ -413,8 +413,8 @@ export default function SolutionPicker() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleIntakeSubmit()}
-                placeholder="例如：我是律師事務所 / 我需要記賬報稅 / 我做電商..."
-                aria-label="描述你的行業，AI 為你匹配方案"
+                placeholder="例如：我是律师事务所 / 我需要记账报税 / 我做电商..."
+                aria-label="描述你的行业，AI 为你匹配方案"
                 className="w-full pl-11 pr-24 py-3.5 text-sm bg-card border border-border/40 rounded-xl text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition-all"
               />
               <button
@@ -449,7 +449,7 @@ export default function SolutionPicker() {
             <div className="flex items-center gap-5 text-xs text-muted-foreground/60 mt-1">
               <span className="flex items-center gap-1.5">
                 <Briefcase className="w-3.5 h-3.5" />
-                {availableRegistry.length} 個行業方案
+                {availableRegistry.length} 个行业方案
               </span>
             </div>
           </div>
@@ -462,7 +462,7 @@ export default function SolutionPicker() {
           {scanning && !scanDone ? (
             <div className="flex items-center gap-3 px-5 py-4 rounded-xl border border-primary/20 bg-primary/5 animate-pulse">
               <Scan className="w-5 h-5 text-primary animate-spin" />
-              <span className="text-sm text-primary/80">正在分析您的電腦環境，智能推薦最適合的方案...</span>
+              <span className="text-sm text-primary/80">正在分析您的电脑环境，智能推荐最适合的方案...</span>
             </div>
           ) : topRecommendation ? (
             <div className="rounded-xl border border-primary/25 bg-gradient-to-r from-primary/[0.06] to-transparent p-5 animate-fade-in-up">
@@ -472,14 +472,14 @@ export default function SolutionPicker() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-sm font-semibold text-foreground">為您智能推薦</h3>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/15 text-primary font-medium">
+                    <h3 className="text-sm font-semibold text-foreground">为您智能推荐</h3>
+                    <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-primary/15 text-primary font-medium">
                       {Math.round(topRecommendation.confidence * 100)}% 匹配
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground mb-3">
-                    檢測到您的電腦安裝了 <span className="text-foreground font-medium">{topRecommendation.matchedApps.slice(0, 3).join('、')}</span> 等軟件，
-                    您可能從事 <span className="text-primary font-medium">{topRecommendation.industry}</span> 相關工作
+                    检测到您的电脑安装了 <span className="text-foreground font-medium">{topRecommendation.matchedApps.slice(0, 3).join('、')}</span> 等软件，
+                    您可能从事 <span className="text-primary font-medium">{topRecommendation.industry}</span> 相关工作
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {industryGuesses.map((guess) => {
@@ -494,7 +494,7 @@ export default function SolutionPicker() {
                         >
                           {(() => { const I = getSolutionIcon(sol.id); return <I className="w-4 h-4 text-primary" /> })()}
                           <span className="font-medium">{sol.name}</span>
-                          <span className="text-[10px] text-muted-foreground">
+                          <span className="text-[11px] text-muted-foreground">
                             {Math.round(guess.confidence * 100)}%
                           </span>
                         </button>
@@ -524,9 +524,9 @@ export default function SolutionPicker() {
           <div className="flex items-center gap-2 mb-4">
             <Sparkles className="w-4 h-4 text-primary" />
             <h2 className="text-sm font-semibold text-foreground">
-              為「{intakeQuery}」推薦的方案
+              为「{intakeQuery}」推荐的方案
             </h2>
-            <span className="text-xs text-muted-foreground/50">({filteredIntakeResults.length} 個匹配)</span>
+            <span className="text-xs text-muted-foreground/50">({filteredIntakeResults.length} 个匹配)</span>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filteredIntakeResults.map((rec, i) => {
@@ -606,7 +606,7 @@ export default function SolutionPicker() {
             className="inline-flex items-center gap-1.5 px-5 py-2.5 text-sm text-muted-foreground hover:text-foreground border border-border/40 rounded-xl hover:border-border transition-all"
           >
             <ChevronDown className="w-4 h-4" />
-            {intakeResults.length > 0 ? `不滿意？瀏覽全部 ${availableRegistry.length} 個方案` : `或者，瀏覽全部行業方案`}
+            {intakeResults.length > 0 ? `不满意？浏览全部 ${availableRegistry.length} 个方案` : `或者，浏览全部行业方案`}
           </button>
         </div>
       )}
@@ -614,8 +614,8 @@ export default function SolutionPicker() {
         {filteredCategories.length === 0 && !search.trim() ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <Briefcase className="w-12 h-12 text-muted-foreground/20 mb-4" />
-            <p className="text-muted-foreground font-medium">暫無可用方案</p>
-            <p className="text-muted-foreground/50 text-sm mt-1">請聯絡管理員配置行業方案</p>
+            <p className="text-muted-foreground font-medium">暂无可用方案</p>
+            <p className="text-muted-foreground/50 text-sm mt-1">请联络管理员配置行业方案</p>
           </div>
         ) : filteredCategories.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in">
@@ -638,7 +638,7 @@ export default function SolutionPicker() {
                       {cat.label}
                     </h2>
                     <div className="flex-1 h-px bg-border/20" />
-                    <span className="text-[11px] text-muted-foreground/40">{solutions.length} 個</span>
+                    <span className="text-[11px] text-muted-foreground/40">{solutions.length} 个</span>
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {solutions.map((s) => {
@@ -669,8 +669,8 @@ export default function SolutionPicker() {
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-fade-in">
             <div className="w-full max-w-md mx-4 rounded-2xl bg-card border border-border p-6 shadow-2xl animate-fade-in-up">
-              <h3 className="text-lg font-bold text-foreground mb-1">快速設置</h3>
-              <p className="text-sm text-muted-foreground mb-6">幫我們了解你的情況，AI 專家會更準確地服務你</p>
+              <h3 className="text-lg font-bold text-foreground mb-1">快速设置</h3>
+              <p className="text-sm text-muted-foreground mb-6">帮我们了解你的情况，AI 专家会更准确地服务你</p>
               <div className="space-y-5">
                 {questions.map((q) => (
                   <div key={q.key}>
@@ -694,7 +694,7 @@ export default function SolutionPicker() {
                   onClick={completeOnboarding}
                   className="flex-1 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity"
                 >
-                  開始使用
+                  开始使用
                 </button>
                 <button
                   onClick={() => {

@@ -56,7 +56,7 @@ export function DashboardTemplateCard({ tmpl, onStart, starting, agentName, onRe
               </span>
             )}
           </div>
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-[11px] text-muted-foreground">
             {tmpl.steps.length} 步自动完成
             {tmpl.schedule && <span className="ml-1.5 text-primary">⏰ 定时</span>}
           </p>
@@ -67,12 +67,12 @@ export function DashboardTemplateCard({ tmpl, onStart, starting, agentName, onRe
       )}
       <div className="flex items-center gap-1.5 flex-wrap">
         {tmpl.steps.slice(0, 4).map((s) => (
-          <span key={s.id} className="text-[10px] px-1.5 py-0.5 rounded bg-secondary/30 text-muted-foreground">
+          <span key={s.id} className="text-[11px] px-1.5 py-0.5 rounded bg-secondary/30 text-muted-foreground">
             {s.name}
           </span>
         ))}
         {tmpl.steps.length > 4 && (
-          <span className="text-[10px] text-muted-foreground">+{tmpl.steps.length - 4}</span>
+          <span className="text-[11px] text-muted-foreground">+{tmpl.steps.length - 4}</span>
         )}
       </div>
       <div className="mt-auto flex items-center gap-1.5">
@@ -86,7 +86,7 @@ export function DashboardTemplateCard({ tmpl, onStart, starting, agentName, onRe
         {hasCanary && (
           <button
             onClick={async () => { await promoteCanary(agentName, tmpl.id); onRefresh() }}
-            className="px-2 py-1.5 rounded-lg text-[10px] bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-950 dark:text-green-300 dark:hover:bg-green-900"
+            className="px-2 py-1.5 rounded-lg text-[11px] bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-950 dark:text-green-300 dark:hover:bg-green-900"
             title="全量发布灰度版本"
           >
             全量
@@ -94,7 +94,7 @@ export function DashboardTemplateCard({ tmpl, onStart, starting, agentName, onRe
         )}
         <button
           onClick={async () => { await rollbackTemplate(agentName, tmpl.id); onRefresh() }}
-          className="px-2 py-1.5 rounded-lg text-[10px] text-muted-foreground hover:bg-secondary/50"
+          className="px-2 py-1.5 rounded-lg text-[11px] text-muted-foreground hover:bg-secondary/50"
           title="回滚到上一版本"
         >
           回滚

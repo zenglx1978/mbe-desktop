@@ -41,12 +41,12 @@ export function DashboardExtendedSections({
                 <span className="text-lg">{getTemplateIcon(s.template_id)}</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm truncate">{s.name}</p>
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-[11px] text-muted-foreground">
                     {s.schedule_description || s.schedule}
                   </p>
                 </div>
                 {s.next_run && (
-                  <span className="text-[10px] text-primary font-mono shrink-0">
+                  <span className="text-[11px] text-primary font-mono shrink-0">
                     下次 {new Date(s.next_run).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </span>
                 )}
@@ -72,7 +72,7 @@ export function DashboardExtendedSections({
                   <span className="text-lg">🌐</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{wf.name}</p>
-                    <p className="text-[10px] text-muted-foreground truncate">
+                    <p className="text-[11px] text-muted-foreground truncate">
                       {wf.description || `${wf.mode} · ${wf.steps.length} 步`}
                     </p>
                     <div className="flex flex-wrap gap-1 mt-1">
@@ -144,7 +144,7 @@ export function DashboardExtendedSections({
                       </span>
                     )}
                   </div>
-                  <p className="text-[10px] text-muted-foreground truncate">
+                  <p className="text-[11px] text-muted-foreground truncate">
                     {wh.endpoint} → {wh.template_id}
                     {wh.trigger_count > 0 && ` · 已触发 ${wh.trigger_count} 次`}
                   </p>
@@ -156,7 +156,7 @@ export function DashboardExtendedSections({
                       setWebhooks((prev) => prev.filter((h) => h.hook_id !== wh.hook_id))
                     }
                   }}
-                  className="px-2 py-1 text-[10px] rounded text-red-500 hover:bg-red-50 dark:hover:bg-red-950 shrink-0"
+                  className="px-2 py-1 text-[11px] rounded text-red-500 hover:bg-red-50 dark:hover:bg-red-950 shrink-0"
                   title="删除"
                 >
                   删除

@@ -156,6 +156,7 @@ export default function Sidebar() {
                 setActiveTab(tab)
                 if (solutionId) trackTabSwitch(solutionId, tab)
               }}
+              aria-label={!sidebarExpanded ? meta.label : undefined}
               className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors relative ${
                 isActive
                   ? 'bg-primary/10'

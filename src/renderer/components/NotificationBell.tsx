@@ -69,7 +69,7 @@ export default function NotificationBell() {
       >
         <Bell className="w-4 h-4" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-medium">
+          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[11px] rounded-full flex items-center justify-center font-medium">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -125,7 +125,7 @@ export default function NotificationBell() {
                         <span className="text-xs font-medium truncate">
                           {TYPE_LABELS[n.type] || n.type}
                         </span>
-                        <span className="text-[10px] text-muted-foreground ml-auto shrink-0">
+                        <span className="text-[11px] text-muted-foreground ml-auto shrink-0">
                           {formatTime(n.created_at)}
                         </span>
                       </div>

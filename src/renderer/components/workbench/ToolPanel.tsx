@@ -185,7 +185,7 @@ function ResultTable({ data, tool, source }: { data: Record<string, unknown>; to
           <span className="font-medium text-sm">{tool.name} · 计算结果</span>
         </div>
         {source && (
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
+          <span className="text-[11px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
             {source === 'local' ? '📱 本地计算' : '☁️ 云端计算'}
           </span>
         )}
@@ -198,7 +198,7 @@ function ResultTable({ data, tool, source }: { data: Record<string, unknown>; to
           </div>
         ))}
       </div>
-      <div className="px-4 py-2 bg-secondary/20 text-[10px] text-muted-foreground/50">
+      <div className="px-4 py-2 bg-secondary/20 text-[11px] text-muted-foreground/50">
         结果仅供参考，具体以实际为准
       </div>
     </>

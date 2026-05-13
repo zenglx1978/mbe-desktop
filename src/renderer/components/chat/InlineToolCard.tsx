@@ -34,7 +34,7 @@ export default function InlineToolCard({ card }: { card: ToolCardData }) {
           <span>{card.toolIcon}</span>
           <span className="text-xs font-medium">{card.toolName}</span>
           {card.confidence && (
-            <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600">
+            <span className="ml-auto text-[11px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600">
               {card.confidence}
             </span>
           )}
@@ -52,12 +52,12 @@ export default function InlineToolCard({ card }: { card: ToolCardData }) {
         <div className="px-3 py-2 border-t border-border/30 flex items-center gap-2">
           <button
             onClick={handleOpenTool}
-            className="text-[10px] text-primary hover:underline"
+            className="text-[11px] text-primary hover:underline"
           >
             打开 {card.toolName} →
           </button>
           {card.source && (
-            <span className="ml-auto text-[10px] text-muted-foreground/50">
+            <span className="ml-auto text-[11px] text-muted-foreground/50">
               {card.source === 'local' ? '📱 本地' : '☁️ 云端'}
             </span>
           )}

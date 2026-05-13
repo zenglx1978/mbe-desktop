@@ -105,17 +105,17 @@ export function CopilotReplyCard({
       {/* 头部：客户信息 */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-violet-200 dark:bg-violet-800 flex items-center justify-center text-[10px] font-bold text-violet-700 dark:text-violet-300">
+          <div className="w-6 h-6 rounded-full bg-violet-200 dark:bg-violet-800 flex items-center justify-center text-[11px] font-bold text-violet-700 dark:text-violet-300">
             {reply.customerName.charAt(0)}
           </div>
           <div>
             <span className="text-sm font-medium">{reply.customerName}</span>
-            <span className="text-[10px] text-muted-foreground ml-2">
+            <span className="text-[11px] text-muted-foreground ml-2">
               {APP_LABELS[reply.sourceApp] ?? reply.sourceApp}
             </span>
           </div>
         </div>
-        <span className={`text-[10px] ${confidenceColor}`}>
+        <span className={`text-[11px] ${confidenceColor}`}>
           {Math.round(reply.confidence * 100)}%
         </span>
       </div>
@@ -123,7 +123,7 @@ export function CopilotReplyCard({
       {/* 客户问题 */}
       {!compact && (
         <div className="mb-2 px-2 py-1.5 rounded bg-black/5 dark:bg-white/5 text-xs text-muted-foreground">
-          <span className="text-[10px] font-medium text-muted-foreground/60">客户:</span>{' '}
+          <span className="text-[11px] font-medium text-muted-foreground/60">客户:</span>{' '}
           {reply.customerQuery.length > 120
             ? reply.customerQuery.slice(0, 120) + '...'
             : reply.customerQuery}
@@ -254,7 +254,7 @@ export function BatchCopilotPanel() {
             待回复客户 ({pending.length})
           </span>
           {stats.copied > 0 && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-200 dark:bg-blue-800 text-blue-700 dark:text-blue-300">
+            <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-blue-200 dark:bg-blue-800 text-blue-700 dark:text-blue-300">
               {stats.copied} 待粘贴
             </span>
           )}
@@ -280,7 +280,7 @@ export function BatchCopilotPanel() {
 
       {/* 底部统计 */}
       {expanded && (stats.sent > 0 || stats.skipped > 0) && (
-        <div className="px-4 py-2 border-t border-violet-200/50 dark:border-violet-800/50 flex items-center gap-3 text-[10px] text-muted-foreground">
+        <div className="px-4 py-2 border-t border-violet-200/50 dark:border-violet-800/50 flex items-center gap-3 text-[11px] text-muted-foreground">
           {stats.sent > 0 && <span>✓ 已发送 {stats.sent}</span>}
           {stats.skipped > 0 && <span>→ 已跳过 {stats.skipped}</span>}
           {stats.escalated > 0 && <span>⚡ 已转人工 {stats.escalated}</span>}

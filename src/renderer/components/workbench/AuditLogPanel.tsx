@@ -77,7 +77,7 @@ export default function AuditLogPanel({ entityType, entityId, limit = 50 }: Prop
                 </div>
               )}
             </div>
-            <span className="text-[10px] text-muted-foreground/60 shrink-0">
+            <span className="text-[11px] text-muted-foreground/60 shrink-0">
               {new Date(log.createdAt).toLocaleString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>

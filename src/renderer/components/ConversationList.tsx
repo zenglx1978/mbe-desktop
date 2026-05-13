@@ -111,7 +111,7 @@ export default function ConversationList({ solutionId, onClose }: Props) {
                     {conv.title || '新对话'}
                   </span>
                   <div className="flex items-center gap-1 shrink-0">
-                    <span className="text-[10px] text-muted-foreground/60">
+                    <span className="text-[11px] text-muted-foreground/60">
                       {formatTime(conv.createdAt)}
                     </span>
                     <button

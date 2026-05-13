@@ -112,7 +112,7 @@ export default function ClientChatPanel() {
                   >
                     <FileText className="w-3 h-3" /> 文档
                     {digests.length > 0 && (
-                      <span className="ml-0.5 text-[10px] bg-primary/15 text-primary px-1 rounded-full">{digests.length}</span>
+                      <span className="ml-0.5 text-[11px] bg-primary/15 text-primary px-1 rounded-full">{digests.length}</span>
                     )}
                   </button>
                   <button
@@ -123,7 +123,7 @@ export default function ClientChatPanel() {
                   >
                     <ListChecks className="w-3 h-3" /> 任务
                     {tasks.filter(t => t.status !== 'done' && t.status !== 'cancelled').length > 0 && (
-                      <span className="ml-0.5 text-[10px] bg-amber-500/15 text-amber-400 px-1 rounded-full">
+                      <span className="ml-0.5 text-[11px] bg-amber-500/15 text-amber-400 px-1 rounded-full">
                         {tasks.filter(t => t.status !== 'done' && t.status !== 'cancelled').length}
                       </span>
                     )}

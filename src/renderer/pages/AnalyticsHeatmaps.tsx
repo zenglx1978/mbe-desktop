@@ -199,7 +199,7 @@ export default function AnalyticsHeatmaps() {
         </button>
         <div className="flex-1">
           <h1 className="text-sm font-semibold">数据热力图分析</h1>
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-[11px] text-muted-foreground">
             法律风险 · 投资瓶颈 · 产业链冲击
             {useMock && <span className="ml-2 text-amber-500">（示例数据 — 后端未连接）</span>}
           </p>
@@ -280,7 +280,7 @@ export default function AnalyticsHeatmaps() {
               <div className="flex items-center gap-2 mb-4">
                 <TrendingUp className="w-4 h-4 text-purple-500" />
                 <h2 className="text-sm font-semibold">产业链 AI 冲击热力图</h2>
-                <span className="text-[10px] text-muted-foreground ml-2">
+                <span className="text-[11px] text-muted-foreground ml-2">
                   {chain.industries_count} 个行业
                 </span>
               </div>
@@ -303,7 +303,7 @@ export default function AnalyticsHeatmaps() {
               <div className="flex items-center gap-2 mb-4">
                 <Shield className="w-4 h-4 text-red-500" />
                 <h2 className="text-sm font-semibold">合同条款风险分布</h2>
-                <span className="text-[10px] text-muted-foreground ml-2">
+                <span className="text-[11px] text-muted-foreground ml-2">
                   共 {risk.total_clauses} 条款
                 </span>
               </div>
@@ -358,11 +358,11 @@ export default function AnalyticsHeatmaps() {
                     >
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-xs font-medium">#{item.index} {item.title}</span>
-                        <span className="text-[10px] font-bold text-red-500">
+                        <span className="text-[11px] font-bold text-red-500">
                           {(item.score * 100).toFixed(0)}分
                         </span>
                       </div>
-                      <ul className="text-[10px] text-muted-foreground space-y-0.5">
+                      <ul className="text-[11px] text-muted-foreground space-y-0.5">
                         {item.issues.map((issue, i) => (
                           <li key={i}>· {issue}</li>
                         ))}

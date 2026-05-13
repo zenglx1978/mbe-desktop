@@ -170,16 +170,16 @@ export default function DispatchDashboard() {
                       <div className="flex-1 p-3 rounded-xl border border-border/30 bg-card space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span
-                            className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                            className="text-[11px] px-2 py-0.5 rounded-full font-medium"
                             style={{ backgroundColor: `${st.color}15`, color: st.color }}
                           >
                             {st.label}
                           </span>
                           <span className="text-xs font-medium">{item.agent_name}/{item.expert_id || '—'}</span>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted/30 text-muted-foreground">
+                          <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-muted/30 text-muted-foreground">
                             {item.source}
                           </span>
-                          <span className="text-[10px] text-muted-foreground ml-auto">
+                          <span className="text-[11px] text-muted-foreground ml-auto">
                             {item.created_at ? new Date(item.created_at).toLocaleString('zh-CN') : '—'}
                           </span>
                         </div>
@@ -189,7 +189,7 @@ export default function DispatchDashboard() {
                         {item.result_summary && (
                           <p className="text-xs text-foreground/80 line-clamp-2">{item.result_summary}</p>
                         )}
-                        <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
                           {item.token_cost > 0 && <span>Token: {item.token_cost}</span>}
                           <span className="font-mono">{item.request_id.slice(0, 8)}</span>
                         </div>
@@ -231,22 +231,22 @@ function DeviceCard({ device, color }: { device: HubDesktopInfo; color: string }
         <span className="text-sm font-medium flex-1 truncate">{device.device_name}</span>
         <div className={`w-2 h-2 rounded-full ${isHealthy ? 'bg-green-500' : 'bg-yellow-500'}`} />
       </div>
-      <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
+      <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
         <span>负载: {device.active_load}</span>
         <span>心跳: {device.last_pong_age_s.toFixed(0)}s ago</span>
       </div>
       {device.agents.length > 0 ? (
         <div className="flex flex-wrap gap-1">
           {device.agents.map((a) => (
-            <span key={a} className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10" style={{ color }}>
+            <span key={a} className="text-[11px] px-1.5 py-0.5 rounded bg-primary/10" style={{ color }}>
               {a}
             </span>
           ))}
         </div>
       ) : (
-        <p className="text-[10px] text-muted-foreground">支持全部 Agent</p>
+        <p className="text-[11px] text-muted-foreground">支持全部 Agent</p>
       )}
-      <p className="text-[10px] text-muted-foreground">
+      <p className="text-[11px] text-muted-foreground">
         连接于 {device.connected_at ? new Date(device.connected_at).toLocaleString('zh-CN') : '—'}
       </p>
     </div>

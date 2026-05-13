@@ -100,13 +100,13 @@ function ExpertCard({ expert, index }: { expert: ExpertStatus; index: number }) 
           {expert.name}
         </p>
         {expert.role && (
-          <p className="text-[10px] text-gray-400 truncate">{expert.role}</p>
+          <p className="text-[11px] text-gray-400 truncate">{expert.role}</p>
         )}
         <div className="flex items-center gap-1.5 mt-0.5">
           <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${style.dot}`} />
-          <span className={`text-[10px] ${style.text}`}>{style.label}</span>
+          <span className={`text-[11px] ${style.text}`}>{style.label}</span>
           {expert.status === 'done' && expert.elapsed_ms != null && (
-            <span className="text-[10px] tabular-nums text-gray-400 ml-1">{formatMs(expert.elapsed_ms)}</span>
+            <span className="text-[11px] tabular-nums text-gray-400 ml-1">{formatMs(expert.elapsed_ms)}</span>
           )}
         </div>
 
@@ -215,10 +215,10 @@ export function ExpertOrchestrationPanel({
             <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
               AI 专家{allDone ? '协作完成' : '协作中'}
             </span>
-            <span className="ml-2 text-[10px] text-gray-400">{mode.desc}</span>
+            <span className="ml-2 text-[11px] text-gray-400">{mode.desc}</span>
           </div>
         </div>
-        <div className="flex items-center gap-3 text-[10px] text-gray-400">
+        <div className="flex items-center gap-3 text-[11px] text-gray-400">
           {workingCount > 0 && (
             <span className="flex items-center gap-1">
               <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" aria-hidden="true" />
@@ -256,7 +256,7 @@ export function ExpertOrchestrationPanel({
             <div key={expert.id} className="flex items-center gap-2">
               <ExpertCard expert={expert} index={i} />
               {expert.status === 'done' && (
-                <span className="text-[10px] text-emerald-500 font-medium shrink-0">
+                <span className="text-[11px] text-emerald-500 font-medium shrink-0">
                   {i === 0 ? '✦ 最优' : `#${i + 1}`}
                 </span>
               )}

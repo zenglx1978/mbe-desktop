@@ -198,7 +198,7 @@ export default function DispatchPanel() {
                         <p className="text-sm leading-relaxed line-clamp-3">
                           {r.result_summary || r.status}
                         </p>
-                        <div className="flex items-center gap-3 text-[10px] text-muted-foreground mt-1">
+                        <div className="flex items-center gap-3 text-[11px] text-muted-foreground mt-1">
                           <span>{r.completed_at ? new Date(r.completed_at).toLocaleString('zh-CN') : ''}</span>
                           <span className="font-mono">{r.request_id.slice(0, 8)}</span>
                         </div>

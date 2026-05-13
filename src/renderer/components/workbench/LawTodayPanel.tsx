@@ -152,7 +152,7 @@ export default function LawTodayPanel({ solution }: Props) {
           })}
         </div>
         {dataSource === 'mock' && (
-          <p className="text-[10px] text-muted-foreground/50 text-center -mt-3">数据为演示值，连接后端后自动刷新</p>
+          <p className="text-[11px] text-muted-foreground/50 text-center -mt-3">数据为演示值，连接后端后自动刷新</p>
         )}
 
         {/* 案件日历 — 截止日倒计时 */}

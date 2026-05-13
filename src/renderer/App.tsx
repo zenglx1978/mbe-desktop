@@ -1,6 +1,7 @@
 import { Component, Suspense, lazy, useEffect, useState } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { AlertTriangle } from 'lucide-react'
 import { useAppStore } from '@/stores/app-store'
 import { useAuthStore } from '@/stores/auth-store'
 
@@ -61,7 +62,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
       return (
         <div className="flex items-center justify-center h-screen bg-background">
           <div className="text-center space-y-6 max-w-md px-6">
-            <div className="text-6xl">⚠</div>
+            <div className="flex justify-center"><AlertTriangle className="w-16 h-16 text-destructive" /></div>
             <h1 className="text-2xl font-bold">应用出现异常</h1>
             <p className="text-muted-foreground text-sm">
               {this.state.error?.message || '未知错误'}

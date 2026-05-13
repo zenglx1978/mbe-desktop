@@ -151,7 +151,7 @@ export default function LaborTodayPanel({ solution }: Props) {
           })}
         </div>
         {dataSource === 'mock' && (
-          <p className="text-[10px] text-muted-foreground/50 text-center -mt-3">数据为演示值，连接后端后自动刷新</p>
+          <p className="text-[11px] text-muted-foreground/50 text-center -mt-3">数据为演示值，连接后端后自动刷新</p>
         )}
 
         {/* 截止日历 */}
@@ -172,7 +172,7 @@ export default function LaborTodayPanel({ solution }: Props) {
                   <div className="text-sm font-medium text-foreground">{d.name}</div>
                   <div className="text-xs text-muted-foreground">截止日: {d.date}</div>
                 </div>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full ${d.type === 'contract' ? 'bg-blue-500/10 text-blue-500' : d.type === 'settlement' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-violet-500/10 text-violet-500'}`}>
+                <span className={`text-[11px] px-2 py-0.5 rounded-full ${d.type === 'contract' ? 'bg-blue-500/10 text-blue-500' : d.type === 'settlement' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-violet-500/10 text-violet-500'}`}>
                   {d.type === 'contract' ? '合同' : d.type === 'settlement' ? '结算' : '合规'}
                 </span>
                 <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${d.urgent ? 'bg-red-500/10 text-red-500' : d.daysLeft <= 7 ? 'bg-amber-500/10 text-amber-500' : 'bg-muted text-muted-foreground'}`}>

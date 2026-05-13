@@ -260,7 +260,7 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
                           {wf.steps.map((s, i) => {
                             const ModeIcon = wf.mode ? ORCHESTRATION_META[wf.mode]?.icon : undefined
                             return (
-                              <span key={s.id ?? i} className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
+                              <span key={s.id ?? i} className="flex items-center gap-1 text-[11px] text-muted-foreground/60">
                                 {i > 0 && ModeIcon && <ModeIcon className="w-3 h-3" />}
                                 {s.label}
                                 {s.profitImpact && <ProfitBadge impact={s.profitImpact} />}
@@ -421,7 +421,7 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
                     return (
                       <span key={s.id ?? i} className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
                         {i > 0 && ModeIcon && <ModeIcon className="w-3 h-3 text-border" />}
-                        <span className="w-5 h-5 rounded-full bg-secondary/40 flex items-center justify-center text-[10px] font-bold">
+                        <span className="w-5 h-5 rounded-full bg-secondary/40 flex items-center justify-center text-[11px] font-bold">
                           {i + 1}
                         </span>
                         {s.label}
@@ -432,7 +432,7 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
                 {activeWf.steps.some(s => s.profitImpact) && (
                   <div className="flex flex-wrap gap-2 px-4">
                     {activeWf.steps.filter(s => s.profitImpact).map((s, i) => (
-                      <span key={s.id ?? i} className="text-[10px] text-muted-foreground">
+                      <span key={s.id ?? i} className="text-[11px] text-muted-foreground">
                         {s.label}: <ProfitBadge impact={s.profitImpact} />
                       </span>
                     ))}
@@ -577,7 +577,7 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
                 <div className="px-5 py-4 rounded-xl border border-border/40 bg-card max-h-[60vh] overflow-y-auto">
                   <MarkdownContent content={scenarioAnswer} />
                   {activeScenario?.apiEndpoint && (
-                    <div className="mt-3 pt-2 border-t border-border/20 flex items-center gap-2 text-[10px] text-muted-foreground/50">
+                    <div className="mt-3 pt-2 border-t border-border/20 flex items-center gap-2 text-[11px] text-muted-foreground/50">
                       <span>数据来源：规则引擎 + 知识库</span>
                     </div>
                   )}
@@ -630,7 +630,7 @@ function ProfitBadge({ impact }: { impact?: ProfitImpact }) {
   const dim = PROFIT_DIM_META[impact.dimension] || PROFIT_DIM_META.revenue
   const DimIcon = dim.icon
   return (
-    <span className={`inline-flex items-center gap-1 text-[10px] ${dim.cls} bg-secondary/30 rounded-full px-2 py-0.5`}>
+    <span className={`inline-flex items-center gap-1 text-[11px] ${dim.cls} bg-secondary/30 rounded-full px-2 py-0.5`}>
       <DimIcon className="w-3 h-3" /> {dim.label}：{impact.amount}
     </span>
   )
@@ -692,14 +692,14 @@ function StepCard({ index, step, status, answer, error, durationMs, color }: {
           <p className="text-sm font-medium">
             第 {index + 1} 步 · {step.label}
           </p>
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-[11px] text-muted-foreground">
             {step.agent}.{step.expert}
           </p>
           {step.profitImpact && <ProfitBadge impact={step.profitImpact} />}
         </div>
 
         {durationMs != null && (
-          <span className="text-[10px] text-muted-foreground shrink-0">
+          <span className="text-[11px] text-muted-foreground shrink-0">
             {(durationMs / 1000).toFixed(1)}秒
           </span>
         )}

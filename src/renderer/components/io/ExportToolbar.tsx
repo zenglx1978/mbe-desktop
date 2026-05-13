@@ -148,7 +148,7 @@ export default function ExportToolbar({ content, title = '对话导出', classNa
       >
         <Share2 className="h-4 w-4" />
       </button>
-      {copied ? <span className="text-[10px] text-emerald-400 whitespace-nowrap pl-0.5">已复制</span> : null}
+      {copied ? <span className="text-[11px] text-emerald-400 whitespace-nowrap pl-0.5">已复制</span> : null}
     </div>
   )
 }

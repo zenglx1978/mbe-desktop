@@ -51,7 +51,7 @@ function TypeBadge({ type }: { type: Activity['type'] }) {
   }
   const m = meta[type] || meta.conversation
   return (
-    <span className={`text-[10px] px-1.5 py-0.5 rounded-md shrink-0 ${m.cls}`}>
+    <span className={`text-[11px] px-1.5 py-0.5 rounded-md shrink-0 ${m.cls}`}>
       {m.label}
     </span>
   )

@@ -159,13 +159,13 @@ function CalculatorSection({ section, active }: { section: ScrollySection; activ
 
         <div className="mt-6 grid grid-cols-2 gap-4">
           <div className="rounded-xl bg-gray-50 dark:bg-gray-800/50 p-4 text-center">
-            <p className="text-[10px] text-gray-500 mb-1">传统人工成本</p>
+            <p className="text-[11px] text-gray-500 mb-1">传统人工成本</p>
             <p className="text-xl font-bold text-gray-800 dark:text-gray-200 tabular-nums">
               ¥{humanCost.toLocaleString()}
             </p>
           </div>
           <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 p-4 text-center">
-            <p className="text-[10px] text-emerald-600 mb-1">AI 专家团队</p>
+            <p className="text-[11px] text-emerald-600 mb-1">AI 专家团队</p>
             <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
               ¥{aiCost.toLocaleString()}
             </p>
@@ -237,7 +237,7 @@ function WorkflowSection({ section, active }: { section: ScrollySection; active:
                 {s}
               </span>
               {i === step && (
-                <span className="ml-auto text-[10px] text-blue-500 animate-pulse">处理中...</span>
+                <span className="ml-auto text-[11px] text-blue-500 animate-pulse">处理中...</span>
               )}
             </div>
           ))}

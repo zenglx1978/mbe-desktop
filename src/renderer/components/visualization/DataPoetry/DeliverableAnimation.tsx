@@ -126,9 +126,9 @@ export function DeliverableAnimation({
             {deliverable.title}
           </p>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-[10px] text-gray-500">{typeInfo.label}</span>
-            <span className="text-[10px] text-gray-400">·</span>
-            <span className="text-[10px] text-gray-500">{deliverable.expert_name}</span>
+            <span className="text-[11px] text-gray-500">{typeInfo.label}</span>
+            <span className="text-[11px] text-gray-400">·</span>
+            <span className="text-[11px] text-gray-500">{deliverable.expert_name}</span>
           </div>
         </div>
 
@@ -138,21 +138,21 @@ export function DeliverableAnimation({
             <svg className="h-4 w-4 animate-[scale-in_0.3s_ease-out]" viewBox="0 0 16 16" fill="none">
               <path d="M3 8l3.5 3.5L13 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <span className="text-[10px] font-medium">已完成</span>
+            <span className="text-[11px] font-medium">已完成</span>
           </div>
         )}
 
         {phase === 'fluid' && (
           <div className="shrink-0 flex items-center gap-1 text-gray-400">
             <div className="h-2 w-2 rounded-full bg-blue-400 animate-pulse" />
-            <span className="text-[10px]">生成中</span>
+            <span className="text-[11px]">生成中</span>
           </div>
         )}
 
         {phase === 'crystallizing' && (
           <div className="shrink-0 flex items-center gap-1 text-amber-500">
             <div className="h-2 w-2 rounded-full bg-amber-400 animate-spin" />
-            <span className="text-[10px]">凝固中</span>
+            <span className="text-[11px]">凝固中</span>
           </div>
         )}
       </div>

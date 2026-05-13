@@ -108,7 +108,7 @@ export function ChatLocalActionCards({ actions, messageId, actionStatus }: ChatL
           <span>⚡</span>
           <span>{isChain ? '操作链' : '可执行操作'}</span>
           {isChain && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-200 dark:bg-violet-800 text-violet-600 dark:text-violet-300">
+            <span className="text-[11px] px-1.5 py-0.5 rounded bg-violet-200 dark:bg-violet-800 text-violet-600 dark:text-violet-300">
               {actions.length} 步
             </span>
           )}
@@ -117,7 +117,7 @@ export function ChatLocalActionCards({ actions, messageId, actionStatus }: ChatL
           <button
             onClick={handleExecuteAll}
             disabled={runningAll}
-            className="text-[10px] px-2 py-1 rounded bg-violet-600 text-white hover:bg-violet-700 transition-colors disabled:opacity-50"
+            className="text-[11px] px-2 py-1 rounded bg-violet-600 text-white hover:bg-violet-700 transition-colors disabled:opacity-50"
           >
             {runningAll ? '执行中...' : '全部执行'}
           </button>
@@ -132,7 +132,7 @@ export function ChatLocalActionCards({ actions, messageId, actionStatus }: ChatL
               style={{ width: `${progressPercent}%` }}
             />
           </div>
-          <p className="text-[10px] text-violet-500/70 mt-1">
+          <p className="text-[11px] text-violet-500/70 mt-1">
             {completedCount}/{actions.length} 步完成
           </p>
         </div>
@@ -168,7 +168,7 @@ export function ChatLocalActionCards({ actions, messageId, actionStatus }: ChatL
                 {!isDone && !isRunning && !runningAll && isElectronAvailable() && (
                   <button
                     onClick={() => handleExecute(action as LocalAction, idx)}
-                    className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-violet-200 dark:bg-violet-800 hover:bg-violet-300 dark:hover:bg-violet-700 transition-colors"
+                    className="ml-auto text-[11px] px-1.5 py-0.5 rounded bg-violet-200 dark:bg-violet-800 hover:bg-violet-300 dark:hover:bg-violet-700 transition-colors"
                   >
                     执行
                   </button>
@@ -222,7 +222,7 @@ export function ChatLocalActionCards({ actions, messageId, actionStatus }: ChatL
       )}
 
       {allDone && actions.length > 0 && (
-        <div className="mt-2 text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+        <div className="mt-2 text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
           <span>✓</span> 全部操作已完成
         </div>
       )}
@@ -275,7 +275,7 @@ export function ChatLocalActionCards({ actions, messageId, actionStatus }: ChatL
       })}
 
       {!isElectronAvailable() && (
-        <p className="text-[10px] text-violet-500/60 mt-1">需在桌面端运行才能执行本地操作</p>
+        <p className="text-[11px] text-violet-500/60 mt-1">需在桌面端运行才能执行本地操作</p>
       )}
     </div>
   )

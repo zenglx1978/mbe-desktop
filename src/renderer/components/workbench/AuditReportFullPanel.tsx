@@ -245,7 +245,7 @@ export default function AuditReportFullPanel({ solution: _solution }: Props) {
                     className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs ${c.covered ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                     {c.covered ? <CheckCircle2 className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
                     {c.fiscal_year}年
-                    {c.covered && c.status && <span className="opacity-60 text-[10px]">·{c.status}</span>}
+                    {c.covered && c.status && <span className="opacity-60 text-[11px]">·{c.status}</span>}
                   </div>
                 ))}
               </div>
@@ -289,11 +289,11 @@ export default function AuditReportFullPanel({ solution: _solution }: Props) {
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium truncate">{p.name}</p>
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="text-[10px] text-muted-foreground">{p.fiscal_year}年</span>
-                      <span className="text-[10px] text-muted-foreground">{AUDIT_TYPE_LABEL[p.audit_type] ?? p.audit_type}</span>
+                      <span className="text-[11px] text-muted-foreground">{p.fiscal_year}年</span>
+                      <span className="text-[11px] text-muted-foreground">{AUDIT_TYPE_LABEL[p.audit_type] ?? p.audit_type}</span>
                     </div>
                   </div>
-                  <span className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-md ${STATUS_COLOR[p.status] ?? 'bg-muted text-muted-foreground'}`}>
+                  <span className={`shrink-0 text-[11px] px-1.5 py-0.5 rounded-md ${STATUS_COLOR[p.status] ?? 'bg-muted text-muted-foreground'}`}>
                     {p.status}
                   </span>
                 </button>
@@ -409,7 +409,7 @@ export default function AuditReportFullPanel({ solution: _solution }: Props) {
                 <p className="text-xs font-medium text-amber-700 mb-1">需补充内容：</p>
                 <div className="flex flex-wrap gap-1">
                   {reportMeta.placeholders.map((p, i) => (
-                    <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">{p}</span>
+                    <span key={i} className="text-[11px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">{p}</span>
                   ))}
                 </div>
               </div>

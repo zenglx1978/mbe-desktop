@@ -207,7 +207,7 @@ function BillingStep({
             `}
           >
             {/* 角标 */}
-            <span className="absolute top-3 right-3 text-[10px] px-2 py-0.5 rounded-full bg-background/70 text-muted-foreground border border-border/40">
+            <span className="absolute top-3 right-3 text-[11px] px-2 py-0.5 rounded-full bg-background/70 text-muted-foreground border border-border/40">
               {card.badge}
             </span>
 

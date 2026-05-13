@@ -167,11 +167,11 @@ function CalcResultCard({ result, tool, color }: {
         </div>
         <div className="flex items-center gap-2">
           {tool.type === 'calculator' && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 font-medium">
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 font-medium">
               ✓ 100% 确定性计算
             </span>
           )}
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
+          <span className="text-[11px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
             {result.source === 'local' ? '📱 本地计算' : '☁️ 云端计算'}
             {result.durationMs > 0 && ` · ${result.durationMs}ms`}
           </span>
@@ -236,7 +236,7 @@ function CalcResultCard({ result, tool, color }: {
 
       {/* 底部操作 */}
       <div className="px-4 py-3 bg-secondary/20 flex items-center justify-between">
-        <span className="text-[10px] text-muted-foreground/50">
+        <span className="text-[11px] text-muted-foreground/50">
           结果仅供参考，具体以实际为准
         </span>
         <div className="flex items-center gap-2">

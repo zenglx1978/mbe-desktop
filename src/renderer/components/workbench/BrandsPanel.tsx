@@ -212,7 +212,7 @@ export default function BrandsPanel({ solution }: Props) {
                 <div className="grid grid-cols-4 gap-3 text-center">
                   {([['≤30天', buckets.current, '#22c55e'], ['31-60天', buckets.d30, '#3b82f6'], ['61-90天', buckets.d60, '#f59e0b'], ['>90天', buckets.d90, '#ef4444']] as [string, number, string][]).map(([label, val, color]) => (
                     <div key={label}>
-                      <p className="text-[10px] text-muted-foreground">{label}</p>
+                      <p className="text-[11px] text-muted-foreground">{label}</p>
                       <p className="text-sm font-bold" style={{ color: val > 0 ? color : undefined }}>{fmt(val)}</p>
                     </div>
                   ))}
@@ -238,7 +238,7 @@ export default function BrandsPanel({ solution }: Props) {
               <button
                 type="button"
                 onClick={() => setShowRBAC(true)}
-                className="text-[10px] px-2 py-0.5 rounded-full border border-border/30 text-muted-foreground hover:text-foreground hover:border-border/60 transition-colors"
+                className="text-[11px] px-2 py-0.5 rounded-full border border-border/30 text-muted-foreground hover:text-foreground hover:border-border/60 transition-colors"
               >
                 {currentRole.name}
               </button>
@@ -314,7 +314,7 @@ export default function BrandsPanel({ solution }: Props) {
                         <h4 className="text-sm font-semibold group-hover:text-primary transition-colors truncate">
                           {brand.name}
                         </h4>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${st.cls}`}>{st.label}</span>
+                        <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${st.cls}`}>{st.label}</span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {brand.category} · {brand.platforms.join('/')} · 费率 {brand.contractRate}%+{brand.performanceRate}%
@@ -382,19 +382,19 @@ export default function BrandsPanel({ solution }: Props) {
           {/* 合同条款 */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="p-3 rounded-xl bg-secondary/20">
-              <p className="text-[10px] text-muted-foreground uppercase">基础服务费率</p>
+              <p className="text-[11px] text-muted-foreground uppercase">基础服务费率</p>
               <p className="text-lg font-bold mt-1">{activeBrand.contractRate}%</p>
             </div>
             <div className="p-3 rounded-xl bg-secondary/20">
-              <p className="text-[10px] text-muted-foreground uppercase">绩效佣金费率</p>
+              <p className="text-[11px] text-muted-foreground uppercase">绩效佣金费率</p>
               <p className="text-lg font-bold mt-1">{activeBrand.performanceRate}%</p>
             </div>
             <div className="p-3 rounded-xl bg-secondary/20">
-              <p className="text-[10px] text-muted-foreground uppercase">固定月费</p>
+              <p className="text-[11px] text-muted-foreground uppercase">固定月费</p>
               <p className="text-lg font-bold mt-1">{fmt(activeBrand.fixedMonthlyFee)}</p>
             </div>
             <div className="p-3 rounded-xl bg-secondary/20">
-              <p className="text-[10px] text-muted-foreground uppercase">SLA 等级</p>
+              <p className="text-[11px] text-muted-foreground uppercase">SLA 等级</p>
               <p className="text-sm font-semibold mt-1">{SLA_LABELS[activeBrand.slaTier]}</p>
             </div>
           </div>
@@ -412,23 +412,23 @@ export default function BrandsPanel({ solution }: Props) {
                 <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">品牌盈亏分析（P&L）</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                   <div>
-                    <p className="text-[10px] text-muted-foreground">累计 GMV</p>
+                    <p className="text-[11px] text-muted-foreground">累计 GMV</p>
                     <p className="text-base font-bold mt-0.5">{fmt(totalGmv)}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-muted-foreground">佣金收入</p>
+                    <p className="text-[11px] text-muted-foreground">佣金收入</p>
                     <p className="text-base font-bold mt-0.5 text-green-500">{fmt(totalRevenue)}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-muted-foreground">扣款/调整</p>
+                    <p className="text-[11px] text-muted-foreground">扣款/调整</p>
                     <p className="text-base font-bold mt-0.5 text-red-500">{fmt(totalDeductions)}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-muted-foreground">应收余额</p>
+                    <p className="text-[11px] text-muted-foreground">应收余额</p>
                     <p className={`text-base font-bold mt-0.5 ${receivable > 0 ? 'text-amber-500' : 'text-green-500'}`}>{fmt(receivable)}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-muted-foreground">实际费率</p>
+                    <p className="text-[11px] text-muted-foreground">实际费率</p>
                     <p className="text-base font-bold mt-0.5" style={{ color: solution.color }}>{effectiveRate}%</p>
                   </div>
                 </div>
@@ -513,7 +513,7 @@ export default function BrandsPanel({ solution }: Props) {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{s.month}</span>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${ss.cls} bg-secondary/30`}>{ss.label}</span>
+                        <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${ss.cls} bg-secondary/30`}>{ss.label}</span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         GMV {fmt(s.gmv)} · 基础 {fmt(s.baseServiceFee)} + 绩效 {fmt(s.performanceCommission)} + 月费 {fmt(activeBrand.fixedMonthlyFee)}
@@ -521,7 +521,7 @@ export default function BrandsPanel({ solution }: Props) {
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-sm font-bold">{fmt(s.totalAmount)}</p>
-                      <p className="text-[10px] text-muted-foreground">税 {fmt(s.taxAmount)}</p>
+                      <p className="text-[11px] text-muted-foreground">税 {fmt(s.taxAmount)}</p>
                     </div>
                     <button
                       type="button"
@@ -760,7 +760,7 @@ function StatCard({ label, value, icon, color }: { label: string; value: string;
     <div className="p-3 rounded-xl border border-border/30 bg-card">
       <div className="flex items-center gap-2 mb-1">
         {icon}
-        <span className="text-[10px] text-muted-foreground uppercase">{label}</span>
+        <span className="text-[11px] text-muted-foreground uppercase">{label}</span>
       </div>
       <p className="text-lg font-bold" style={{ color }}>{value}</p>
     </div>

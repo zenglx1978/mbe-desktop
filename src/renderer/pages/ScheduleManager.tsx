@@ -133,7 +133,7 @@ function StatePanel({ stateData, color }: { stateData: Record<string, unknown> |
       {/* 上次执行摘要 */}
       {lastSummary && (
         <div className="p-3 rounded-xl border border-border/30 bg-card">
-          <p className="text-[10px] text-muted-foreground mb-1">上次执行摘要</p>
+          <p className="text-[11px] text-muted-foreground mb-1">上次执行摘要</p>
           <p className="text-xs text-foreground/80 whitespace-pre-wrap leading-relaxed">{lastSummary}</p>
         </div>
       )}
@@ -177,7 +177,7 @@ function StatePanel({ stateData, color }: { stateData: Record<string, unknown> |
                 <ProgressRing value={val} color={color} />
                 <div>
                   <p className="text-xs font-medium">{w.label}</p>
-                  <p className="text-[10px] text-muted-foreground">{val}%</p>
+                  <p className="text-[11px] text-muted-foreground">{val}%</p>
                 </div>
               </div>
             )
@@ -221,7 +221,7 @@ function StatePanel({ stateData, color }: { stateData: Record<string, unknown> |
           <h3 className="text-xs font-bold text-muted-foreground">其他上下文</h3>
           {textWidgets.map((w) => (
             <div key={w.key} className="p-3 rounded-xl border border-border/30 bg-card">
-              <div className="text-[10px] font-mono text-muted-foreground mb-1">{w.key}</div>
+              <div className="text-[11px] font-mono text-muted-foreground mb-1">{w.key}</div>
               <div className="text-xs text-foreground/80 whitespace-pre-wrap break-all leading-relaxed">
                 {typeof w.value === 'object' ? JSON.stringify(w.value, null, 2) : String(w.value)}
               </div>
@@ -508,7 +508,7 @@ export default function ScheduleManager() {
                       <p className="text-sm font-semibold truncate">{p.name}</p>
                       <p className="text-xs text-muted-foreground truncate">{p.description}</p>
                     </div>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground shrink-0">
+                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground shrink-0">
                       {p.frequency}
                     </span>
                   </div>
@@ -640,7 +640,7 @@ export default function ScheduleManager() {
                     value={formData.cron_expr}
                     onChange={(e) => setFormData((p) => ({ ...p, cron_expr: e.target.value }))}
                   />
-                  <p className="text-[10px] text-muted-foreground mt-1">
+                  <p className="text-[11px] text-muted-foreground mt-1">
                     格式：分(0-59) 时(0-23) 日(1-31) 月(1-12) 周(0=周日,1=周一..6=周六)
                   </p>
                 </div>
@@ -654,17 +654,17 @@ export default function ScheduleManager() {
                 </summary>
                 <div className="mt-2 space-y-2 pl-5">
                   <div>
-                    <label className="text-[10px] text-muted-foreground mb-0.5 block">监控本地文件/目录路径</label>
+                    <label className="text-[11px] text-muted-foreground mb-0.5 block">监控本地文件/目录路径</label>
                     <input
                       className="w-full px-3 py-1.5 text-sm rounded-lg border border-border/40 bg-background font-mono"
                       placeholder="如 C:\Reports\monthly.xlsx"
                       value={formData.watch_path}
                       onChange={(e) => setFormData((p) => ({ ...p, watch_path: e.target.value }))}
                     />
-                    <p className="text-[10px] text-muted-foreground mt-0.5">执行前自动读取并注入文件内容到 AI 提示词</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">执行前自动读取并注入文件内容到 AI 提示词</p>
                   </div>
                   <div>
-                    <label className="text-[10px] text-muted-foreground mb-0.5 block">文件类型过滤（可选）</label>
+                    <label className="text-[11px] text-muted-foreground mb-0.5 block">文件类型过滤（可选）</label>
                     <input
                       className="w-full px-3 py-1.5 text-sm rounded-lg border border-border/40 bg-background"
                       placeholder="如 xlsx,csv,pdf（逗号分隔，留空=全部）"
@@ -673,7 +673,7 @@ export default function ScheduleManager() {
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] text-muted-foreground mb-0.5 block">自动填报输出路径（可选）</label>
+                    <label className="text-[11px] text-muted-foreground mb-0.5 block">自动填报输出路径（可选）</label>
                     <div className="flex gap-2">
                       <select
                         className="px-2 py-1.5 text-sm rounded-lg border border-border/40 bg-background"
@@ -692,7 +692,7 @@ export default function ScheduleManager() {
                         onChange={(e) => setFormData((p) => ({ ...p, auto_fill_target: e.target.value }))}
                       />
                     </div>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">执行后自动将 AI 结果写入本地文件</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">执行后自动将 AI 结果写入本地文件</p>
                   </div>
                 </div>
               </details>
@@ -758,14 +758,14 @@ export default function ScheduleManager() {
                       <div className="flex items-center gap-2">
                         <h3 className="text-sm font-semibold truncate">{sc.name}</h3>
                         <span
-                          className="text-[10px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5"
+                          className="text-[11px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5"
                           style={{ backgroundColor: `${badge.color}15`, color: badge.color }}
                         >
                           <BadgeIcon className="w-3 h-3" /> {badge.label}
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5 truncate">{sc.description || sc.prompt}</p>
-                      <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground">
+                      <div className="flex items-center gap-3 mt-2 text-[11px] text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" /> {describeSchedule(sc)}
                         </span>
@@ -896,19 +896,19 @@ export default function ScheduleManager() {
                       <div className="flex-1 p-3 rounded-xl border border-border/30 bg-card space-y-2">
                       <div className="flex items-center gap-2">
                         <span
-                          className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                          className="text-[11px] px-2 py-0.5 rounded-full font-medium"
                           style={{ backgroundColor: `${st.color}15`, color: st.color }}
                         >
                           {st.label}
                         </span>
                         <span className="text-xs text-muted-foreground">{formatTime(rec.triggered_at)}</span>
                         {rec.trigger_source !== 'schedule' && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-500/10 text-purple-500">
+                          <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-purple-500/10 text-purple-500">
                             {rec.trigger_source}
                           </span>
                         )}
                         {rec.attempt_number > 1 && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-500">
+                          <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-500">
                             {rec.attempt_number} 次尝试
                           </span>
                         )}
@@ -927,16 +927,16 @@ export default function ScheduleManager() {
                       {/* 自纠错链路 */}
                       {rec.heal_chain.length > 0 && (
                         <div className="mt-2 p-2 rounded-lg bg-blue-500/5 border border-blue-500/10">
-                          <p className="text-[10px] font-semibold text-blue-500 mb-1">自纠错链路</p>
+                          <p className="text-[11px] font-semibold text-blue-500 mb-1">自纠错链路</p>
                           {rec.heal_chain.map((entry, i) => (
-                            <div key={i} className="text-[10px] text-muted-foreground">
+                            <div key={i} className="text-[11px] text-muted-foreground">
                               第 {(entry as any).attempt || i + 1} 次: {(entry as any).strategy || '—'} → {(entry as any).action || '—'}
                             </div>
                           ))}
                         </div>
                       )}
 
-                      <div className="flex items-center gap-4 text-[10px] text-muted-foreground pt-1">
+                      <div className="flex items-center gap-4 text-[11px] text-muted-foreground pt-1">
                         <span>Token: {rec.tokens_in + rec.tokens_out}</span>
                         {rec.cost_rmb > 0 && <span>费用: ¥{rec.cost_rmb.toFixed(2)}</span>}
                         {rec.deliverables.length > 0 && <span>{rec.deliverables.length} 个交付物</span>}
@@ -1063,7 +1063,7 @@ function PipelinePanel({
 
             {/* 步骤列表（可拖拽排序） */}
             <div className="space-y-2">
-              <p className="text-[10px] font-medium text-muted-foreground">步骤（拖拽排序）</p>
+              <p className="text-[11px] font-medium text-muted-foreground">步骤（拖拽排序）</p>
               {draftSteps.map((step, i) => (
                 <div
                   key={step.id}
@@ -1105,7 +1105,7 @@ function PipelinePanel({
                         )}
                       </select>
                       <select
-                        className="text-[10px] bg-background border border-border/50 rounded px-1 py-0.5"
+                        className="text-[11px] bg-background border border-border/50 rounded px-1 py-0.5"
                         value={step.failure_policy}
                         onChange={(e) => setDraftSteps((prev) => prev.map((s) => s.id === step.id ? { ...s, failure_policy: e.target.value as any } : s))}
                       >
@@ -1120,7 +1120,7 @@ function PipelinePanel({
                       value={step.prompt}
                       onChange={(e) => setDraftSteps((prev) => prev.map((s) => s.id === step.id ? { ...s, prompt: e.target.value } : s))}
                     />
-                    <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                    <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                       <input
                         type="checkbox"
                         checked={step.inject_prev_result}
@@ -1155,7 +1155,7 @@ function PipelinePanel({
 
             {/* 流程预览 */}
             {draftSteps.length > 0 && (
-              <div className="flex items-center gap-1 flex-wrap text-[10px]">
+              <div className="flex items-center gap-1 flex-wrap text-[11px]">
                 <span className="text-muted-foreground">预览:</span>
                 {draftSteps.map((s, i) => (
                   <span key={s.id} className="flex items-center gap-1">
@@ -1214,7 +1214,7 @@ function PipelinePanel({
               >
                 <p className="text-sm font-medium group-hover:text-foreground">{preset.name}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">{preset.description}</p>
-                <p className="text-[10px] text-muted-foreground mt-1">
+                <p className="text-[11px] text-muted-foreground mt-1">
                   {(preset.steps || []).length} 步 · {(preset.steps || []).map((s: any) => s.agent_name).filter(Boolean).join(' → ')}
                 </p>
               </button>
@@ -1278,20 +1278,20 @@ function PipelinePanel({
               {p.steps.map((step, i) => (
                 <div key={step.step_id} className="flex items-center gap-1">
                   <div
-                    className="px-2 py-0.5 rounded-md text-[10px] font-medium border"
+                    className="px-2 py-0.5 rounded-md text-[11px] font-medium border"
                     style={{ borderColor: `${color}40`, color }}
                   >
                     {step.agent_name}/{step.expert_id}
                   </div>
                   {i < p.steps.length - 1 && (
-                    <span className="text-muted-foreground text-[10px]">→</span>
+                    <span className="text-muted-foreground text-[11px]">→</span>
                   )}
                 </div>
               ))}
             </div>
 
             {/* 统计 */}
-            <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground">
+            <div className="flex items-center gap-3 mt-2 text-[11px] text-muted-foreground">
               <span>累计 {p.total_runs} 次</span>
               {p.total_runs > 0 && (
                 <span>成功率 {Math.round((p.success_runs / p.total_runs) * 100)}%</span>
@@ -1335,11 +1335,11 @@ function PipelinePanel({
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium">{step.agent_name}/{step.expert_id}</span>
                           {step.inject_prev_result && i > 0 && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-500">
+                            <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-500">
                               接收上一步结果
                             </span>
                           )}
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+                          <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
                             {step.failure_policy}
                           </span>
                         </div>
@@ -1413,7 +1413,7 @@ function PipelinePanel({
                         ))}
                       </div>
 
-                      <div className="flex items-center gap-4 text-[10px] text-muted-foreground pt-1">
+                      <div className="flex items-center gap-4 text-[11px] text-muted-foreground pt-1">
                         <span>Token: {run.total_tokens_in + run.total_tokens_out}</span>
                         {run.total_cost_rmb > 0 && <span>费用: ¥{run.total_cost_rmb.toFixed(2)}</span>}
                         {run.completed_at && (
@@ -1527,7 +1527,7 @@ function TemplateMarketPanel({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span
-                      className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                      className="text-[11px] px-2 py-0.5 rounded-full font-medium"
                       style={{
                         backgroundColor: tpl.type === 'pipeline' ? '#3b82f615' : `${color}15`,
                         color: tpl.type === 'pipeline' ? '#3b82f6' : color,
@@ -1546,11 +1546,11 @@ function TemplateMarketPanel({
                   )}
                   <div className="flex items-center gap-3 mt-2">
                     {tpl.tags.map((tag) => (
-                      <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-muted/30 text-muted-foreground">
+                      <span key={tag} className="text-[11px] px-1.5 py-0.5 rounded bg-muted/30 text-muted-foreground">
                         {tag}
                       </span>
                     ))}
-                    <span className="text-[10px] text-muted-foreground">{tpl.installs} 次安装</span>
+                    <span className="text-[11px] text-muted-foreground">{tpl.installs} 次安装</span>
                   </div>
                 </div>
                 <button

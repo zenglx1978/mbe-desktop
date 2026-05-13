@@ -340,7 +340,7 @@ function InnovationView({ BASE, onBack }: { BASE: string; onBack: () => void }) 
                 <div>
                   <p className={`font-medium ${c.eligible ? 'text-green-700' : ''}`}>{c.standard_name}</p>
                   {!c.eligible && c.details && (
-                    <p className="text-muted-foreground text-[10px] mt-0.5">
+                    <p className="text-muted-foreground text-[11px] mt-0.5">
                       {Object.entries(c.details)
                         .filter(([k]) => !k.startsWith('required'))
                         .map(([k, v]) => `${k}: ${v}`)
@@ -459,7 +459,7 @@ function BSEView({ BASE, onBack }: { BASE: string; onBack: () => void }) {
                 {s.met ? <CheckCircle2 className="w-3.5 h-3.5 text-green-600 shrink-0" /> : <Info className="w-3.5 h-3.5 text-muted-foreground shrink-0" />}
                 <div>
                   <p className={`font-medium ${s.met ? 'text-green-700' : ''}`}>{s.standard_name}</p>
-                  {!s.met && <p className="text-muted-foreground text-[10px]">{s.gap_description}</p>}
+                  {!s.met && <p className="text-muted-foreground text-[11px]">{s.gap_description}</p>}
                 </div>
               </div>
             ))}
@@ -585,7 +585,7 @@ function AdvisoryView({ BASE, onBack }: { BASE: string; onBack: () => void }) {
         <div className="flex flex-wrap gap-1.5">
           {QUICK_QUESTIONS.map(q => (
             <button key={q} onClick={() => { setQuestion(q); ask(q) }}
-              className="text-[10px] px-2 py-1 rounded-lg border border-border/40 hover:bg-muted transition-colors text-left">
+              className="text-[11px] px-2 py-1 rounded-lg border border-border/40 hover:bg-muted transition-colors text-left">
               {q}
             </button>
           ))}
