@@ -15,20 +15,24 @@ import { app, ipcMain } from 'electron'
 import path from 'path'
 import fs from 'fs'
 
+/**
+ * 仅纳入"后台常驻型敏感模块"——这些模块在启动后会持续运行（轮询/全局快捷键/
+ * 周期分析），属隐私与合规风险点，需默认关闭 + 用户显式 opt-in。
+ *
+ * 注意：按需触发的核心交付能力（accessibility 读店铺消息 / rpa 操作 ERP /
+ * workflow-miner）不在此列——它们仅在用户进入对应解决方案主动调用时才工作，
+ * 启动期零开销，治理走"使用点 consent"而非全局默认关，避免破坏正常交付。
+ */
 export type ModuleFlagKey =
   | 'behaviorObserver'
   | 'patternRecognizer'
   | 'copilot'
-  | 'rpa'
-  | 'accessibility'
 
 /** 默认全部关闭：实验/敏感模块需用户显式 opt-in */
 const DEFAULTS: Record<ModuleFlagKey, boolean> = {
   behaviorObserver: false,
   patternRecognizer: false,
   copilot: false,
-  rpa: false,
-  accessibility: false,
 }
 
 let cache: Record<ModuleFlagKey, boolean> | null = null
