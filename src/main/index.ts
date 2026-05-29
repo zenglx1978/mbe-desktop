@@ -19,7 +19,7 @@ import { setupDataPipelineIPC, setPipelineMainWindow } from './data-pipeline'
 import { setupSchedulerIPC, setSchedulerMainWindow, setSchedulerDb, initScheduler, destroyScheduler } from './scheduler'
 import { setupDispatchIPC, setDispatchMainWindow, destroyDispatch } from './dispatch-bridge'
 import { setupUserMemoryIPC, setMemoryMainWindow, setMemoryDb } from './user-memory'
-import { setupLocalInferenceIPC, setInferenceDb, setInferenceMainWindow, initLocalInference, setupKnowledgeCacheIPC } from './local-inference'
+import { setupLocalInferenceIPC, setInferenceDb, setInferenceMainWindow, setupKnowledgeCacheIPC } from './local-inference'
 import { setupBehaviorObserverIPC, setBehaviorObserverMainWindow, setBehaviorObserverDb, startBehaviorObserver, stopBehaviorObserver } from './behavior-observer'
 import { setupPatternRecognizerIPC, setPatternRecognizerMainWindow, setPatternRecognizerDb, startPatternRecognizer, stopPatternRecognizer } from './pattern-recognizer'
 import { setupDownloadManagerIPC, setDownloadManagerMainWindow } from './download-manager'
@@ -449,7 +449,8 @@ app.whenReady().then(async () => {
   setMemoryDb(getDb())
   setInferenceMainWindow(mainWindow!)
   setInferenceDb(getDb())
-  initLocalInference()
+  // 懒加载：initLocalInference 会构建 TF-IDF 索引（CPU 重活），
+  // 改为首次调用离线推理 IPC 时触发，避免拖慢冷启动
   initScheduler()
   setBehaviorObserverMainWindow(mainWindow!)
   setBehaviorObserverDb(getDb())

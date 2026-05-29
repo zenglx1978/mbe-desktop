@@ -934,14 +934,17 @@ function loadCachedSnippets(): void {
 
 export function setupLocalInferenceIPC(): void {
   ipcMain.handle('inference:classify', async (_, text: string) => {
+    ensureInferenceReady()
     return classifyIntent(text)
   })
 
   ipcMain.handle('inference:answer', async (_, text: string, solutionId?: string) => {
+    ensureInferenceReady()
     return generateOfflineAnswer(text, solutionId)
   })
 
   ipcMain.handle('inference:analyze', async (_, text: string) => {
+    ensureInferenceReady()
     return analyzeText(text)
   })
 
@@ -955,13 +958,26 @@ export function setupLocalInferenceIPC(): void {
   })
 }
 
-/** 初始化（在 DB 就绪后调用） */
+let _initialized = false
+
+/**
+ * 初始化（在 DB 就绪后调用）。
+ * 幂等：重复调用只生效一次。会同步构建 TF-IDF 索引（CPU 重活），
+ * 因此改为懒加载——首次调用离线推理 IPC 时才执行，避免拖慢冷启动。
+ */
 export function initLocalInference(): void {
+  if (_initialized) return
+  _initialized = true
   loadCachedSnippets()
   // 若 DB 中没有缓存片段，也要为内置片段建 TF-IDF 索引
   if (!_tfidfIndex) {
     _tfidfIndex = buildTfIdfIndex(BUILTIN_SNIPPETS)
   }
+}
+
+/** 懒初始化守卫：离线推理相关 IPC 首次被调用时触发索引构建 */
+function ensureInferenceReady(): void {
+  if (!_initialized) initLocalInference()
 }
 
 /**
