@@ -207,38 +207,3 @@ export function AIReasoningBadge() {
   )
 }
 
-/**
- * 行内知识锚点（嵌入正文中的小图标，hover 弹出来源）
- */
-export function InlineSourceAnchor({
-  source,
-  children,
-}: {
-  source: SourceCitationData
-  children: React.ReactNode
-}) {
-  const [showPopup, setShowPopup] = useState(false)
-  const typeInfo = guessSourceType(source)
-
-  return (
-    <span
-      className="relative inline"
-      onMouseEnter={() => setShowPopup(true)}
-      onMouseLeave={() => setShowPopup(false)}
-    >
-      {children}
-      <sup
-        className="cursor-help text-[9px] ml-0.5 px-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-        title={source.title}
-      >
-        {typeInfo.icon}
-      </sup>
-
-      {showPopup && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 z-50 w-64 rounded-lg border border-gray-200 dark:border-[#3c3c3c] bg-white dark:bg-[#1e1e1e] shadow-xl p-3 text-left">
-          <KnowledgeSourceBadge source={source} />
-        </div>
-      )}
-    </span>
-  )
-}

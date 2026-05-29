@@ -1,2 +1,2 @@
-export { getConfidenceStyle, scoreToGrade, ConfidenceIndicator, ConfidenceFooter, ConfidenceMessage } from './ConfidenceText'
-export { ConfidenceBadge, ConfidenceParagraph } from './ConfidenceBadge'
+export { getConfidenceStyle, scoreToGrade } from './ConfidenceText'
+export { ConfidenceBadge } from './ConfidenceBadge'

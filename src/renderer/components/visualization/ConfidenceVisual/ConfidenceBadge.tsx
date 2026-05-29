@@ -52,32 +52,3 @@ export function ConfidenceBadge({
     </span>
   )
 }
-
-/**
- * 段落级置信度标注 — 包裹内容并在右上角显示徽章
- */
-export function ConfidenceParagraph({
-  grade,
-  score,
-  dark = false,
-  children,
-  className = '',
-}: {
-  grade: ConfidenceGrade
-  score?: number
-  dark?: boolean
-  children: React.ReactNode
-  className?: string
-}) {
-  const { className: bgCls, style } = getDitherStyle(grade, dark)
-
-  return (
-    <div className={`relative rounded-lg px-3 py-2 ${bgCls} ${className}`} style={style}>
-      {/* 右上角浮动徽章 */}
-      <div className="absolute -top-2 right-2">
-        <ConfidenceBadge grade={grade} score={score} dark={dark} />
-      </div>
-      <div className="pr-16">{children}</div>
-    </div>
-  )
-}
