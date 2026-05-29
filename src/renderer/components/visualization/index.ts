@@ -1,14 +1,6 @@
 /**
  * MBE Desktop 可视化组件库 — 统一导出
  *
- * 三条前沿线全覆盖：
- *
- * Direction 1: Data Poetry（数据诗）
- *   - ParticleCanvas     — Canvas 2D 粒子星系动效
- *   - SolutionGalaxy     — Solution 数据 → 星系映射
- *   - DeliverableAnimation — 交付物凝固微动效
- *   - DeliverableList    — 批量交付物动效列表
- *
  * Direction 2: Agent 协作热力图 + 注意力流
  *   - ExpertOrchestrationPanel — 多 Expert 实时编排面板（含 WebSocket）
  *   - KnowledgeSourceBadge     — 知识溯源增强标注
@@ -49,14 +41,6 @@ export type {
   ScrollySection,
   ScrollyConfig,
 } from './types'
-
-// Direction 1: Data Poetry
-export {
-  ParticleCanvas,
-  SolutionGalaxy,
-  DeliverableAnimation,
-  DeliverableList,
-} from './DataPoetry'
 
 // Direction 2: Agent Collaboration
 export {
