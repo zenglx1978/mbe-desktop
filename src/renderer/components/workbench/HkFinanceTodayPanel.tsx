@@ -12,8 +12,9 @@ import type { SolutionConfig, WorkbenchTab } from '@/lib/solution-router'
 import {
   AlertTriangle, FileText, Landmark, Calculator,
   TrendingUp, ChevronRight, CheckCircle2,
-  CalendarClock, Zap, ArrowRight, Shield, Globe,
+  CalendarClock, Shield, Globe,
 } from 'lucide-react'
+import { StatCard, QuickAction, CalcButton, CalculatorChips, ProfitImpactFooter } from './today-panel-shared'
 
 interface Props {
   solution: SolutionConfig
@@ -243,101 +244,24 @@ export default function HkFinanceTodayPanel({ solution }: Props) {
         <section>
           <h3 className="text-sm font-semibold text-foreground mb-3">🧮 常用計算器</h3>
           <div className="flex flex-wrap gap-2">
-            {solution.tools.filter(t => t.type === 'calculator').length > 0
-              ? solution.tools.filter(t => t.type === 'calculator').map((tool) => (
-                  <button
-                    key={tool.id}
-                    onClick={() => goToTab('tools')}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border/50 bg-card text-sm hover:border-primary/30 hover:bg-primary/5 transition-colors"
-                  >
-                    <span>{tool.icon}</span>
-                    <span className="text-foreground">{tool.name}</span>
-                    <ArrowRight className="w-3 h-3 text-muted-foreground" />
-                  </button>
-                ))
-              : (
-                  <>
-                    <CalcButton label="利得稅計算" icon="🧮" onClick={() => navigateToChat('/利得稅')} />
-                    <CalcButton label="薪俸稅估算" icon="💰" onClick={() => navigateToChat('幫我估算香港薪俸稅')} />
-                    <CalcButton label="印花稅計算" icon="🏠" onClick={() => navigateToChat('幫我計算香港物業印花稅')} />
-                    <CalcButton label="暫繳稅計算" icon="📊" onClick={() => navigateToChat('幫我計算暫繳利得稅金額')} />
-                  </>
-                )
-            }
+            <CalculatorChips
+              solution={solution}
+              onOpenTools={() => goToTab('tools')}
+              fallback={
+                <>
+                  <CalcButton label="利得稅計算" icon="🧮" onClick={() => navigateToChat('/利得稅')} />
+                  <CalcButton label="薪俸稅估算" icon="💰" onClick={() => navigateToChat('幫我估算香港薪俸稅')} />
+                  <CalcButton label="印花稅計算" icon="🏠" onClick={() => navigateToChat('幫我計算香港物業印花稅')} />
+                  <CalcButton label="暫繳稅計算" icon="📊" onClick={() => navigateToChat('幫我計算暫繳利得稅金額')} />
+                </>
+              }
+            />
           </div>
         </section>
 
         {/* 利潤影響提示 */}
-        <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
-          <div className="flex items-start gap-3">
-            <Zap className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-            <div>
-              <div className="text-sm font-semibold text-foreground mb-1">{solution.entrepreneurPurpose}</div>
-              <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                {solution.profitMetrics.map((m, i) => (
-                  <span key={i} className="px-2 py-0.5 rounded-full bg-primary/10 text-primary">{m}</span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+        <ProfitImpactFooter solution={solution} />
       </div>
     </div>
-  )
-}
-
-function StatCard({ icon, label, value, sub, color, bgColor, onClick }: {
-  icon: React.ReactNode; label: string; value: string; sub: string
-  color: string; bgColor: string; onClick?: () => void
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex flex-col p-4 rounded-xl border border-border/50 bg-card hover:border-primary/30 hover:shadow-sm transition-all text-left"
-    >
-      <div className="flex items-center justify-between mb-3">
-        <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${bgColor} ${color}`}>
-          {icon}
-        </div>
-        {onClick && <ChevronRight className="w-4 h-4 text-muted-foreground/40" />}
-      </div>
-      <span className={`text-2xl font-bold ${color}`}>{value}</span>
-      <span className="text-xs font-medium text-foreground mt-1">{label}</span>
-      <span className="text-[11px] text-muted-foreground">{sub}</span>
-    </button>
-  )
-}
-
-function QuickAction({ icon, title, desc, onClick, color }: {
-  icon: React.ReactNode; title: string; desc: string
-  onClick: () => void; color: string
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex items-start gap-3 p-4 rounded-xl border border-border/50 bg-card hover:border-primary/30 hover:shadow-sm transition-all text-left group"
-    >
-      <div className={`w-10 h-10 rounded-lg flex items-center justify-center bg-muted/50 ${color} shrink-0 group-hover:scale-105 transition-transform`}>
-        {icon}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-foreground">{title}</div>
-        <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{desc}</div>
-      </div>
-      <ChevronRight className="w-4 h-4 text-muted-foreground/30 shrink-0 mt-1 group-hover:text-primary transition-colors" />
-    </button>
-  )
-}
-
-function CalcButton({ label, icon, onClick }: { label: string; icon: string; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border/50 bg-card text-sm hover:border-primary/30 hover:bg-primary/5 transition-colors"
-    >
-      <span>{icon}</span>
-      <span className="text-foreground">{label}</span>
-      <ArrowRight className="w-3 h-3 text-muted-foreground" />
-    </button>
   )
 }
