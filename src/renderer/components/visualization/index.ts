@@ -7,18 +7,14 @@
  *   - EnhancedSourceList       — 知识来源列表
  *   - InlineSourceAnchor       — 行内知识锚点
  *   - AIReasoningBadge         — AI 推理无源标注
- *   - OrchestrationTimeline    — WorkflowOS 水平时间线
  *   - AgentHeatmap             — Agent 活动热力图
  *
- * Direction 3: Dithering 交互解释
- *   - DitherWrapper       — 置信度纹理包装器
- *   - ConfidenceLegend    — 四级纹理图例
+ * Direction 3: 置信度可视化
  *   - ConfidenceIndicator — 左侧色条指示器
  *   - ConfidenceFooter    — 底部说明 + 交互模式
  *   - ConfidenceMessage   — 完整置信度消息包装
  *   - ConfidenceBadge     — 段落级置信度徽章
  *   - ConfidenceParagraph — 段落级置信度标注
- *   - ScrollyExplainer    — The Pudding 滚动叙事
  */
 
 // Types
@@ -50,16 +46,11 @@ export {
   EnhancedSourceList,
   AIReasoningBadge,
   InlineSourceAnchor,
-  OrchestrationTimeline,
   AgentHeatmap,
 } from './AgentCollaboration'
 
-// Direction 3: Confidence Visual / Dithering
+// Direction 3: Confidence Visual
 export {
-  DitherWrapper,
-  ConfidenceLegend,
-  getDitherStyle,
-  CONFIDENCE_DITHER,
   getConfidenceStyle,
   scoreToGrade,
   ConfidenceIndicator,
@@ -67,6 +58,4 @@ export {
   ConfidenceMessage,
   ConfidenceBadge,
   ConfidenceParagraph,
-  ScrollyExplainer,
-  LABOR_DISPATCH_SCROLLY,
 } from './ConfidenceVisual'
