@@ -30,7 +30,7 @@ export function ScheduleStatePanel({
       <div className="text-center py-12 text-muted-foreground">
         <Database className="w-10 h-10 mx-auto mb-3 opacity-20" />
         <p className="text-sm">暂无业务记忆</p>
-        <p className="text-xs mt-1">Schedule 执行后会自动积累上下�?/p>
+        <p className="text-xs mt-1">Schedule 执行后会自动积累上下文</p>
       </div>
     )
   }
@@ -63,7 +63,7 @@ export function ScheduleStatePanel({
         业务记忆
       </h2>
       <p className="text-xs text-muted-foreground">
-        AI 专家每次执行后积累的业务上下文，让下次执行更有连续性�?
+        AI 专家每次执行后积累的业务上下文，让下次执行更有连续性。
       </p>
 
       {lastSummary && (
@@ -139,7 +139,7 @@ export function ScheduleStatePanel({
         <div className="space-y-2">
           <h3 className="text-xs font-bold flex items-center gap-1.5 text-muted-foreground">
             <CheckCircle2 className="w-3.5 h-3.5" />
-            待办事项（{pendingActions.filter((a) => a.status === 'pending').length} 项待处理�?
+            待办事项（{pendingActions.filter((a) => a.status === 'pending').length} 项待处理）
           </h3>
           <ActionList actions={pendingActions} color={color} />
         </div>
@@ -147,7 +147,7 @@ export function ScheduleStatePanel({
 
       {textWidgets.length > 0 && (
         <div className="space-y-2">
-          <h3 className="text-xs font-bold text-muted-foreground">其他上下�?/h3>
+          <h3 className="text-xs font-bold text-muted-foreground">其他上下文</h3>
           {textWidgets.map((w) => (
             <div key={w.key} className="p-3 rounded-xl border border-border/30 bg-card">
               <div className="text-[11px] font-mono text-muted-foreground mb-1">{w.key}</div>

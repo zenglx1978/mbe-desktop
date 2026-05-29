@@ -36,7 +36,7 @@ export function TemplateMarketPanel({
         </div>
 
         <p className="text-sm text-muted-foreground">
-          浏览社区分享�?Schedule �?Pipeline 模板，一键安装到您的 AI 专家
+          浏览社区分享的 Schedule 与 Pipeline 模板，一键安装到您的 AI 专家
         </p>
 
         <div className="flex gap-2">
@@ -69,7 +69,7 @@ export function TemplateMarketPanel({
             <Database className="w-10 h-10 mx-auto mb-3 opacity-20" />
             <p className="text-sm">暂无模板</p>
             <p className="text-xs mt-1">
-              您可以将自己�?Schedule/Pipeline 通过导出功能分享到市�?
+              您可以将自己的 Schedule/Pipeline 通过导出功能分享到市场
             </p>
           </div>
         )}
@@ -107,7 +107,7 @@ export function TemplateMarketPanel({
                         {tag}
                       </span>
                     ))}
-                    <span className="text-[11px] text-muted-foreground">{tpl.installs} 次安�?/span>
+                    <span className="text-[11px] text-muted-foreground">{tpl.installs} 次安装</span>
                   </div>
                 </div>
                 <button

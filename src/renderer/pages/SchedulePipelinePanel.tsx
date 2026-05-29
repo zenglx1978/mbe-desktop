@@ -20,7 +20,7 @@ const AVAILABLE_EXPERTS = [
   { agent: 'hr', experts: ['hr_consultant'], label: '人力资源' },
   { agent: 'cost', experts: ['cost_engineer'], label: '造价' },
   { agent: 'cs', experts: ['cs_consultant'], label: '客服' },
-  { agent: 'sales', experts: ['sales_strategist'], label: '销�? },
+  { agent: 'sales', experts: ['sales_strategist'], label: '销售' },
   { agent: 'growth', experts: ['growth_consultant', 'content_creator'], label: '增长' },
   { agent: 'invest', experts: ['investment_analyst'], label: '投资' },
   { agent: 'pulmonary', experts: ['pulmonary_physician'], label: '肺科' },
@@ -70,14 +70,14 @@ export function PipelinePanel({
             className="flex items-center gap-2 flex-1 text-left px-3 py-2 rounded-lg border border-dashed border-primary/30 hover:bg-primary/5 transition-colors"
           >
             <Plus className="w-4 h-4" style={{ color }} />
-            <span className="text-sm font-medium">从模�?/span>
+            <span className="text-sm font-medium">从模板</span>
           </button>
           <button
             onClick={() => { setShowEditor(!showEditor); setShowPresets(false) }}
             className="flex items-center gap-2 flex-1 text-left px-3 py-2 rounded-lg border border-dashed border-blue-500/30 hover:bg-blue-500/5 transition-colors"
           >
             <Activity className="w-4 h-4 text-blue-500" />
-            <span className="text-sm font-medium">可视化编�?/span>
+            <span className="text-sm font-medium">可视化编辑</span>
           </button>
         </div>
 
@@ -121,7 +121,7 @@ export function PipelinePanel({
                     dragIdx === i ? 'border-blue-500 opacity-50' : 'border-border/30'
                   }`}
                 >
-                  <div className="cursor-grab mt-1 text-muted-foreground hover:text-foreground">�?/div>
+                  <div className="cursor-grab mt-1 text-muted-foreground hover:text-foreground">⋮⋮</div>
                   <div className="flex-1 space-y-1.5 min-w-0">
                     <div className="flex gap-2">
                       <select
@@ -152,7 +152,7 @@ export function PipelinePanel({
                     </div>
                     <input
                       className="w-full text-[11px] bg-background border border-border/50 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500/40"
-                      placeholder="该步骤的提示�?
+                      placeholder="该步骤的提示词"
                       value={step.prompt}
                       onChange={(e) => setDraftSteps((prev) => prev.map((s) => s.id === step.id ? { ...s, prompt: e.target.value } : s))}
                     />
@@ -162,7 +162,7 @@ export function PipelinePanel({
                         checked={step.inject_prev_result}
                         onChange={(e) => setDraftSteps((prev) => prev.map((s) => s.id === step.id ? { ...s, inject_prev_result: e.target.checked } : s))}
                       />
-                      接收上一步结�?
+                      接收上一步结果
                     </label>
                   </div>
                   <button
@@ -197,7 +197,7 @@ export function PipelinePanel({
                     <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500 font-medium">
                       {s.agent_name}/{s.expert_id}
                     </span>
-                    {i < draftSteps.length - 1 && <span className="text-muted-foreground">�?/span>}
+                    {i < draftSteps.length - 1 && <span className="text-muted-foreground">→</span>}
                   </span>
                 ))}
               </div>
@@ -227,7 +227,7 @@ export function PipelinePanel({
                 disabled={!editorName.trim() || draftSteps.length === 0}
                 className="flex-1 text-xs bg-blue-500 text-white rounded-lg py-1.5 disabled:opacity-40 hover:bg-blue-600 transition-colors"
               >
-                创建 Pipeline ({draftSteps.length} �?
+                创建 Pipeline ({draftSteps.length} 步)
               </button>
               <button
                 onClick={() => { setShowEditor(false); setDraftSteps([]) }}
@@ -250,7 +250,7 @@ export function PipelinePanel({
                 <p className="text-sm font-medium group-hover:text-foreground">{preset.name}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">{preset.description}</p>
                 <p className="text-[11px] text-muted-foreground mt-1">
-                  {(preset.steps || []).length} �?· {(preset.steps || []).map((s: Record<string, unknown>) => s.agent_name as string).filter(Boolean).join(' �?')}
+                  {(preset.steps || []).length} 步 · {(preset.steps || []).map((s: Record<string, unknown>) => s.agent_name as string).filter(Boolean).join(' → ')}
                 </p>
               </button>
             ))}
@@ -316,16 +316,16 @@ export function PipelinePanel({
                     {step.agent_name}/{step.expert_id}
                   </div>
                   {i < p.steps.length - 1 && (
-                    <span className="text-muted-foreground text-[11px]">�?/span>
+                    <span className="text-muted-foreground text-[11px]">→</span>
                   )}
                 </div>
               ))}
             </div>
 
             <div className="flex items-center gap-3 mt-2 text-[11px] text-muted-foreground">
-              <span>累计 {p.total_runs} �?/span>
+              <span>累计 {p.total_runs} 次</span>
               {p.total_runs > 0 && (
-                <span>成功�?{Math.round((p.success_runs / p.total_runs) * 100)}%</span>
+                <span>成功率{Math.round((p.success_runs / p.total_runs) * 100)}%</span>
               )}
               {p.last_run_at && (
                 <span>上次 {new Date(p.last_run_at).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
@@ -366,7 +366,7 @@ export function PipelinePanel({
                           <span className="text-sm font-medium">{step.agent_name}/{step.expert_id}</span>
                           {step.inject_prev_result && i > 0 && (
                             <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-500">
-                              接收上一步结�?
+                              接收上一步结果
                             </span>
                           )}
                           <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
@@ -462,7 +462,7 @@ export function PipelinePanel({
               <Zap className="w-10 h-10 mx-auto mb-3 opacity-20" />
               <p className="text-sm">选择左侧 Pipeline 查看详情</p>
               <p className="text-xs mt-1 text-muted-foreground/60">
-                Pipeline 可串联多�?AI 专家，前一步结果自动注入后一�?
+                Pipeline 可串联多个 AI 专家，前一步结果自动注入后一步
               </p>
             </div>
           </div>
