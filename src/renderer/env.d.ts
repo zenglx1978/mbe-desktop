@@ -40,6 +40,8 @@ interface ElectronDbStats {
 }
 
 interface ElectronPattern {
+  enabled: () => Promise<boolean>
+  setEnabled: (enabled: boolean) => Promise<{ success: boolean; enabled: boolean }>
   list: (status?: string) => Promise<unknown[]>
   analyze: () => Promise<{ patterns: unknown[]; newCount: number }>
   accept: (patternId: string) => Promise<{ success: boolean }>
@@ -210,6 +212,13 @@ interface ElectronAPI {
 
   observer: ElectronObserver
   pattern: ElectronPattern
+
+  /** 实验/敏感模块开关（默认关闭，opt-in；与 main/module-flags.ts 一致） */
+  moduleFlags: {
+    getAll: () => Promise<Record<string, boolean>>
+    get: (key: string) => Promise<boolean>
+    set: (key: string, value: boolean) => Promise<Record<string, boolean>>
+  }
 
   migration: {
     detect: () => Promise<LegacyAgentInfo[]>

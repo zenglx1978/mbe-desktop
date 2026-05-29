@@ -6,6 +6,7 @@
 //   3. 跨应用数据搬运 — 在 A 复制 → 在 B 粘贴 → 可被工作流自动化
 
 import { ipcMain, BrowserWindow, Notification } from 'electron'
+import { setFlag } from './module-flags'
 
 // ────────────────────── 类型定义 ──────────────────────
 
@@ -535,6 +536,15 @@ export function stopPatternRecognizer(): void {
 // ────────────────────── IPC 注册 ──────────────────────
 
 export function setupPatternRecognizerIPC(): void {
+  ipcMain.handle('pattern:enabled', () => analysisInterval !== null)
+
+  ipcMain.handle('pattern:setEnabled', (_, enabled: boolean) => {
+    if (enabled && !analysisInterval) startPatternRecognizer()
+    if (!enabled && analysisInterval) stopPatternRecognizer()
+    setFlag('patternRecognizer', enabled) // 持久化：重启后保持用户选择
+    return { success: true, enabled }
+  })
+
   ipcMain.handle('pattern:list', (_, status?: string) => {
     return loadPatterns(status)
   })

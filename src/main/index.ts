@@ -26,6 +26,7 @@ import { setupDownloadManagerIPC, setDownloadManagerMainWindow } from './downloa
 import { setupErpAutoSetupIPC, setErpSetupMainWindow } from './erp-auto-setup'
 import { setupRpaBridgeIPC, setRpaMainWindow } from './rpa-bridge'
 import { setupFullPipelineIPC, setFullPipelineMainWindow } from './full-pipeline'
+import { setupModuleFlagsIPC, getFlag } from './module-flags'
 import { logger } from './logger'
 
 logger.info('App', `MBE Desktop starting`, { pid: process.pid, platform: process.platform, electron: process.versions.electron })
@@ -428,6 +429,7 @@ app.whenReady().then(async () => {
   setupErpAutoSetupIPC()
   setupRpaBridgeIPC()
   setupFullPipelineIPC()
+  setupModuleFlagsIPC()
   setMigrationDb(getDb())
   setupMigrationIPC()
 
@@ -451,16 +453,18 @@ app.whenReady().then(async () => {
   initScheduler()
   setBehaviorObserverMainWindow(mainWindow!)
   setBehaviorObserverDb(getDb())
-  startBehaviorObserver()
   setPatternRecognizerMainWindow(mainWindow!)
   setPatternRecognizerDb(getDb())
-  startPatternRecognizer()
   setDownloadManagerMainWindow(mainWindow)
   setErpSetupMainWindow(mainWindow)
   setRpaMainWindow(mainWindow)
   setFullPipelineMainWindow(mainWindow)
-  initCopilotBridge()
   setupAutoUpdater()
+
+  // 实验/敏感模块：默认关闭，仅在用户曾显式开启（持久化 flag）时才启动
+  if (getFlag('behaviorObserver')) startBehaviorObserver()
+  if (getFlag('patternRecognizer')) startPatternRecognizer()
+  if (getFlag('copilot')) initCopilotBridge()
 
   app.on('open-url', (event, url) => {
     event.preventDefault()

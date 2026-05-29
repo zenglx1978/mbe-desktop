@@ -13,12 +13,14 @@ import {
 } from 'electron'
 import path from 'path'
 import { execSync } from 'child_process'
+import { setFlag } from './module-flags'
 
 // ────────────────────── 状态 ──────────────────────
 
 let mainWindowRef: BrowserWindow | null = null
 let copilotWindow: BrowserWindow | null = null
-let isEnabled = true
+// 默认关闭：全局快捷键 + 剪贴板/截屏读取属敏感能力，需用户显式开启
+let isEnabled = false
 
 const COPILOT_WIDTH = 420
 const COPILOT_HEIGHT = 520
@@ -384,6 +386,7 @@ export function setupCopilotBridgeIPC(): void {
       unregisterShortcuts()
       hideCopilotWindow()
     }
+    setFlag('copilot', enabled) // 持久化：重启后保持用户选择
     return { success: true, enabled: isEnabled }
   })
 
@@ -416,6 +419,7 @@ export function setupCopilotBridgeIPC(): void {
 // ────────────────────── 生命周期 ──────────────────────
 
 export function initCopilotBridge(): void {
+  isEnabled = true
   registerShortcuts()
 }
 

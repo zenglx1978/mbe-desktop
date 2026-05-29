@@ -344,8 +344,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('observer:recordAction', solutionId, expertId, label),
   },
 
+  // ── ModuleFlags（实验/敏感模块开关 — 默认关闭 opt-in） ──
+  moduleFlags: {
+    getAll: () => ipcRenderer.invoke('moduleFlags:getAll'),
+    get: (key: string) => ipcRenderer.invoke('moduleFlags:get', key),
+    set: (key: string, value: boolean) => ipcRenderer.invoke('moduleFlags:set', key, value),
+  },
+
   // ── PatternRecognizer（模式识别 — 自动化建议） ──
   pattern: {
+    enabled: () => ipcRenderer.invoke('pattern:enabled'),
+    setEnabled: (enabled: boolean) => ipcRenderer.invoke('pattern:setEnabled', enabled),
     list: (status?: string) => ipcRenderer.invoke('pattern:list', status),
     analyze: () => ipcRenderer.invoke('pattern:analyze'),
     accept: (patternId: string) => ipcRenderer.invoke('pattern:accept', patternId),

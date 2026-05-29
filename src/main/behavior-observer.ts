@@ -8,6 +8,7 @@
 
 import { ipcMain, BrowserWindow } from 'electron'
 import { execSync } from 'child_process'
+import { setFlag } from './module-flags'
 
 // ────────────────────── 类型定义 ──────────────────────
 
@@ -51,7 +52,8 @@ let dbAdapter: {
   }
 } | null = null
 
-let observerEnabled = true
+// 默认关闭：全局窗口监控属敏感能力，需用户在设置页显式开启
+let observerEnabled = false
 let pollInterval: ReturnType<typeof setInterval> | null = null
 let lastActiveApp = ''
 let lastActiveTitle = ''
@@ -303,6 +305,7 @@ function mapRow(r: Record<string, unknown>): BehaviorEvent {
 
 export function startBehaviorObserver(): void {
   if (pollInterval) return
+  observerEnabled = true
   lastActiveApp = ''
   lastActiveTitle = ''
   lastSwitchTime = Date.now()
@@ -337,6 +340,7 @@ export function setupBehaviorObserverIPC(): void {
     observerEnabled = enabled
     if (enabled && !pollInterval) startBehaviorObserver()
     if (!enabled && pollInterval) stopBehaviorObserver()
+    setFlag('behaviorObserver', enabled) // 持久化：重启后保持用户选择
     return { success: true, enabled }
   })
 
