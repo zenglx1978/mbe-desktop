@@ -67,7 +67,7 @@ export function setFlag(key: ModuleFlagKey, value: boolean): void {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
     fs.writeFileSync(flagsPath(), JSON.stringify(flags, null, 2), 'utf-8')
   } catch (err) {
-    console.error('[ModuleFlags] 持久化失败:', err) // eslint-disable-line no-console
+    console.error('[ModuleFlags] 持久化失败:', err)
   }
 }
 

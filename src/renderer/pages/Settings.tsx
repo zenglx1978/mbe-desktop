@@ -34,6 +34,42 @@ function formatBytes(b: number): string {
   return `${v.toFixed(i > 0 ? 1 : 0)} ${units[i]}`
 }
 
+/** 实验/敏感模块（默认关闭，需用户显式开启）— 与 main/module-flags.ts 一致 */
+type ExperimentalKey = 'behaviorObserver' | 'patternRecognizer' | 'copilot'
+
+interface ExperimentalModuleMeta {
+  key: ExperimentalKey
+  label: string
+  desc: string
+  /** sensitive=true 时开启需二次确认（涉及全局监控/系统级权限） */
+  sensitive: boolean
+  /** 开启前的知情确认文案 */
+  consent?: string
+}
+
+const EXPERIMENTAL_MODULES: ExperimentalModuleMeta[] = [
+  {
+    key: 'behaviorObserver',
+    label: '行为观察',
+    desc: '记录应用切换与前台窗口标题（仅前 50 字），数据仅存本地，保留 90 天，用于效率统计。',
+    sensitive: true,
+    consent: '开启后将监控所有应用的前台窗口标题（每 5 秒采样一次）。数据仅保存在本机、不上传，保留 90 天，可随时关闭。确定开启？',
+  },
+  {
+    key: 'patternRecognizer',
+    label: '模式识别与自动化建议',
+    desc: '基于行为数据识别高频重复流程，给出可 AI 化的工作流建议（依赖「行为观察」）。',
+    sensitive: false,
+  },
+  {
+    key: 'copilot',
+    label: '全局副驾驶',
+    desc: '注册全局快捷键（Ctrl+Shift+M/S/Space），支持读剪贴板、截屏交给 AI 分析。',
+    sensitive: true,
+    consent: '开启后将注册全局系统快捷键，并在你触发时读取剪贴板/截屏内容交给 AI 分析。可随时关闭。确定开启？',
+  },
+]
+
 export default function Settings() {
   const navigate = useNavigate()
   const { token } = useAuthStore()
@@ -51,6 +87,41 @@ export default function Settings() {
   const [restoreMsg, setRestoreMsg] = useState<string | null>(null)
   const [pendingRestorePath, setPendingRestorePath] = useState<string | null>(null)
   const [restorePassword, setRestorePassword] = useState('')
+
+  const [moduleFlags, setModuleFlags] = useState<Record<string, boolean>>({})
+
+  const loadModuleFlags = useCallback(async () => {
+    const api = window.electronAPI
+    if (!api?.moduleFlags?.getAll) return
+    try {
+      const flags = await api.moduleFlags.getAll()
+      setModuleFlags(flags ?? {})
+    } catch { /* ignore */ }
+  }, [])
+
+  useEffect(() => {
+    loadModuleFlags()
+  }, [loadModuleFlags])
+
+  const handleToggleModule = useCallback(async (meta: ExperimentalModuleMeta) => {
+    const api = window.electronAPI
+    if (!api) return
+    const next = !moduleFlags[meta.key]
+    // 敏感模块开启前需知情确认
+    if (next && meta.sensitive && meta.consent && !window.confirm(meta.consent)) return
+    try {
+      // 运行期启停（主进程内部会持久化 flag，重启后保持）
+      if (meta.key === 'behaviorObserver') {
+        await api.observer.setEnabled(next)
+      } else if (meta.key === 'patternRecognizer') {
+        await api.pattern.setEnabled(next)
+      } else if (meta.key === 'copilot') {
+        await (api as unknown as { copilot?: { setEnabled: (e: boolean) => Promise<unknown> } })
+          .copilot?.setEnabled(next)
+      }
+      setModuleFlags((prev) => ({ ...prev, [meta.key]: next }))
+    } catch { /* ignore */ }
+  }, [moduleFlags])
 
   const loadSolutionUsers = useCallback(async () => {
     if (!solutionId || !token || !isElectron()) return
@@ -405,6 +476,55 @@ export default function Settings() {
             系统每 7 天会自动备份到 文档/MBE Desktop/backups/ 目录。
           </p>
         </section>
+
+        {/* 隐私与实验功能 — 默认关闭，需用户显式开启 */}
+        {isElectron() && (
+          <section className="rounded-lg border border-border bg-card p-4 mb-4">
+            <h2 className="text-sm font-medium text-foreground mb-1">隐私与实验功能</h2>
+            <p className="text-muted-foreground text-xs mb-3">
+              以下功能默认关闭，开启后才会运行。数据均仅保存在本机、不上传，可随时关闭。
+            </p>
+            <div className="space-y-2">
+              {EXPERIMENTAL_MODULES.map((meta) => {
+                const enabled = !!moduleFlags[meta.key]
+                return (
+                  <div
+                    key={meta.key}
+                    className="flex items-start justify-between gap-3 py-2 px-3 rounded bg-muted/20"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-foreground">{meta.label}</span>
+                        {meta.sensitive && (
+                          <span className="text-[10px] bg-amber-500/15 text-amber-500 px-1.5 py-0.5 rounded">
+                            敏感
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-muted-foreground text-[11px] mt-0.5">{meta.desc}</p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={enabled}
+                      aria-label={`${enabled ? '关闭' : '开启'}${meta.label}`}
+                      onClick={() => handleToggleModule(meta)}
+                      className={`shrink-0 mt-0.5 relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                        enabled ? 'bg-primary' : 'bg-muted-foreground/30'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          enabled ? 'translate-x-4' : 'translate-x-0.5'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        )}
 
         {/* 开发者工具 — 仅对内部员工（admin / mbe_staff）可见 */}
         {isInternal && (
