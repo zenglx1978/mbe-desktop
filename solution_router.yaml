@@ -177,3 +177,170 @@ solutions:
             name: "教育顾问"
             avatar: "📚"
             description: "课程规划、雅思托福备考、留学申请"
+
+  - id: crossborder-ecommerce
+    name: "跨境电商财税方案"
+    description: "多平台对账 + 出口退税 + VAT 申报 + 汇兑核算"
+    icon: "🌐"
+    color: "#0ea5e9"
+    agents:
+      - id: crossborder
+        name: "跨境 Agent"
+        url: "https://mbe.hi-maker.com/api/crossborder"
+        ws_url: "wss://mbe.hi-maker.com/ws/crossborder/chat"
+        experts:
+          - id: crossborder_accountant
+            name: "跨境财税专家"
+            avatar: "💱"
+            description: "Amazon/Shopify 对账、EU OSS/UK VAT、出口退税"
+          - id: fx_accountant
+            name: "汇兑核算专家"
+            avatar: "💹"
+            description: "外币折算（准则19号）、港股HKEX披露草稿"
+      - id: finance
+        name: "财务 Agent"
+        url: "https://mbe.hi-maker.com/api/finance"
+        ws_url: "wss://mbe.hi-maker.com/ws/finance/chat"
+        experts:
+          - id: tax_consultant
+            name: "税务顾问"
+            avatar: "🧾"
+            description: "增值税、企业所得税、外贸税务筹划"
+
+  - id: customer-service
+    name: "智能客服方案"
+    description: "多渠道工单 + AI 分流 + 知识库自动回复"
+    icon: "🎧"
+    color: "#14b8a6"
+    agents:
+      - id: cs
+        name: "客服 Agent"
+        url: "https://mbe.hi-maker.com/api/cs"
+        ws_url: "wss://mbe.hi-maker.com/ws/cs/chat"
+        experts:
+          - id: customer_service
+            name: "AI 客服专员"
+            avatar: "💬"
+            description: "工单分流、话术生成、投诉处理、CSAT 提升"
+          - id: cs_manager
+            name: "客服运营顾问"
+            avatar: "📊"
+            description: "SLA 设计、知识库建设、质检体系搭建"
+
+  - id: b2c-growth
+    name: "B2C 增长运营方案"
+    description: "用户激活 + 留存优化 + 多平台内容运营"
+    icon: "📈"
+    color: "#f43f5e"
+    agents:
+      - id: growth
+        name: "增长 Agent"
+        url: "https://mbe.hi-maker.com/api/growth"
+        ws_url: "wss://mbe.hi-maker.com/ws/growth/chat"
+        experts:
+          - id: growth_consultant
+            name: "增长顾问"
+            avatar: "🚀"
+            description: "DAU/MAU 增长策略、A/B 测试、渠道 ROI 分析"
+          - id: content_strategist
+            name: "内容策略专家"
+            avatar: "✍️"
+            description: "微信/小红书/抖音多平台内容规划与发布"
+
+  - id: investment-analysis
+    name: "投资分析方案"
+    description: "宏观研判 + 个股分析 + 组合管理"
+    icon: "📉"
+    color: "#a855f7"
+    agents:
+      - id: invest
+        name: "投资 Agent"
+        url: "https://mbe.hi-maker.com/api/invest"
+        ws_url: "wss://mbe.hi-maker.com/ws/invest/chat"
+        experts:
+          - id: investment_analyst
+            name: "投资分析师"
+            avatar: "📊"
+            description: "米塞斯五因子、DCF 估值、多空论点构建"
+          - id: macro_analyst
+            name: "宏观分析师"
+            avatar: "🌍"
+            description: "宏观因子评分（GEI/DPI/MEI）、板块轮动信号"
+
+  - id: voice-transcription
+    name: "语音转写方案"
+    description: "会议/电话录音转写 + 智能摘要 + 关键词提取"
+    icon: "🎙️"
+    color: "#64748b"
+    agents:
+      - id: transcribe
+        name: "转写 Agent"
+        url: "https://mbe.hi-maker.com/api/transcribe"
+        ws_url: "wss://mbe.hi-maker.com/ws/transcribe/chat"
+        experts:
+          - id: transcription_specialist
+            name: "转写专员"
+            avatar: "📝"
+            description: "录音转文字、会议纪要生成、多语言支持"
+
+  - id: insurance-service
+    name: "保险客服方案"
+    description: "理赔工单 + 核保辅助 + 投保建议 + 监管合规"
+    icon: "🛡️"
+    color: "#0891b2"
+    agents:
+      - id: insurance_cs
+        name: "保险客服 Agent"
+        url: "https://mbe.hi-maker.com/api/insurance_cs"
+        ws_url: "wss://mbe.hi-maker.com/ws/insurance_cs/chat"
+        experts:
+          - id: insurance_advisor
+            name: "保险顾问"
+            avatar: "📋"
+            description: "理赔流程、核保辅助、产品费率查询"
+          - id: claims_handler
+            name: "理赔专员"
+            avatar: "⚡"
+            description: "报案立案、定损核赔、SLA 时效追踪"
+
+  - id: banking
+    name: "银行业智能运营方案"
+    description: "AML 初筛 + KYC 核验 + 监管报表 + 信贷审查 + 账单对账"
+    icon: "🏦"
+    color: "#1d4ed8"
+    agents:
+      - id: legal
+        name: "法律 Agent"
+        url: "https://mbe.hi-maker.com/api/legal"
+        ws_url: "wss://mbe.hi-maker.com/ws/legal/chat"
+        experts:
+          - id: civil_lawyer
+            name: "合规法务"
+            avatar: "⚖️"
+            description: "AML 反洗钱、KYC 材料审核、监管合规检查、借款合同审查"
+          - id: contract_reviewer
+            name: "合同审查"
+            avatar: "📋"
+            description: "贷款合同条款风险识别、抵押担保合规性"
+      - id: finance
+        name: "财务 Agent"
+        url: "https://mbe.hi-maker.com/api/finance"
+        ws_url: "wss://mbe.hi-maker.com/ws/finance/chat"
+        experts:
+          - id: finance_accountant
+            name: "信贷财务分析师"
+            avatar: "📊"
+            description: "贷款逾期对账、1104 监管报表辅助填报、信贷财务数据结构化"
+          - id: tax_consultant
+            name: "税务顾问"
+            avatar: "🧾"
+            description: "银行业营业税/增值税核算、利息收入税务处理"
+      - id: cs
+        name: "客服 Agent"
+        url: "https://mbe.hi-maker.com/api/cs"
+        ws_url: "wss://mbe.hi-maker.com/ws/cs/chat"
+        experts:
+          - id: customer_service
+            name: "银行客服专员"
+            avatar: "💬"
+            description: "开户咨询、产品介绍、投诉处理、业务工单分流"
