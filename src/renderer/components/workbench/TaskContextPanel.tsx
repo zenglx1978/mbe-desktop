@@ -7,9 +7,10 @@
  * 每个 taskId（bookkeeping/invoices/tax-filing/reports/tax-planning）
  * 有自己的场景描述、快捷操作和关联工作流。
  */
-import { useState, lazy, Suspense } from 'react'
+import { useState, useRef, lazy, Suspense } from 'react'
 import { useToolStore } from '@/stores/tool-store'
 import type { SolutionConfig, WorkflowConfig } from '@/lib/solution-router'
+import type { SelectedStock } from '@/stores/tool-store'
 
 const CaseKanbanPanel = lazy(() => import('./CaseKanbanPanel'))
 const EmployeeKanbanPanel = lazy(() => import('./EmployeeKanbanPanel'))
@@ -22,7 +23,70 @@ import {
   Clock, Gavel,
   UserPlus, Users, Banknote, ShieldAlert, ClipboardList,
   Search, Briefcase, Globe, FileCheck, TrendingUp, BarChart3, Target,
+  X,
 } from 'lucide-react'
+
+// ── 股票搜索输入框（仅 research tab 使用）──
+function StockSearchInput({ onConfirm }: { onConfirm: (stock: SelectedStock) => void }) {
+  const [ticker, setTicker] = useState('')
+  const [market, setMarket] = useState<'A' | 'HK' | 'US'>('A')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const handleSubmit = () => {
+    const t = ticker.trim().toUpperCase()
+    if (!t) return
+    onConfirm({ ticker: t, name: t, market })
+    // 不清空，保持当前输入可见
+  }
+
+  return (
+    <div className="rounded-xl border-2 border-primary/50 bg-primary/8 p-4 shadow-sm">
+      <div className="flex items-center gap-2 mb-3">
+        <Search className="w-4 h-4 text-primary" />
+        <p className="text-sm font-bold text-primary">输入股票代码，开始深度研究</p>
+      </div>
+      <div className="flex items-center gap-2">
+        {/* 市场选择 */}
+        <div className="flex rounded-lg border border-border/50 overflow-hidden shrink-0">
+          {(['A', 'HK', 'US'] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setMarket(m)}
+              className={`px-2.5 py-1.5 text-xs font-medium transition-colors
+                ${market === m
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-card text-muted-foreground hover:bg-muted/50'}`}
+            >
+              {m}股
+            </button>
+          ))}
+        </div>
+        {/* 代码输入 */}
+        <input
+          ref={inputRef}
+          value={ticker}
+          onChange={e => setTicker(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+          type="text"
+          placeholder={market === 'A' ? '如 001283、贵州茅台' : market === 'HK' ? '如 00700、0941.HK' : '如 AAPL、NVDA'}
+          className="flex-1 px-3 py-1.5 rounded-lg border border-border/50 bg-card text-sm focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
+        />
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={!ticker.trim()}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold disabled:opacity-40 hover:opacity-90 transition-opacity shrink-0"
+        >
+          <Search className="w-3.5 h-3.5" /> 开始研究
+        </button>
+      </div>
+      <p className="text-[11px] text-muted-foreground mt-2">
+        输入后 AI 会先确认公司实际业务领域，再选用匹配的分析框架。
+      </p>
+    </div>
+  )
+}
 
 interface Props {
   solution: SolutionConfig
@@ -244,13 +308,29 @@ const TASK_CONTEXTS: Record<string, TaskContext> = {
     title: '研究',
     description: '行业深度 → 个股筛选 → 估值建模 → 投资建议，从发现到交付一站完成',
     icon: <Search className="w-5 h-5" />,
-    workflowIds: ['stock_research', 'four_pillar_full'],
+    workflowIds: ['deep_research', 'stock_screening'],
     scenarioIds: ['pillar_stock', 'ai_chain'],
     quickActions: [
-      { label: '个股深度分析', prompt: '对指定个股进行深度分析，输出投资建议', icon: <Search className="w-4 h-4" /> },
-      { label: '行业深度研究', prompt: '对指定行业进行深度分析，含竞争格局和核心标的', icon: <BarChart3 className="w-4 h-4" /> },
-      { label: 'MISES 五维评分', prompt: '对指定个股进行 MISES 五维评分', icon: <Target className="w-4 h-4" /> },
-      { label: 'AI 产业链分析', prompt: '分析 AI 产业链上下游投资机会', icon: <TrendingUp className="w-4 h-4" /> },
+      {
+        label: '个股深度分析',
+        prompt: '请对指定个股进行深度投资研究。\n\n⚠️ 分析前置步骤（必须执行）：\n1. 先通过公告/招股书确认公司实际主营业务（不得依赖标题或股票代码臆测行业）\n2. 根据业务性质选用对应框架：制造业→成本/产能/供应链；消费品→品牌/渠道/回款；科技→研发/护城河；金融→ROE/资产质量\n3. 如非 AI/半导体公司，严禁套用"AI产业链六层模型"\n\n分析结构：①主营业务确认 ②行业竞争格局 ③近三年财务健康（ROE/毛利率/现金流）④合理估值区间 ⑤投资风险 ⑥建议操作',
+        icon: <Search className="w-4 h-4" />,
+      },
+      {
+        label: '行业深度研究',
+        prompt: '请对指定行业进行深度分析，包含：①行业规模与增速 ②竞争格局与集中度 ③产业链结构 ④核心驱动因素 ⑤主要风险 ⑥代表性上市标的推荐（注明选择理由）',
+        icon: <BarChart3 className="w-4 h-4" />,
+      },
+      {
+        label: 'MISES 五维评分',
+        prompt: '请先确认该公司主营业务，再进行 MISES 五维评分（M市场/I创新/S可扩展性/E护城河/S安全边际），每维度0-10分并说明评分依据，最终给出综合投资建议',
+        icon: <Target className="w-4 h-4" />,
+      },
+      {
+        label: 'AI 产业链分析',
+        prompt: '请分析 AI 产业链（算力→基础设施→大模型→应用）上下游的投资机会，列出各层代表性 A股/港股/美股标的，并说明当前最值得关注的层级和理由',
+        icon: <TrendingUp className="w-4 h-4" />,
+      },
     ],
     toolIds: ['mises-score', 'financial-ratio', 'valuation-calc'],
   },
@@ -258,7 +338,7 @@ const TASK_CONTEXTS: Record<string, TaskContext> = {
     title: '组合',
     description: '持仓回顾 → 风险暴露 → 估值检查 → 调仓建议，纪律化组合管理',
     icon: <Briefcase className="w-5 h-5" />,
-    workflowIds: ['four_pillar_full'],
+    workflowIds: ['portfolio_review'],
     scenarioIds: ['pillar_operation', 'four_pillar_dashboard'],
     quickActions: [
       { label: '持仓检视', prompt: '回顾当前持仓的表现和风险暴露', icon: <Briefcase className="w-4 h-4" /> },
@@ -272,7 +352,7 @@ const TASK_CONTEXTS: Record<string, TaskContext> = {
     title: '宏观',
     description: 'WorldMonitor 全球信号 → GEI/DPI/MEI 评分 → BUY/CASH 决策 → 行业轮动',
     icon: <Globe className="w-5 h-5" />,
-    workflowIds: ['four_pillar_full'],
+    workflowIds: [],
     scenarioIds: ['pillar_macro', 'pillar_hotspot', 'macro_report'],
     quickActions: [
       { label: '该不该买（BUY/CASH）', prompt: '当前市场环境下应该加仓还是减仓？', icon: <TrendingUp className="w-4 h-4" /> },
@@ -286,8 +366,8 @@ const TASK_CONTEXTS: Record<string, TaskContext> = {
     title: '合规发布',
     description: '内容审查 → 利益冲突 → 信息披露 → 免责声明 → 发布清单，合规前置零风险',
     icon: <FileCheck className="w-5 h-5" />,
-    workflowIds: [],
-    scenarioIds: ['report_review'],
+    workflowIds: ['report_compliance'],
+    scenarioIds: [],
     quickActions: [
       { label: '研报合规审查', prompt: '审查研报内容的合规性：来源标注、预测规范、利益冲突', icon: <FileCheck className="w-4 h-4" /> },
       { label: '免责声明生成', prompt: '为研报生成标准免责声明和风险提示', icon: <FileText className="w-4 h-4" /> },
@@ -390,7 +470,7 @@ const COMPLIANCE_CHECKLIST = [
 ]
 
 export default function TaskContextPanel({ solution, taskId }: Props) {
-  const { setActiveTab, navigateToChat } = useToolStore()
+  const { setActiveTab, navigateToChat, navigateToWorkflow, selectedStock, setSelectedStock } = useToolStore()
   const isHkSolution = solution.id === 'hk-finance-tax'
   const ctx = isHkSolution
     ? (HK_TASK_CONTEXTS[taskId] ?? TASK_CONTEXTS[taskId])
@@ -424,18 +504,70 @@ export default function TaskContextPanel({ solution, taskId }: Props) {
           </div>
         </div>
 
+        {/* research tab：股票搜索输入框 */}
+        {taskId === 'research' && (
+          <StockSearchInput
+            onConfirm={(stock) => {
+              setSelectedStock(stock)
+              // 自动触发深度分析，携带业务确认指令
+              navigateToChat(
+                `请对 ${stock.ticker} 进行深度投资研究分析。\n\n` +
+                `⚠️ 重要：请务必先通过搜索或知识库确认该公司的主营业务领域（行业分类、产品线），` +
+                `再选用对应的分析框架（例如：制造业 → 成本结构/供应链分析；消费品 → 品牌/渠道分析；` +
+                `科技 → 研发投入/护城河分析）。严禁对非 AI/科技公司套用 AI 产业链模型。\n\n` +
+                `分析结构：① 主营业务确认（引用公告/招股书） ② 行业竞争格局 ③ 财务健康评分（近三年） ④ 合理估值区间 ⑤ 风险提示 ⑥ 投资建议`
+              )
+            }}
+          />
+        )}
+
+        {/* research tab：当前选中标的信息卡 */}
+        {taskId === 'research' && selectedStock && (
+          <div className="flex items-center justify-between px-3 py-2 rounded-lg border border-primary/20 bg-primary/5">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-primary">当前研究标的</span>
+              <span className="text-xs font-bold text-foreground">{selectedStock.name}（{selectedStock.ticker}）</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary">{selectedStock.market}股</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedStock(null)}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+              title="清除标的"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
         {/* 快捷操作 — 一键直达 */}
         <section>
-          <h3 className="text-sm font-semibold text-foreground mb-3">我要...</h3>
+          <div className="flex items-center gap-2 mb-3">
+            <h3 className="text-sm font-semibold text-foreground">我要...</h3>
+            {/* 非 research tab 的投研标的 badge */}
+            {selectedStock && ['portfolio', 'macro', 'compliance-pub'].includes(taskId) && (
+              <span className="text-[11px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                当前标的：{selectedStock.name}（{selectedStock.ticker}）
+              </span>
+            )}
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {ctx.quickActions.map((qa, i) => (
-              <QuickActionCard
-                key={i}
-                icon={qa.icon}
-                label={qa.label}
-                onClick={() => navigateToChat(qa.prompt)}
-              />
-            ))}
+            {ctx.quickActions.map((qa, i) => {
+              // 投研 research tab：快捷操作携带选中股票 + 业务确认指令
+              const prompt = (selectedStock && taskId === 'research')
+                ? `${qa.prompt}，标的：${selectedStock.ticker} ${selectedStock.name}（${selectedStock.market}股）。请先确认该公司主营业务，再选用合适分析框架`
+                : (selectedStock && ['portfolio', 'macro'].includes(taskId))
+                  ? `${qa.prompt}，参考标的：${selectedStock.ticker} ${selectedStock.name}`
+                  : qa.prompt
+              return (
+                <QuickActionCard
+                  key={i}
+                  icon={qa.icon}
+                  label={qa.label}
+                  onClick={() => navigateToChat(prompt)}
+                />
+              )
+            })}
           </div>
         </section>
 
@@ -592,7 +724,7 @@ export default function TaskContextPanel({ solution, taskId }: Props) {
                   workflow={wf}
                   expanded={expandedWorkflow === wf.id}
                   onToggle={() => setExpandedWorkflow(expandedWorkflow === wf.id ? null : wf.id)}
-                  onStart={() => setActiveTab('workflows')}
+                  onStart={() => navigateToWorkflow(wf.id)}
                   locale={isHkSolution ? 'hk' : undefined}
                 />
               ))}

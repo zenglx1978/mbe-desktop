@@ -37,6 +37,12 @@ export interface DispatchConfig {
   reconnectIntervalMs: number
   /** 最大重连次数 */
   maxReconnectAttempts: number
+  /**
+   * 本 Desktop 支持的 Agent 名称列表（P21 多设备路由）。
+   * 传给后端 X-Agents header，Hub 据此将任务路由到最合适的 Desktop。
+   * 留空表示支持所有 Agent。
+   */
+  supportedAgents?: string[]
 }
 
 export interface DispatchRequest {
@@ -57,12 +63,19 @@ export interface DispatchRequest {
 
 export interface DispatchResult {
   requestId: string
-  status: 'completed' | 'failed' | 'awaiting_user'
+  status: 'completed' | 'failed' | 'awaiting_user' | 'activation_blocked'
   summary: string
   deliverables: { type: string; name: string; url?: string; path?: string }[]
   error?: string
   tokenCost: number
   executedAt: string
+  /** DispatchActivationGuard 阻断时填充（OPT-04） */
+  activationBlock?: {
+    status: string
+    blockReason: string
+    blockAction: string
+    missingContractId?: string
+  }
 }
 
 type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'reconnecting'
@@ -84,6 +97,13 @@ const DEFAULT_CONFIG: DispatchConfig = {
   pollIntervalMs: 10000,
   reconnectIntervalMs: 1000,
   maxReconnectAttempts: 20,
+  // 声明本 Desktop 支持的 Agent（P21 多设备路由）
+  // Hub 据此将任务路由到最合适的 Desktop，留空表示支持所有 Agent
+  supportedAgents: [
+    'finance', 'legal', 'hr', 'cost', 'pulmonary',
+    'sales', 'growth', 'invest', 'transcribe', 'insurance_cs',
+    'crossborder', 'cs', 'education',
+  ],
 }
 
 function getDeviceName(): string {
@@ -116,8 +136,12 @@ function connectWebSocket(): void {
 
   try {
     const url = `${config.wsUrl}?token=${encodeURIComponent(config.authToken || '')}`
+    const agentsHeader = (config.supportedAgents ?? []).join(',')
     ws = new WebSocket(url, {
-      headers: { 'X-Device-Name': getDeviceName() },
+      headers: {
+        'X-Device-Name': getDeviceName(),
+        ...(agentsHeader ? { 'X-Agents': agentsHeader } : {}),
+      },
     } as any)
 
     ws.onopen = () => {
@@ -261,12 +285,17 @@ async function handleDispatchRequest(request: DispatchRequest): Promise<void> {
 
     const result: DispatchResult = {
       requestId: request.requestId,
-      status: agentResult.success ? 'completed' : 'failed',
+      status: agentResult.activationBlock
+        ? 'activation_blocked'
+        : agentResult.success
+          ? 'completed'
+          : 'failed',
       summary: agentResult.summary || '',
       deliverables: agentResult.deliverables || [],
       error: agentResult.error,
       tokenCost: agentResult.tokenCost || 0,
       executedAt: new Date().toISOString(),
+      activationBlock: agentResult.activationBlock,
     }
 
     // 推回结果
@@ -276,10 +305,18 @@ async function handleDispatchRequest(request: DispatchRequest): Promise<void> {
     emitToRenderer('dispatch:resultReady', result)
 
     // 系统通知
-    sendSystemNotification(
-      result.status === 'completed' ? '✅ 任务完成' : '❌ 任务失败',
-      result.summary?.substring(0, 100) || result.error || '',
-    )
+    if (result.status === 'activation_blocked') {
+      const block = result.activationBlock
+      sendSystemNotification(
+        '⚠️ 派遣激活被阻断',
+        block?.blockAction || '请先完成基准工时确认书签署',
+      )
+    } else {
+      sendSystemNotification(
+        result.status === 'completed' ? '✅ 任务完成' : '❌ 任务失败',
+        result.summary?.substring(0, 100) || result.error || '',
+      )
+    }
 
     pendingResults.set(request.requestId, result)
 
@@ -331,6 +368,7 @@ async function callLocalAgent(
   deliverables: { type: string; name: string; url?: string; path?: string }[]
   error?: string
   tokenCost: number
+  activationBlock?: DispatchResult['activationBlock']
 }> {
   const endpoint = `${baseUrl}/api/v1/consult`
 
@@ -355,6 +393,29 @@ async function callLocalAgent(
     clearTimeout(timeout)
 
     if (!res.ok) {
+      // OPT-04: DispatchActivationGuard 阻断（HTTP 422）
+      if (res.status === 422) {
+        let body: Record<string, unknown> = {}
+        try { body = await res.json() } catch { /* ignore */ }
+        const isActivationBlock =
+          typeof body.status === 'string' &&
+          (body.status as string).startsWith('blocked_')
+        if (isActivationBlock) {
+          return {
+            success: false,
+            summary: '',
+            deliverables: [],
+            error: `ACTIVATION_BLOCKED: ${body.block_reason || '基准工时确认书缺失'}`,
+            tokenCost: 0,
+            activationBlock: {
+              status: body.status as string,
+              blockReason: (body.block_reason as string) || '',
+              blockAction: (body.block_action as string) || '',
+              missingContractId: (body.missing_contract_id as string) || undefined,
+            },
+          }
+        }
+      }
       return {
         success: false,
         summary: '',

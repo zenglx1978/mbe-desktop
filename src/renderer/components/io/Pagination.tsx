@@ -26,7 +26,7 @@ function pageItems(totalPages: number, current: number): (number | 'ellipsis')[]
     if (start > 2) push('ellipsis')
   }
   window.forEach((p) => push(p))
-  const lastW = window[w - 1]
+  const lastW = window[w - 1]!
   if (lastW < totalPages) {
     if (lastW < totalPages - 1) push('ellipsis')
     push(totalPages)

@@ -135,7 +135,7 @@ function loadFromLocalStorage(): Uint8Array | null {
   try {
     const stored = localStorage.getItem(DB_STORAGE_KEY)
     if (!stored) return null
-    const binary = atob(stored.split(',')[1])
+    const binary = atob(stored.split(',')[1]!)
     const bytes = new Uint8Array(binary.length)
     for (let i = 0; i < binary.length; i++) {
       bytes[i] = binary.charCodeAt(i)

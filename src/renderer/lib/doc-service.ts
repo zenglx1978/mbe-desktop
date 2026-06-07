@@ -118,10 +118,11 @@ export async function updateDoc(
       const docs = readLS(solutionId)
       const idx = docs.findIndex(d => d.id === docId)
       if (idx >= 0) {
-        if (updates.title) docs[idx].title = updates.title
-        if (updates.doc_type) docs[idx].type = updates.doc_type as DocType
-        if (updates.content) docs[idx].content = updates.content
-        docs[idx].updatedAt = new Date().toISOString()
+        const doc = docs[idx]!
+        if (updates.title) doc.title = updates.title
+        if (updates.doc_type) doc.type = updates.doc_type as DocType
+        if (updates.content) doc.content = updates.content
+        doc.updatedAt = new Date().toISOString()
         writeLS(solutionId, docs)
       }
     }
@@ -131,10 +132,11 @@ export async function updateDoc(
       const docs = readLS(solutionId)
       const idx = docs.findIndex(d => d.id === docId)
       if (idx >= 0) {
-        if (updates.title) docs[idx].title = updates.title
-        if (updates.doc_type) docs[idx].type = updates.doc_type as DocType
-        if (updates.content) docs[idx].content = updates.content
-        docs[idx].updatedAt = new Date().toISOString()
+        const doc = docs[idx]!
+        if (updates.title) doc.title = updates.title
+        if (updates.doc_type) doc.type = updates.doc_type as DocType
+        if (updates.content) doc.content = updates.content
+        doc.updatedAt = new Date().toISOString()
         writeLS(solutionId, docs)
         return true
       }

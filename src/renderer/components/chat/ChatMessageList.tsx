@@ -37,7 +37,7 @@ function VirtualizedMessages({ messages, messagesEndRef }: { messages: ChatMessa
     getScrollElement: () => parentRef.current,
     estimateSize: () => 120,
     overscan: 8,
-    getItemKey: (index) => messages[index].id,
+    getItemKey: (index) => messages[index]!.id,
   })
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
@@ -104,7 +104,7 @@ function VirtualizedMessages({ messages, messagesEndRef }: { messages: ChatMessa
             className="absolute left-0 right-0 pb-6"
             style={{ transform: `translateY(${virtualRow.start}px)` }}
           >
-            <MemoizedBubble message={messages[virtualRow.index]} />
+            <MemoizedBubble message={messages[virtualRow.index]!} />
           </div>
         ))}
         <div ref={messagesEndRef as React.RefObject<HTMLDivElement>} />

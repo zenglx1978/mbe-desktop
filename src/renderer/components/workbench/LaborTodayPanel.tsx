@@ -11,7 +11,7 @@ import {
   AlertTriangle, Users, Banknote, ShieldAlert,
   Gavel, FileText, UserPlus, Calculator,
 } from 'lucide-react'
-import { StatCard, QuickAction, CalculatorChips, ProfitImpactFooter } from './today-panel-shared'
+import { StatCard, QuickAction, CalculatorChips, ProfitImpactFooter, HelpGuideSection } from './today-panel-shared'
 
 interface Props {
   solution: SolutionConfig
@@ -203,6 +203,9 @@ export default function LaborTodayPanel({ solution }: Props) {
             <CalculatorChips solution={solution} onOpenTools={() => goToTab('tools')} />
           </div>
         </section>
+
+        {/* 快速入门帮助 */}
+        <HelpGuideSection solution={solution} />
 
         {/* 利润影响 */}
         <ProfitImpactFooter solution={solution} />

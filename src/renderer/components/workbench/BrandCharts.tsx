@@ -78,7 +78,7 @@ export function AgingPieChart({ height = 200 }: { height?: number }) {
     ]
     const statusIdx: Record<SettlementStatus, number> = { draft: 0, confirmed: 1, invoiced: 2, paid: 3 }
     for (const s of settlements) {
-      buckets[statusIdx[s.status]].value += s.totalAmount
+      buckets[statusIdx[s.status]]!.value += s.totalAmount
     }
     return buckets.filter((b) => b.value > 0)
   }, [settlements])

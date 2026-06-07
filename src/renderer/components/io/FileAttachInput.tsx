@@ -43,7 +43,7 @@ export default function FileAttachInput({
       const maxBytes = maxSizeMB * 1024 * 1024
 
       for (let i = 0; i < Math.min(fileList.length, maxFiles); i++) {
-        const f = fileList[i]
+        const f = fileList[i]!
         if (f.size > maxBytes) continue
 
         const af: AttachedFile = {

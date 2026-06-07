@@ -78,8 +78,8 @@ function formatTokens(n?: number): string {
 }
 
 function ExpertCard({ expert, index }: { expert: ExpertStatus; index: number }) {
-  const style = STATUS_STYLE[expert.status] || STATUS_STYLE.idle
-  const color = EXPERT_COLORS[index % EXPERT_COLORS.length]
+  const style = (STATUS_STYLE[expert.status] || STATUS_STYLE.idle)!
+  const color = EXPERT_COLORS[index % EXPERT_COLORS.length]!
 
   return (
     <div className={`relative flex items-center gap-3 rounded-xl border border-gray-100 dark:border-[#3c3c3c] px-4 py-3 min-w-[160px] transition-all duration-300 ${style.bg}`}>
@@ -188,7 +188,7 @@ export function ExpertOrchestrationPanel({
 
   if (!info || !info.experts || info.experts.length <= 1) return null
 
-  const mode = MODE_CONFIG[info.mode] || MODE_CONFIG.parallel
+  const mode = (MODE_CONFIG[info.mode] || MODE_CONFIG.parallel)!
   const allDone = info.experts.every(e => e.status === 'done' || e.status === 'error')
   const workingCount = info.experts.filter(e => e.status === 'working').length
 

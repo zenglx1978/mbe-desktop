@@ -160,7 +160,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const data = result.data
       const rawSolutions = Array.isArray(data.allowed_solutions) ? data.allowed_solutions as string[] : undefined
       const user: UserInfo = {
-        name: (data.username as string) || email.split('@')[0],
+        name: (data.username as string) || email.split('@')[0]!,
         email,
         role: data.role as string | undefined,
         userId: data.user_id as string | undefined,
@@ -181,7 +181,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const payload: Record<string, string> = {
         email,
         password,
-        username: username || email.split('@')[0],
+        username: username || email.split('@')[0]!,
         source: 'desktop',
       }
       const ref = get().referralCode
@@ -199,7 +199,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (data.access_token) {
         const rawSolutions = Array.isArray(data.allowed_solutions) ? data.allowed_solutions as string[] : undefined
         const user: UserInfo = {
-          name: username || email.split('@')[0],
+          name: username || email.split('@')[0]!,
           email,
           role: (data.role as string) || 'user',
           userId: data.user_id as string | undefined,

@@ -166,7 +166,7 @@ export default function AnalyticsHeatmaps() {
       metrics.forEach(m => {
         cells.push({
           row: industry,
-          col: metricLabels[m],
+          col: metricLabels[m]!,
           value: data[m],
           label: data[m].toFixed(1),
         })

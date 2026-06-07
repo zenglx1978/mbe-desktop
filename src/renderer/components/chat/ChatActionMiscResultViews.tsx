@@ -112,7 +112,7 @@ export function OfflineInferenceResultView({ result }: { result: OfflineInferenc
     fallback: { icon: '📡', label: '离线模式', color: 'text-gray-600 dark:text-gray-400' },
   }
 
-  const sourceInfo = sourceLabels[result.source] ?? sourceLabels.fallback
+  const sourceInfo = (sourceLabels[result.source] ?? sourceLabels.fallback)!
   const confidencePct = Math.round(result.confidence * 100)
 
   return (

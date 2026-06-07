@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import type { SolutionConfig } from '@/lib/solution-router'
 import {
   generateDesign,
@@ -7,7 +7,8 @@ import {
   type DesignFormat,
   type DesignTheme,
 } from '@/lib/design-engine-service'
-import { FileImage, Download, Loader2, AlertCircle, RefreshCw, Eye } from 'lucide-react'
+import { useToolStore } from '@/stores/tool-store'
+import { FileImage, Download, Loader2, AlertCircle, RefreshCw, Eye, ArrowRight, BarChart2, BookOpen, TrendingUp } from 'lucide-react'
 
 interface Props {
   solution: SolutionConfig
@@ -50,8 +51,13 @@ subtitle: 2025 Q4 业务回顾
 
 export default function DesignEnginePanel({ solution }: Props) {
   const agentName = solution.agents[0]?.id || ''
+  const consumePendingDesignMarkdown = useToolStore((s) => s.consumePendingDesignMarkdown)
+  const selectedStock = useToolStore((s) => s.selectedStock)
+  const navigateToWorkflow = useToolStore((s) => s.navigateToWorkflow)
 
-  const [markdown, setMarkdown] = useState(SAMPLE_MARKDOWN)
+  const [markdown, setMarkdown] = useState(() => {
+    return consumePendingDesignMarkdown() ?? SAMPLE_MARKDOWN
+  })
   const [format, setFormat] = useState<DesignFormat>('pptx')
   const [theme, setTheme] = useState<DesignTheme>('dark')
   const [page, setPage] = useState<number | undefined>(undefined)
@@ -63,12 +69,20 @@ export default function DesignEnginePanel({ solution }: Props) {
   const [healthy, setHealthy] = useState<boolean | null>(null)
 
   const previewRef = useRef<string | null>(null)
+  const autoPreviewDone = useRef(false)
+
+  /** 将 Blob 转为 data: URL（CSP img-src 不允许 blob: 时的安全替代） */
+  const blobToDataUrl = useCallback((blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = reject
+      reader.readAsDataURL(blob)
+    })
+  }, [])
 
   const revokePreview = useCallback(() => {
-    if (previewRef.current) {
-      URL.revokeObjectURL(previewRef.current)
-      previewRef.current = null
-    }
+    previewRef.current = null
   }, [])
 
   const handleGenerate = async (preview = false) => {
@@ -89,9 +103,10 @@ export default function DesignEnginePanel({ solution }: Props) {
 
       if (preview || targetFormat === 'png' || targetFormat === 'svg') {
         revokePreview()
-        const url = URL.createObjectURL(blob)
-        previewRef.current = url
-        setPreviewUrl(url)
+        // 用 data: URL 而非 blob: URL，兼容 Electron CSP img-src 限制
+        const dataUrl = await blobToDataUrl(blob)
+        previewRef.current = dataUrl
+        setPreviewUrl(dataUrl)
         setLastBlob(blob)
       } else {
         downloadBlob(blob, targetFormat)
@@ -103,6 +118,15 @@ export default function DesignEnginePanel({ solution }: Props) {
       setGenerating(false)
     }
   }
+
+  // 挂载时自动生成首页预览（仅一次）
+  useEffect(() => {
+    if (autoPreviewDone.current) return
+    autoPreviewDone.current = true
+    void handleGenerate(true)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
 
   const handleHealthCheck = async () => {
     const res = await checkDesignHealth()
@@ -129,6 +153,52 @@ export default function DesignEnginePanel({ solution }: Props) {
           {healthy === false && <span className="text-red-500">离线</span>}
           {healthy === null && <span className="text-muted-foreground">检查</span>}
         </button>
+      </div>
+
+      {/* 来源引导栏：显示如何把研究结果导入 Design Engine */}
+      <div className="shrink-0 px-4 py-2 border-b border-border/30 bg-muted/10 flex items-center gap-3 flex-wrap">
+        <span className="text-xs text-muted-foreground font-medium">内容来源：</span>
+
+        {/* 有选中股票：快速生成该股票的分析报告模板 */}
+        {selectedStock ? (
+          <button
+            type="button"
+            onClick={() => {
+              const frontmatter = `---\ntitle: ${selectedStock.name}（${selectedStock.ticker}）投研报告\nsubtitle: 深度研究 · ${new Date().toLocaleDateString('zh-CN')}\n---\n\n# 请先在「研究」工作流中完成分析\n\n完成分析后，点击结果页底部的「生成 PPTX」按钮，\n分析结论将自动填入此编辑器。\n\n---\n\n# 分析概要\n\n（待填入）\n\n# 估值区间\n\n（待填入）\n\n# 风险提示\n\n（待填入）`
+              setMarkdown(frontmatter)
+            }}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+          >
+            <BarChart2 className="w-3 h-3" />
+            {selectedStock.name} 报告模板
+          </button>
+        ) : null}
+
+        {/* 快捷入口：去研究工作流 */}
+        <button
+          type="button"
+          onClick={() => navigateToWorkflow('stock_research')}
+          className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs border border-border/50 hover:bg-muted/40 transition-colors text-muted-foreground"
+        >
+          <TrendingUp className="w-3 h-3" />
+          去研究 → 生成研报
+          <ArrowRight className="w-3 h-3" />
+        </button>
+
+        {/* 快捷入口：行业研究 */}
+        <button
+          type="button"
+          onClick={() => navigateToWorkflow('sector_research')}
+          className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs border border-border/50 hover:bg-muted/40 transition-colors text-muted-foreground"
+        >
+          <BookOpen className="w-3 h-3" />
+          行业研究 → 生成研报
+          <ArrowRight className="w-3 h-3" />
+        </button>
+
+        <span className="text-xs text-muted-foreground/60 ml-auto hidden sm:block">
+          研究完成后点击「生成 PPTX」自动导入
+        </span>
       </div>
 
       {/* 主体：左编辑 + 右预览 */}
@@ -244,10 +314,15 @@ export default function DesignEnginePanel({ solution }: Props) {
           ) : (
             <div className="flex-1 flex items-center justify-center text-center p-8">
               <div className="space-y-3">
-                <FileImage className="w-12 h-12 mx-auto text-muted-foreground/30" />
-                <p className="text-sm text-muted-foreground">在左侧输入 Markdown 内容</p>
+                {generating
+                  ? <Loader2 className="w-12 h-12 mx-auto text-primary/40 animate-spin" />
+                  : <FileImage className="w-12 h-12 mx-auto text-muted-foreground/30" />
+                }
+                <p className="text-sm text-muted-foreground">
+                  {generating ? '正在生成首页预览…' : '点击「预览」查看幻灯片效果'}
+                </p>
                 <p className="text-xs text-muted-foreground/60">
-                  点击「预览」查看首页效果，或直接「生成」下载文件
+                  或点击「生成 PPTX」直接下载文件
                 </p>
                 <div className="pt-2 space-y-1 text-xs text-muted-foreground/50 text-left max-w-xs mx-auto">
                   <p>支持的 Markdown 语法：</p>

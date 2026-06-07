@@ -53,7 +53,7 @@ export function execute(action: UndoAction) {
 
 export function undo(): UndoAction | null {
   if (undoStack.length === 0) return null
-  const action = undoStack[0]
+  const action = undoStack[0] as UndoAction
   undoStack = undoStack.slice(1)
   action.undoFn()
   redoStack = [action, ...redoStack]
@@ -63,7 +63,7 @@ export function undo(): UndoAction | null {
 
 export function redo(): UndoAction | null {
   if (redoStack.length === 0) return null
-  const action = redoStack[0]
+  const action = redoStack[0] as UndoAction
   redoStack = redoStack.slice(1)
   action.doFn()
   undoStack = [action, ...undoStack]
@@ -112,7 +112,7 @@ export function restoreFromTrash(id: string): TrashedItem | null {
   const trash = loadTrash()
   const idx = trash.findIndex((t) => t.id === id)
   if (idx === -1) return null
-  const item = trash.splice(idx, 1)[0]
+  const item = trash.splice(idx, 1)[0]!
   localStorage.setItem(TRASH_KEY, JSON.stringify(trash))
   return item
 }

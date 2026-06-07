@@ -131,11 +131,11 @@ export function parseCSVToOrders(csv: string): ERPOrderRow[] {
   const lines = csv.trim().split('\n')
   if (lines.length < 2) return []
 
-  const header = lines[0].split(',').map((h) => h.trim().toLowerCase())
+  const header = lines[0]!.split(',').map((h) => h.trim().toLowerCase())
   const rows: ERPOrderRow[] = []
 
   for (let i = 1; i < lines.length; i++) {
-    const cols = lines[i].split(',').map((c) => c.trim())
+    const cols = lines[i]!.split(',').map((c) => c.trim())
     const get = (key: string) => cols[header.indexOf(key)] || ''
 
     rows.push({

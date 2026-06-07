@@ -156,7 +156,7 @@ export default function DispatchDashboard() {
               <div className="relative">
                 <div className="absolute left-[11px] top-3 bottom-0 w-px bg-border/30" />
                 {dispatchHistory.map((item) => {
-                  const st = STATUS_CONFIG[item.status] || STATUS_CONFIG.pending
+                  const st = STATUS_CONFIG[item.status] ?? STATUS_CONFIG['pending']!
                   return (
                     <div key={item.request_id} className="relative flex gap-3 pb-3">
                       <div className="relative z-10 mt-1 shrink-0">

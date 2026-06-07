@@ -16,7 +16,7 @@ import {
   ChevronRight, Gavel,
   BadgeDollarSign, Clock, ScrollText,
 } from 'lucide-react'
-import { CalculatorChips, ProfitImpactFooter } from './today-panel-shared'
+import { CalculatorChips, ProfitImpactFooter, HelpGuideSection } from './today-panel-shared'
 
 interface Props {
   solution: SolutionConfig
@@ -243,6 +243,9 @@ export default function LawTodayPanel({ solution }: Props) {
             <CalculatorChips solution={solution} onOpenTools={() => goToTab('tools')} />
           </div>
         </section>
+
+        {/* 快速入门帮助 */}
+        <HelpGuideSection solution={solution} />
 
         {/* 利润影响提示 */}
         <ProfitImpactFooter solution={solution} />

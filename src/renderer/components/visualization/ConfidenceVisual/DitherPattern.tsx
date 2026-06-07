@@ -57,8 +57,8 @@ export const CONFIDENCE_DITHER: Record<ConfidenceGrade, DitherConfig> = {
     bar: 'bg-amber-500',
     label: '较确定',
     desc: '有依据但存在地区差异',
-    pattern: DITHER_PATTERNS.dots_fine,
-    patternDark: DITHER_PATTERNS_DARK.dots_fine,
+    pattern: DITHER_PATTERNS.dots_fine!,
+    patternDark: DITHER_PATTERNS_DARK.dots_fine!,
   },
   medium: {
     bg: 'bg-orange-50/40 dark:bg-orange-900/10',
@@ -66,8 +66,8 @@ export const CONFIDENCE_DITHER: Record<ConfidenceGrade, DitherConfig> = {
     bar: 'bg-orange-500',
     label: '需验证',
     desc: '经验判断，非强制规定',
-    pattern: DITHER_PATTERNS.diagonal_lines,
-    patternDark: DITHER_PATTERNS_DARK.diagonal_lines,
+    pattern: DITHER_PATTERNS.diagonal_lines!,
+    patternDark: DITHER_PATTERNS_DARK.diagonal_lines!,
   },
   low: {
     bg: 'bg-red-50/30 dark:bg-red-900/10',
@@ -75,8 +75,8 @@ export const CONFIDENCE_DITHER: Record<ConfidenceGrade, DitherConfig> = {
     bar: 'bg-red-500',
     label: '需确认',
     desc: 'AI 推测/建议，需人工确认',
-    pattern: DITHER_PATTERNS.sparse_dots,
-    patternDark: DITHER_PATTERNS_DARK.sparse_dots,
+    pattern: DITHER_PATTERNS.sparse_dots!,
+    patternDark: DITHER_PATTERNS_DARK.sparse_dots!,
   },
 }
 

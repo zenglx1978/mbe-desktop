@@ -330,6 +330,7 @@ export const investmentResearchSolution: SolutionConfig = {
     { id: 'client-data-isolation', label: '客户数据隔离', trigger: '不同客户的持仓数据出现在同一会话', action: '红色阻断，确保客户数据严格隔离' },
   ],
   quickActions: [
+    { id: 'quick-macro-refresh', label: '刷新宏观数据', icon: '🔄', workflowId: 'portfolio_review', description: '从 akshare/yfinance 拉取最新 PMI/M2/社融/CPI（6小时冷却）', cta: '立即刷新', apiEndpoint: '/api/invest/four-pillar/macro/refresh', apiMethod: 'POST' },
     { id: 'quick-macro', label: '宏观信号速查', icon: '🌍', workflowId: 'portfolio_review', description: '一键获取 WorldMonitor 7 大宏观信号和 BUY/CASH 判断', cta: '查看信号' },
     { id: 'quick-mises-score', label: 'MISES 评分', icon: '🎯', workflowId: 'stock_screening', description: '输入股票代码，秒出 MISES 五维评分', cta: '立即评分' },
     { id: 'quick-valuation', label: '快速估值', icon: '💹', workflowId: 'stock_screening', description: 'PE/PB/PS/DCF 多方法交叉估值', cta: '开始估值' },

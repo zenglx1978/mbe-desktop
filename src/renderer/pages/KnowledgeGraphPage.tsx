@@ -27,7 +27,7 @@ export default function KnowledgeGraphPage() {
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
-    const observer = new ResizeObserver(([entry]) => {
+    const observer = new ResizeObserver(([entry]) => { if (!entry) return;
       setDimensions({
         width: entry.contentRect.width,
         height: entry.contentRect.height,
@@ -207,7 +207,7 @@ export default function KnowledgeGraphPage() {
             </p>
 
             <div className="space-y-3">
-              <DetailRow label="类型" value={NODE_TYPE_LABELS[selectedNode.type]} />
+              <DetailRow label="类型" value={NODE_TYPE_LABELS[selectedNode.type] ?? selectedNode.type} />
               <DetailRow label="所属智能体" value={selectedNode.agentId} />
               <DetailRow label="引用次数" value={String(selectedNode.refCount)} />
               {selectedNode.category && (

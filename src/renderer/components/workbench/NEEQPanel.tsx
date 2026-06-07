@@ -180,8 +180,8 @@ function ListingView({ BASE, onBack }: { BASE: string; onBack: () => void }) {
             ['上上年净利润', 'net_profit_y1'], ['上年净利润', 'net_profit_y2'],
             ['上年末净资产', 'net_assets'],
           ].map(([label, key]) => (
-            <Field key={key} label={label as string}>
-              <Input type="number" value={(form as any)[key]} onChange={f(key)} placeholder="0" />
+            <Field key={key!} label={label as string}>
+              <Input type="number" value={(form as any)[key!]} onChange={f(key!)} placeholder="0" />
             </Field>
           ))}
         </div>
@@ -313,8 +313,8 @@ function InnovationView({ BASE, onBack }: { BASE: string; onBack: () => void }) 
             ['上上年净利润', 'net_profit_y1'], ['上年净利润', 'net_profit_y2'],
             ['上年末净资产', 'net_assets'], ['股本总额', 'registered_capital'],
           ].map(([label, key]) => (
-            <Field key={key} label={`${label}（万元）`}>
-              <Input type="number" value={(form as any)[key]} onChange={f(key)} placeholder="0" />
+            <Field key={key!} label={`${label}（万元）`}>
+              <Input type="number" value={(form as any)[key!]} onChange={f(key!)} placeholder="0" />
             </Field>
           ))}
         </div>
@@ -418,8 +418,8 @@ function BSEView({ BASE, onBack }: { BASE: string; onBack: () => void }) {
             ['上上年净利润', 'net_profit_y1'], ['上年净利润', 'net_profit_y2'],
             ['上年末净资产', 'net_assets'],
           ].map(([label, key]) => (
-            <Field key={key} label={`${label}（万元）`}>
-              <Input type="number" value={(form as any)[key]} onChange={f(key)} placeholder="0" />
+            <Field key={key!} label={`${label}（万元）`}>
+              <Input type="number" value={(form as any)[key!]} onChange={f(key!)} placeholder="0" />
             </Field>
           ))}
           <div className="col-span-2 grid grid-cols-3 gap-2 text-xs">

@@ -15,7 +15,7 @@ import {
   TrendingUp, ChevronRight, CheckCircle2,
   CalendarClock,
 } from 'lucide-react'
-import { StatCard, QuickAction, CalculatorChips, ProfitImpactFooter } from './today-panel-shared'
+import { StatCard, QuickAction, CalculatorChips, ProfitImpactFooter, HelpGuideSection } from './today-panel-shared'
 
 interface Props {
   solution: SolutionConfig
@@ -224,6 +224,9 @@ export default function TodayPanel({ solution }: Props) {
             <CalculatorChips solution={solution} onOpenTools={() => goToTab('tools')} />
           </div>
         </section>
+
+        {/* 快速入门帮助 */}
+        <HelpGuideSection solution={solution} />
 
         {/* 利润影响提示 */}
         <ProfitImpactFooter solution={solution} />

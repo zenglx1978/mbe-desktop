@@ -117,7 +117,7 @@ export default function ForceGraph({
   const findNodeAt = useCallback((wx: number, wy: number): KGNode | null => {
     const nodes = nodesRef.current
     for (let i = nodes.length - 1; i >= 0; i--) {
-      const n = nodes[i]
+      const n = nodes[i]!
       const r = getNodeRadius(n)
       const dx = n.x - wx
       const dy = n.y - wy
@@ -144,8 +144,8 @@ export default function ForceGraph({
     // 排斥力
     for (let i = 0; i < nodes.length; i++) {
       for (let j = i + 1; j < nodes.length; j++) {
-        const a = nodes[i]
-        const b = nodes[j]
+        const a = nodes[i]!
+        const b = nodes[j]!
         const dx = b.x - a.x
         const dy = b.y - a.y
         const dist = Math.sqrt(dx * dx + dy * dy) || 1

@@ -19,14 +19,14 @@ vi.mock('@/lib/solution-registry-data', () => ({
       id: 'law-firm',
       name: '律所运营方案',
       status: 'available',
-      agents: [{ id: 'legal', role: '诉讼分析专家', handles: 'legal', baseUrl: '/api/legal', wsUrl: '/ws/legal/chat' }],
+      agents: [{ id: 'legal', role: '诉讼分析专家', handles: 'legal', baseUrl: '/api/legal', wsUrl: '/api/legal/ws' }],
       theme: { primary: '215 91% 55%', accent: '215 91% 55%' },
     },
     {
       id: 'finance',
       name: '财税专业服务方案',
       status: 'available',
-      agents: [{ id: 'finance', role: '税务专家', handles: 'finance', baseUrl: '/api/finance', wsUrl: '/ws/finance/chat' }],
+      agents: [{ id: 'finance', role: '税务专家', handles: 'finance', baseUrl: '/api/finance', wsUrl: '/api/finance/ws' }],
       theme: { primary: '142 71% 45%', accent: '142 71% 45%' },
     },
     {
@@ -83,7 +83,7 @@ describe('getDefaultAgent', () => {
     const sol = getSolution('law-firm')!
     const agent = getDefaultAgent(sol)
     expect(agent.id).toBe('legal')
-    expect(agent.wsUrl).toBe('/ws/legal/chat')
+    expect(agent.wsUrl).toBe('/api/legal/ws')
   })
 })
 

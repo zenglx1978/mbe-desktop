@@ -65,12 +65,12 @@ const COLOR_SCALES: Record<string, { stops: [number, string][] }> = {
 
 function interpolateColor(stops: [number, string][], t: number): string {
   const clamped = Math.max(0, Math.min(1, t))
-  let lower = stops[0]
-  let upper = stops[stops.length - 1]
+  let lower = stops[0]!
+  let upper = stops[stops.length - 1]!
   for (let i = 0; i < stops.length - 1; i++) {
-    if (clamped >= stops[i][0] && clamped <= stops[i + 1][0]) {
-      lower = stops[i]
-      upper = stops[i + 1]
+    if (clamped >= stops[i]![0] && clamped <= stops[i + 1]![0]) {
+      lower = stops[i]!
+      upper = stops[i + 1]!
       break
     }
   }
@@ -94,7 +94,7 @@ export function AgentHeatmap({
 }: AgentHeatmapProps) {
   const [hoveredCell, setHoveredCell] = useState<HeatmapCell | null>(null)
 
-  const scale = COLOR_SCALES[data.color_scale] || COLOR_SCALES.green
+  const scale = (COLOR_SCALES[data.color_scale] || COLOR_SCALES.green)!
   const cellMap = useMemo(() => {
     const map = new Map<string, HeatmapCell>()
     for (const cell of data.cells) {

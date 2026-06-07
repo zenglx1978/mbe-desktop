@@ -49,7 +49,7 @@ function TypeBadge({ type }: { type: Activity['type'] }) {
     calculation: { label: '计算', cls: 'bg-emerald-500/10 text-emerald-400' },
     task: { label: '任务', cls: 'bg-amber-500/10 text-amber-400' },
   }
-  const m = meta[type] || meta.conversation
+  const m = (meta[type] || meta.conversation)!
   return (
     <span className={`text-[11px] px-1.5 py-0.5 rounded-md shrink-0 ${m.cls}`}>
       {m.label}

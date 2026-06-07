@@ -50,6 +50,10 @@ export interface QuickAction {
   toolId?: string
   description?: string
   cta?: string
+  /** 直接调用的 API 端点（绕过通用工作流） */
+  apiEndpoint?: string
+  /** HTTP 方法（默认 POST） */
+  apiMethod?: 'GET' | 'POST'
 }
 
 /** 工具配置 — 配置驱动，不硬编码 */
@@ -282,6 +286,12 @@ export async function fetchSolutionStatuses(): Promise<Map<string, SolutionConfi
     if (res.ok) {
       const data = await res.json()
       const solutions: { id: string; status?: string }[] = data.solutions || []
+      // 防护：若后端返回 0 个方案（挂载缺失/配置异常），不更新缓存，
+      // 让 getEffectiveStatus 降级到本地注册表，避免全部方案"闪消失"
+      if (solutions.length === 0) {
+        console.warn('[SolutionRouter] API returned 0 solutions – skipping cache update, falling back to local registry')
+        return _remoteStatuses
+      }
       _remoteStatuses.clear()
       _returnedIds.clear()
       for (const sol of solutions) {
@@ -325,7 +335,7 @@ export function getAvailableSolutions(): SolutionConfig[] {
 }
 
 export function getDefaultAgent(solution: SolutionConfig): AgentEndpoint {
-  return solution.agents[0]
+  return solution.agents[0]!
 }
 
 /** 默认主题（无方案选中时恢复） */

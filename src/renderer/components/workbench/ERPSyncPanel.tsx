@@ -365,7 +365,7 @@ export default function ERPSyncPanel({ solution }: Props) {
             ) : (
               <div className="space-y-2">
                 {results.map((r) => {
-                  const meta = RECON_STATUS_META[r.status]
+                  const meta = RECON_STATUS_META[r.status]!
                   const StatusIcon = meta.Icon
                   return (
                     <div key={r.settlementId} className="p-4 rounded-xl border border-border/30 bg-card">

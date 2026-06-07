@@ -1138,7 +1138,7 @@ function AuditReportPanel({ project, BASE, onBack }: { project: IPOProject; BASE
           ['external', 'annual', 'ipo'].includes(p.audit_type)
         )
         setAuditProjects(list)
-        if (list.length > 0 && !selectedAudit) setSelectedAudit(list[0])
+        if (list.length > 0 && !selectedAudit) setSelectedAudit(list[0] ?? null)
       }
     } catch {}
   }, [AUDIT_BASE])

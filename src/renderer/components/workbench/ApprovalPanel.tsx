@@ -92,8 +92,8 @@ export default function ApprovalPanel() {
         {items.length > 0 ? (
           <div className="space-y-2">
             {items.map(item => {
-              const risk = RISK_META[item.risk_level] || RISK_META.medium
-              const statusMeta = STATUS_META[item.status] || STATUS_META.pending
+              const risk = (RISK_META[item.risk_level] || RISK_META.medium)!
+              const statusMeta = (STATUS_META[item.status] ?? STATUS_META['pending'])!
               const isExpanded = expandedId === item.id
               const remaining = getTimeRemaining(item.created_at, item.expire_minutes)
               const isUrgent = remaining === '已过期' || remaining.includes('分钟')

@@ -7,6 +7,7 @@
 import type { WorkflowConfig, ScenarioConfig, WorkflowStep } from './solution-router'
 import { authHeaders, API_BASE, isAbortError } from '@/lib/api-client'
 import { useAppStore } from '@/stores/app-store'
+import { useToolStore } from '@/stores/tool-store'
 import type {
   ConsultResponse,
   ScenarioAskBody,
@@ -174,8 +175,8 @@ async function executeStandard(
   try {
     // 按步骤依次执行（sequential 模式）
     for (let i = 0; i < workflow.steps.length; i++) {
-      const step = workflow.steps[i]
-      const sr = stepResults[i]
+      const step = workflow.steps[i]!
+      const sr = stepResults[i]!
       const stepId = step.id ?? `step_${i}`
 
       sr.status = 'running'
@@ -183,7 +184,7 @@ async function executeStandard(
       const stepStart = Date.now()
 
       try {
-        const prevAnswer = i > 0 ? stepResults[i - 1].answer : undefined
+        const prevAnswer = i > 0 ? stepResults[i - 1]!.answer : undefined
         const enrichedQuery = prevAnswer
           ? `${query}\n\n[上一步分析结果]\n${prevAnswer}`
           : query
@@ -242,19 +243,33 @@ export async function executeScenario(
   opts?: WorkflowRequestOptions,
 ): Promise<{ success: boolean; answer?: string; error?: string; durationMs: number }> {
   const start = Date.now()
-  const reqSignal = withTimeoutAndUser(opts?.signal, 60_000)
+  const reqSignal = withTimeoutAndUser(opts?.signal, 90_000)
   try {
     // 专用 API 端点直调（绕过通用 /consult，如 WorldMonitor 宏观数据管线）
     if (scenario.apiEndpoint) {
       try {
         const method = scenario.apiMethod || 'GET'
-        const url = `${API_BASE}${scenario.apiEndpoint}`
+        let url = `${API_BASE}${scenario.apiEndpoint}`
         const reqInit: RequestInit = {
           method,
           headers: authHeaders(),
           signal: reqSignal,
         }
-        if (method === 'POST') {
+        if (method === 'GET') {
+          // GET 场景（四柱系统等）：把股票上下文作为 query 参数传入，
+          // 让后端在宏观/热点分析中加入该标的的针对性结论。
+          // 优先级：1) 用户在输入框里打的内容  2) 全局选中的股票  3) 无
+          const stockCtx =
+            userInput?.trim() ||
+            (() => {
+              const s = useToolStore.getState().selectedStock
+              return s ? `${s.name}（${s.ticker}）` : ''
+            })()
+          if (stockCtx) {
+            const sep = url.includes('?') ? '&' : '?'
+            url += `${sep}stock_query=${encodeURIComponent(stockCtx)}`
+          }
+        } else if (method === 'POST') {
           reqInit.body = JSON.stringify({ query: userInput || scenario.prompt, ...getBillingFields() })
         }
         const directResp = await fetch(url, reqInit)
@@ -466,29 +481,35 @@ function processEvent(
 
   if (type === 'step_start') {
     if (idx >= 0) {
-      stepResults[idx].status = 'running'
-      onProgress?.(steps[idx].id ?? `step_${idx}`, 'running')
+      const sr = stepResults[idx]!
+      const step = steps[idx]!
+      sr.status = 'running'
+      onProgress?.(step.id ?? `step_${idx}`, 'running')
     }
   } else if (type === 'step_complete' || type === 'step_done') {
     if (idx >= 0) {
-      const stepId = steps[idx].id ?? `step_${idx}`
+      const sr = stepResults[idx]!
+      const step = steps[idx]!
+      const stepId = step.id ?? `step_${idx}`
       if (evt.success === false) {
-        stepResults[idx].status = 'error'
-        stepResults[idx].error = evt.error || '步骤执行失败'
+        sr.status = 'error'
+        sr.error = evt.error || '步骤执行失败'
         onProgress?.(stepId, 'error', evt.error)
       } else {
-        stepResults[idx].status = 'done'
-        stepResults[idx].answer = evt.answer || evt.text
-        stepResults[idx].durationMs = evt.elapsed_ms || evt.duration_ms
-        stepResults[idx].expert = `${evt.agent}.${evt.expert}`
+        sr.status = 'done'
+        sr.answer = evt.answer || evt.text
+        sr.durationMs = evt.elapsed_ms || evt.duration_ms
+        sr.expert = `${evt.agent}.${evt.expert}`
         onProgress?.(stepId, 'done', evt.answer)
       }
     }
   } else if (type === 'step_error') {
     if (idx >= 0) {
-      stepResults[idx].status = 'error'
-      stepResults[idx].error = evt.error || evt.message
-      onProgress?.(steps[idx].id ?? `step_${idx}`, 'error', evt.error)
+      const sr = stepResults[idx]!
+      const step = steps[idx]!
+      sr.status = 'error'
+      sr.error = evt.error || evt.message
+      onProgress?.(step.id ?? `step_${idx}`, 'error', evt.error)
     }
   }
 }

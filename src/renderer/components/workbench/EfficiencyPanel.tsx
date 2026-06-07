@@ -316,7 +316,7 @@ export default function EfficiencyPanel() {
                       <Tooltip
                         content={({ payload }) => {
                           if (!payload?.length) return null
-                          const d = payload[0].payload as { fullName: string; human: number; mbe: number; saved: number; count: number }
+                          const d = payload[0]!.payload as { fullName: string; human: number; mbe: number; saved: number; count: number }
                           return (
                             <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-lg">
                               <p className="font-medium mb-1">{d.fullName}（{d.count}次）</p>

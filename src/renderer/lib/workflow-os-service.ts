@@ -304,9 +304,10 @@ const STATUS_LABEL: Record<string, { text: string; color: string }> = {
   failed: { text: '失败', color: '#ef4444' },
   cancelled: { text: '已取消', color: '#71717a' },
 }
+const STATUS_FALLBACK: { text: string; color: string } = { text: '草稿', color: '#a1a1aa' }
 
-export function getStatusDisplay(status: string) {
-  return STATUS_LABEL[status] || STATUS_LABEL.draft
+export function getStatusDisplay(status: string): { text: string; color: string } {
+  return STATUS_LABEL[status] ?? STATUS_FALLBACK
 }
 
 const TYPE_ICON: Record<string, string> = {

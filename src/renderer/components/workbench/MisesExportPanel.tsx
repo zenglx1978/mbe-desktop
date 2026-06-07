@@ -4,11 +4,12 @@
  * 调用 GET /api/invest/mises/report/{ticker}/export?format=pdf|pptx
  * 返回二进制文件流，触发浏览器/Electron 下载。
  */
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Download, FileText, Presentation, AlertCircle, CheckCircle2, Loader2, Info } from 'lucide-react'
 import type { SolutionConfig } from '@/lib/solution-router'
 import { runFileExport } from '@/lib/tool-service'
 import { API_BASE, authHeaders } from '@/lib/api-client'
+import { useToolStore } from '@/stores/tool-store'
 
 interface Props {
   solution: SolutionConfig
@@ -40,9 +41,18 @@ const FORMAT_META: Record<Format, { label: string; desc: string; icon: typeof Fi
 }
 
 export default function MisesExportPanel({ solution: _solution }: Props) {
+  const selectedStock = useToolStore((s) => s.selectedStock)
   const [ticker, setTicker] = useState('')
   const [market, setMarket] = useState<'A' | 'HK' | 'US'>('A')
   const [statuses, setStatuses] = useState<ReportStatus[]>([])
+
+  // 从全局股票上下文预填（首次进入或上下文切换时）
+  useEffect(() => {
+    if (selectedStock) {
+      setTicker(selectedStock.ticker)
+      setMarket(selectedStock.market)
+    }
+  }, [selectedStock])
 
   const setStatus = (s: ReportStatus) => {
     setStatuses((prev) => {
@@ -119,13 +129,22 @@ export default function MisesExportPanel({ solution: _solution }: Props) {
           </p>
         </div>
 
-        {/* 提示 */}
-        <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm">
-          <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-          <span className="text-amber-700 dark:text-amber-400">
-            导出前需先在「研究」标签对目标股票完成 MISES 评分分析，系统才能生成研报。
-          </span>
-        </div>
+        {/* 已选中股票的快捷提示 */}
+        {selectedStock ? (
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20 text-sm">
+            <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+            <span className="text-foreground">
+              已从「组合」自动填入：<span className="font-semibold text-primary">{selectedStock.name}（{selectedStock.ticker}）</span>
+            </span>
+          </div>
+        ) : (
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm">
+            <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+            <span className="text-amber-700 dark:text-amber-400">
+              导出前需先在「研究」标签对目标股票完成 MISES 评分分析，系统才能生成研报。或从「组合」自选股卡片点击直接跳转。
+            </span>
+          </div>
+        )}
 
         {/* 输入区 */}
         <div className="space-y-3 p-4 rounded-xl border border-border/60 bg-card">

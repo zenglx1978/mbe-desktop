@@ -1,12 +1,22 @@
 import { create } from 'zustand'
 import type { WorkbenchTab, ToolConfig } from '@/lib/solution-router'
 
+export interface SelectedStock {
+  ticker: string
+  name: string
+  market: 'A' | 'HK' | 'US'
+}
+
 interface ToolState {
   activeTab: WorkbenchTab
   activeTool: ToolConfig | null
   pendingPrompt: string | null
   pendingWorkflowId: string | null
   pendingScenarioId: string | null
+  /** 当前选中的研究标的，全局共享，消除各面板重复输入 */
+  selectedStock: SelectedStock | null
+  /** 从工作流结果传入 Design Engine 的预填 Markdown（用完即清） */
+  pendingDesignMarkdown: string | null
   setActiveTab: (tab: WorkbenchTab) => void
   navigateToChat: (prompt: string) => void
   navigateToTool: (tool: ToolConfig) => void
@@ -17,6 +27,12 @@ interface ToolState {
   consumePendingPrompt: () => string | null
   consumePendingWorkflowId: () => string | null
   consumePendingScenarioId: () => string | null
+  setSelectedStock: (stock: SelectedStock | null) => void
+  /** 选中股票并跳转到研究工作流 */
+  selectStockAndResearch: (stock: SelectedStock, workflowId?: string) => void
+  /** 将工作流结果 Markdown 传给 Design Engine，并跳转到该 tab */
+  navigateToDesignEngine: (markdown: string) => void
+  consumePendingDesignMarkdown: () => string | null
 }
 
 export const useToolStore = create<ToolState>((set, get) => ({
@@ -25,6 +41,8 @@ export const useToolStore = create<ToolState>((set, get) => ({
   pendingPrompt: null,
   pendingWorkflowId: null,
   pendingScenarioId: null,
+  selectedStock: null,
+  pendingDesignMarkdown: null,
   setActiveTab: (tab) => set({ activeTab: tab }),
   navigateToChat: (prompt) => set({ activeTab: 'chat', pendingPrompt: prompt }),
   navigateToTool: (tool) => set({ activeTab: 'tools', activeTool: tool }),
@@ -46,5 +64,23 @@ export const useToolStore = create<ToolState>((set, get) => ({
     const id = get().pendingScenarioId
     if (id) set({ pendingScenarioId: null })
     return id
+  },
+  setSelectedStock: (stock) => set({ selectedStock: stock }),
+  selectStockAndResearch: (stock, workflowId) => {
+    set({
+      selectedStock: stock,
+      activeTab: 'workflows' as WorkbenchTab,
+      pendingWorkflowId: workflowId ?? 'stock_screening',
+      pendingScenarioId: null,
+    })
+  },
+  navigateToDesignEngine: (markdown) => set({
+    activeTab: 'design-engine' as WorkbenchTab,
+    pendingDesignMarkdown: markdown,
+  }),
+  consumePendingDesignMarkdown: () => {
+    const md = get().pendingDesignMarkdown
+    if (md) set({ pendingDesignMarkdown: null })
+    return md
   },
 }))

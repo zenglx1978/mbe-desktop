@@ -281,7 +281,7 @@ export default function CaseDocumentsPanel({ solution }: Props) {
         {filtered.length > 0 ? (
           <div className="space-y-2">
             {filtered.map(att => {
-              const meta = CATEGORY_META[att.category] || CATEGORY_META.other
+              const meta = (CATEGORY_META[att.category] ?? CATEGORY_META['other'])!
               const isExpanded = expandedId === att.id
               return (
                 <div key={att.id}>

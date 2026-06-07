@@ -178,7 +178,7 @@ export function WorkflowInstanceTimeline({
           <div key={step.id} className="contents">
             <StepNode step={step} index={i} total={steps.length} />
             {i < steps.length - 1 && (
-              <TrackSegment from={step} to={steps[i + 1]} />
+              <TrackSegment from={step} to={steps[i + 1]!} />
             )}
           </div>
         ))}
@@ -240,7 +240,7 @@ export function WorkflowSuggestionTimeline({
             <div key={step.id} className="contents">
               <StepNode step={step} index={i} total={steps.length} />
               {i < steps.length - 1 && (
-                <TrackSegment from={step} to={steps[i + 1]} />
+                <TrackSegment from={step} to={steps[i + 1]!} />
               )}
             </div>
           ))}
@@ -276,7 +276,7 @@ function StatusBadge({ status }: { status: string }) {
     failed: { text: '失败', cls: 'text-red-400 bg-red-400/10' },
     cancelled: { text: '已取消', cls: 'text-gray-400 bg-gray-400/10' },
   }
-  const { text, cls } = map[status] ?? map.draft
+  const { text, cls } = (map as Record<string, { text: string; cls: string } | undefined>)[status] ?? map.draft!
   return (
     <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${cls}`}>
       {text}

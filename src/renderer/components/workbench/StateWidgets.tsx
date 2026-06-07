@@ -171,7 +171,7 @@ export function SparkLine({
           const min = Math.min(...data)
           const max = Math.max(...data)
           const range = max - min || 1
-          return 2 + (height - 4) - ((data[data.length - 1] - min) / range) * (height - 4)
+          return 2 + (height - 4) - ((data[data.length - 1]! - min) / range) * (height - 4)
         })()}
         r={2.5}
         fill={color}
@@ -242,8 +242,8 @@ interface KpiCardProps {
 export function KpiCard({ label, value, trendData, color = '#6366f1', unit = '' }: KpiCardProps) {
   const trend = useMemo(() => {
     if (!trendData || trendData.length < 2) return null
-    const prev = trendData[trendData.length - 2]
-    const curr = trendData[trendData.length - 1]
+    const prev = trendData[trendData.length - 2]!
+    const curr = trendData[trendData.length - 1]!
     if (prev === 0) return { dir: 'flat' as const, pct: 0 }
     const pct = ((curr - prev) / Math.abs(prev)) * 100
     return { dir: pct > 0.5 ? 'up' as const : pct < -0.5 ? 'down' as const : 'flat' as const, pct }
@@ -405,8 +405,8 @@ export function TrendChart({ snapshots, metricKey, label, color = '#6366f1', hei
   const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
   const areaPath = linePath + ` L${padX + usableW},${height} L${padX},${height} Z`
 
-  const last = data[data.length - 1]
-  const prev = data[data.length - 2]
+  const last = data[data.length - 1]!
+  const prev = data[data.length - 2]!
   const change = prev !== 0 ? ((last - prev) / Math.abs(prev)) * 100 : 0
 
   return (
@@ -440,7 +440,7 @@ export function TrendChart({ snapshots, metricKey, label, color = '#6366f1', hei
         <path d={areaPath} fill={`${color}10`} />
         <path d={linePath} fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
         {/* 末尾圆点 */}
-        <circle cx={points[points.length - 1].x} cy={points[points.length - 1].y} r={3} fill={color} />
+        <circle cx={points[points.length - 1]!.x} cy={points[points.length - 1]!.y} r={3} fill={color} />
       </svg>
       {/* X 轴标签 */}
       {labels.length >= 2 && (

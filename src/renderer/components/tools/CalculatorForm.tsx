@@ -42,7 +42,7 @@ export default function CalculatorForm({ tool, color }: Props) {
             .map(s => s.trim())
             .filter(s => s.length > 0)
         } else if (f.type === 'number' || f.type === 'currency') {
-          numericValues[f.key] = parseFloat(v) || 0
+          numericValues[f.key] = parseFloat(v!) || 0
         } else {
           numericValues[f.key] = v
         }

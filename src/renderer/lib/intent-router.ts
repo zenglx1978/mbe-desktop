@@ -90,7 +90,7 @@ export function routeMessage(
   currentIndex: number,
 ): RouteResult {
   const defaultResult: RouteResult = {
-    agent: solution.agents[currentIndex],
+    agent: solution.agents[currentIndex]!,
     agentIndex: currentIndex,
     autoRouted: false,
     confidence: 0.5,
@@ -101,7 +101,7 @@ export function routeMessage(
   const scores: { idx: number; score: number; matched: string[] }[] = []
 
   for (let i = 0; i < solution.agents.length; i++) {
-    const agentId = solution.agents[i].id
+    const agentId = solution.agents[i]!.id
     const weightedKws = AGENT_WEIGHTED_KEYWORDS[agentId] || []
     let score = 0
     const matched: string[] = []
@@ -124,10 +124,10 @@ export function routeMessage(
   for (const rule of DISAMBIGUATION) {
     const ruleMatches = rule.keywords.filter(kw => text.includes(kw)).length
     if (ruleMatches >= 2) {
-      const preferIdx = scores.find(s => solution.agents[s.idx].id === rule.prefer)
+      const preferIdx = scores.find(s => solution.agents[s.idx]!.id === rule.prefer)
       if (preferIdx) {
         for (const overId of rule.over) {
-          const overEntry = scores.find(s => solution.agents[s.idx].id === overId)
+          const overEntry = scores.find(s => solution.agents[s.idx]!.id === overId)
           if (overEntry) {
             overEntry.score *= 0.5
           }
@@ -137,19 +137,19 @@ export function routeMessage(
   }
 
   scores.sort((a, b) => b.score - a.score)
-  const best = scores[0]
+  const best = scores[0]!
 
   if (best.idx === currentIndex) return { ...defaultResult, matchedKeywords: best.matched }
 
   // 置信度：归一化到 0-1
-  const maxWeight = AGENT_WEIGHTED_KEYWORDS[solution.agents[best.idx].id]?.reduce((s, [, w]) => s + w, 0) ?? 1
+  const maxWeight = AGENT_WEIGHTED_KEYWORDS[solution.agents[best.idx]!.id]?.reduce((s, [, w]) => s + w, 0) ?? 1
   const confidence = Math.min(best.score / (maxWeight * 0.12), 1.0)
 
   // 路由切换阈值：至少 0.3 置信度
   if (confidence < 0.3) return { ...defaultResult, matchedKeywords: best.matched }
 
   return {
-    agent: solution.agents[best.idx],
+    agent: solution.agents[best.idx]!,
     agentIndex: best.idx,
     autoRouted: true,
     confidence,

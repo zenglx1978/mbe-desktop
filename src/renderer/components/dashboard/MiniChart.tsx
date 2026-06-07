@@ -29,7 +29,7 @@ export default function MiniChart({ data, color }: Props) {
   })
 
   const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
-  const areaPath = `${linePath} L ${points[points.length - 1].x} ${H - PAD} L ${points[0].x} ${H - PAD} Z`
+  const areaPath = `${linePath} L ${points[points.length - 1]!.x} ${H - PAD} L ${points[0]!.x} ${H - PAD} Z`
 
   return (
     <div className="rounded-xl border border-border/40 bg-card p-4">
@@ -75,7 +75,7 @@ export default function MiniChart({ data, color }: Props) {
               fill="currentColor"
               fillOpacity={0.3}
             >
-              {data[i].date.slice(5)}
+              {data[i]!.date.slice(5)}
             </text>
             {p.v > 0 && (
               <text

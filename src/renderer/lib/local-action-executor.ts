@@ -476,14 +476,14 @@ export async function executeActions(
   const results: ActionResult[] = []
 
   for (let i = 0; i < actions.length; i++) {
-    const action = actions[i]
+    const action = actions[i]!
     const result: ActionResult = { index: i, action, status: 'running' }
     onProgress?.(result)
 
     try {
       let prevOutput: unknown
       if (action.depends_on != null && action.depends_on < results.length) {
-        prevOutput = results[action.depends_on].output
+        prevOutput = results[action.depends_on]!.output
       }
 
       result.output = await executeSingle(action, prevOutput)

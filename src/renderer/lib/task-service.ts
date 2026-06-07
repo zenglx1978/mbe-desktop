@@ -159,11 +159,12 @@ export async function updateTask(
       const tasks = readLS(solutionId)
       const idx = tasks.findIndex(t => t.id === taskId)
       if (idx >= 0) {
-        if (updates.title) tasks[idx].title = updates.title
-        if (updates.status) tasks[idx].status = updates.status as TaskStatus
-        if (updates.priority) tasks[idx].priority = updates.priority as Priority
-        if (updates.due_date !== undefined) tasks[idx].dueDate = updates.due_date
-        if (updates.note !== undefined) tasks[idx].note = updates.note
+        const task = tasks[idx]!
+        if (updates.title) task.title = updates.title
+        if (updates.status) task.status = updates.status as TaskStatus
+        if (updates.priority) task.priority = updates.priority as Priority
+        if (updates.due_date !== undefined) task.dueDate = updates.due_date
+        if (updates.note !== undefined) task.note = updates.note
         writeLS(solutionId, tasks)
       }
     }
@@ -173,11 +174,12 @@ export async function updateTask(
       const tasks = readLS(solutionId)
       const idx = tasks.findIndex(t => t.id === taskId)
       if (idx >= 0) {
-        if (updates.title) tasks[idx].title = updates.title
-        if (updates.status) tasks[idx].status = updates.status as TaskStatus
-        if (updates.priority) tasks[idx].priority = updates.priority as Priority
-        if (updates.due_date !== undefined) tasks[idx].dueDate = updates.due_date
-        if (updates.note !== undefined) tasks[idx].note = updates.note
+        const task = tasks[idx]!
+        if (updates.title) task.title = updates.title
+        if (updates.status) task.status = updates.status as TaskStatus
+        if (updates.priority) task.priority = updates.priority as Priority
+        if (updates.due_date !== undefined) task.dueDate = updates.due_date
+        if (updates.note !== undefined) task.note = updates.note
         writeLS(solutionId, tasks)
         return true
       }

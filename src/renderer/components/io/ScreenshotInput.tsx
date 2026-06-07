@@ -74,7 +74,7 @@ export default function ScreenshotInput({ onImage, className = '' }: ScreenshotI
       const items = e.clipboardData?.items
       if (!items) return
       for (let i = 0; i < items.length; i++) {
-        const it = items[i]
+        const it = items[i]!
         if (it.kind === 'file' && it.type.startsWith('image/')) {
           const f = it.getAsFile()
           if (f) {

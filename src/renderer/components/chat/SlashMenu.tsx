@@ -30,7 +30,7 @@ export default function SlashMenu({ commands, query, onSelect, onClose }: Props)
         setSelectedIndex(i => (i - 1 + filtered.length) % filtered.length)
       } else if (e.key === 'Enter' && filtered.length > 0) {
         e.preventDefault()
-        onSelect(filtered[selectedIndex])
+        onSelect(filtered[selectedIndex]!)
       } else if (e.key === 'Escape') {
         onClose()
       }

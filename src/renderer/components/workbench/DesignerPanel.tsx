@@ -112,7 +112,7 @@ export default function DesignerPanel({ solution }: Props) {
     }))
     c.edges = tmpl.steps.slice(1).map((step, i) => ({
       edge_id: `e_${i}`,
-      source: tmpl.steps[i].id,
+      source: tmpl.steps[i]!.id,
       target: step.id,
       label: '',
       condition: '',
@@ -311,7 +311,7 @@ export default function DesignerPanel({ solution }: Props) {
 
             {/* 节点 */}
             {canvas?.nodes.map(node => {
-              const typeInfo = NODE_TYPES[node.node_type] || NODE_TYPES.default
+              const typeInfo = (NODE_TYPES[node.node_type] ?? NODE_TYPES['default'])!
               const isSelected = selectedNode === node.node_id
               return (
                 <g

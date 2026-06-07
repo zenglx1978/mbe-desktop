@@ -139,7 +139,18 @@ export default function KnowledgeGraphPanel() {
     return <CenteredMessage icon={<Loader2 className="animate-spin" size={32} />} text="加载知识图谱…" />
   }
   if (error && !stats) {
-    return <CenteredMessage icon={<AlertCircle size={32} className="text-red-400" />} text={error} />
+    const isUnloaded = error.includes('不可用') || error.includes('offline')
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-3 text-white/50">
+        <AlertCircle size={32} className={isUnloaded ? 'text-yellow-400' : 'text-red-400'} />
+        <p>{error}</p>
+        {isUnloaded && (
+          <p className="text-xs text-white/30 max-w-xs text-center">
+            知识图谱数据尚未加载，请联系管理员上传 graph.json 到服务器
+          </p>
+        )}
+      </div>
+    )
   }
 
   return (
@@ -153,8 +164,8 @@ export default function KnowledgeGraphPanel() {
         )}
         <Network size={18} className="text-blue-400" />
         <span className="font-medium">
-          {view === 'overview' && '知识图谱'}
-          {view === 'community' && communityDetail && `社区 #${communityDetail.community_id}: ${communityDetail.label}`}
+          {view === 'overview' && '投研知识图谱'}
+          {view === 'community' && communityDetail && `${communityDetail.label || `板块 #${communityDetail.community_id}`}`}
           {view === 'node' && nodeDetail && nodeDetail.node.label}
         </span>
         {healthy === false && (
@@ -191,6 +202,24 @@ export default function KnowledgeGraphPanel() {
 }
 
 // ── 子组件 ────────────────────────────────────────────────
+
+const NODE_TYPE_STYLES: Record<string, string> = {
+  company:  'bg-blue-500/20 text-blue-300',
+  industry: 'bg-purple-500/20 text-purple-300',
+  sector:   'bg-indigo-500/20 text-indigo-300',
+  concept:  'bg-amber-500/20 text-amber-300',
+  policy:   'bg-red-500/20 text-red-300',
+  index:    'bg-green-500/20 text-green-300',
+}
+const NODE_TYPE_LABELS: Record<string, string> = {
+  company: '公司', industry: '行业', sector: '赛道',
+  concept: '主题', policy: '政策', index: '指数',
+}
+function NodeTypeBadge({ type }: { type: string }) {
+  const style = NODE_TYPE_STYLES[type] ?? 'bg-white/10 text-white/50'
+  const label = NODE_TYPE_LABELS[type] ?? type
+  return <span className={`px-1.5 py-0.5 text-xs rounded ${style}`}>{label}</span>
+}
 
 function CenteredMessage({ icon, text }: { icon: React.ReactNode; text: string }) {
   return (
@@ -236,7 +265,7 @@ function OverviewView({
           <StatCard icon={<Hash size={18} />} label="节点" value={stats.nodes} />
           <StatCard icon={<Link2 size={18} />} label="边" value={stats.edges} />
           <StatCard icon={<Users size={18} />} label="社区" value={stats.communities} />
-          <StatCard icon={<Layers size={18} />} label="平均度" value={stats.avg_degree.toFixed(1)} />
+          <StatCard icon={<Layers size={18} />} label="平均度" value={stats.avg_degree != null ? stats.avg_degree.toFixed(1) : '—'} />
         </div>
       )}
 
@@ -286,7 +315,7 @@ function OverviewView({
               className="bg-white/5 hover:bg-white/8 rounded-lg p-3 text-left transition-colors group"
             >
               <div className="flex items-center justify-between">
-                <span className="font-medium text-white/80 truncate">{c.label || `社区 #${c.id}`}</span>
+                <span className="font-medium text-white/80 truncate">{c.label || `板块 #${c.id}`}</span>
                 <ArrowRight size={14} className="text-white/20 group-hover:text-white/40 transition-colors shrink-0" />
               </div>
               <div className="flex items-center gap-3 mt-1 text-xs text-white/40">
@@ -367,15 +396,17 @@ function NodeView({
       <div className="bg-white/5 rounded-lg p-4 space-y-2">
         <div className="flex items-center gap-2">
           <span className="text-lg font-semibold">{node.label}</span>
-          <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-300 text-xs rounded">{node.type}</span>
+          <NodeTypeBadge type={node.type} />
         </div>
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/40">
-          <span>度: {node.degree}</span>
+          {node.ticker != null && <span className="font-mono text-blue-300/70">{String(node.ticker)}</span>}
+          {node.sector != null && <span>{String(node.sector)}</span>}
+          <span>关联度: {node.degree}</span>
           <button
             onClick={() => onOpenCommunity(node.community)}
             className="hover:text-blue-400 transition-colors"
           >
-            社区: {node.community_label || `#${node.community}`}
+            {node.community_label || `板块 #${node.community}`}
           </button>
         </div>
       </div>

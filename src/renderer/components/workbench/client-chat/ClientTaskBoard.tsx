@@ -110,7 +110,7 @@ export default function ClientTaskBoard({
                   </div>
                   <div className="flex-1 space-y-1.5 overflow-y-auto">
                     {colTasks.map(t => {
-                      const pri = PRIORITY_STYLES[t.priority] ?? PRIORITY_STYLES.medium
+                      const pri = (PRIORITY_STYLES[t.priority] ?? PRIORITY_STYLES['medium'])!
                       return (
                         <div key={t.task_id} className="p-2.5 rounded-lg border border-border bg-background hover:border-primary/20 transition-colors">
                           <div className="flex items-start gap-1.5">

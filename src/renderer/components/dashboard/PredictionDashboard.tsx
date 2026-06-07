@@ -62,7 +62,7 @@ function SeverityBadge({ severity }: { severity: string }) {
     warning:  { bg: 'bg-amber-500/15',  text: 'text-amber-400',  label: '警告' },
     info:     { bg: 'bg-blue-500/15',   text: 'text-blue-400',   label: '提示' },
   }
-  const c = cfg[severity] || cfg.info
+  const c = (cfg[severity] || cfg.info)!
   return (
     <span className={`text-[10px] px-1.5 py-0.5 rounded ${c.bg} ${c.text} font-medium`}>
       {c.label}
@@ -269,7 +269,7 @@ function OperationsForecastPanel({ data }: { data: NonNullable<PredictionDashboa
         <div className="rounded-lg bg-muted/20 px-3 py-2">
           <p className="text-[10px] text-muted-foreground mb-1">预测 OEE</p>
           <p className="text-xl font-bold text-foreground">
-            {oeeData.length > 0 ? `${oeeData[0].OEE.toFixed(1)}%` : '—'}
+            {oeeData.length > 0 ? `${oeeData[0]!.OEE.toFixed(1)}%` : '—'}
           </p>
           <p className="text-[10px] text-muted-foreground">下期均值</p>
         </div>

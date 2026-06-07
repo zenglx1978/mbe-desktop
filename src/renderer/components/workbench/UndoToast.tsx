@@ -22,7 +22,7 @@ export default function UndoToast() {
 
       const stack = getUndoStack()
       if (stack.length > 0) {
-        const latest = stack[0]
+        const latest = stack[0]!
         setLastAction({ label: latest.label, id: latest.id })
         setVisible(true)
       }

@@ -69,7 +69,7 @@ function OnboardingDialog({ solution, onComplete }: { solution: SolutionConfig; 
   if (questions.length === 0) return null
 
   const isHk = solution.id === 'hk-finance-tax'
-  const current = questions[step]
+  const current = questions[step]!
   const isLast = step === questions.length - 1
 
   const handleSelect = (value: string) => {
@@ -376,7 +376,7 @@ export default function Workspace() {
         {/* 内容区 + AI 助手侧面板 */}
         <div className="flex-1 flex overflow-hidden">
           <div className="flex-1 flex flex-col overflow-hidden">
-            <PanelErrorBoundary name={activeTab}>
+            <PanelErrorBoundary key={activeTab} name={activeTab}>
               <ActivePanel tab={activeTab} />
             </PanelErrorBoundary>
           </div>

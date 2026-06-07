@@ -55,8 +55,8 @@ export function VoiceInput({ onTranscript, lang = 'zh-CN', className }: VoiceInp
       rec.onresult = (event: SpeechRecognitionEvent) => {
         let chunk = ''
         for (let i = event.resultIndex; i < event.results.length; i++) {
-          if (event.results[i].isFinal) {
-            chunk += event.results[i][0].transcript
+          if (event.results[i]!.isFinal) {
+            chunk += event.results[i]![0]!.transcript
           }
         }
         const text = chunk.trim()

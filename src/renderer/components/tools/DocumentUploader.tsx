@@ -91,7 +91,7 @@ export default function DocumentUploader({ tool, color, onFileReady }: Props) {
       ],
     })
     if (paths.length > 0) {
-      const filePath = paths[0]
+      const filePath = paths[0]!
       const fileName = filePath.split(/[/\\]/).pop() || '文件'
       try {
         const base64 = await api.readFileBase64(filePath)

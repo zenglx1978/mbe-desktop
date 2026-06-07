@@ -7,8 +7,8 @@
 import { useState, useCallback, useMemo, useRef, useEffect, memo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { ArrowLeft, Copy, Play, ClipboardList as ClipboardListIcon } from 'lucide-react'
-import type { SolutionConfig, WorkflowConfig, ScenarioConfig, ProfitImpact } from '@/lib/solution-router'
+import { ArrowLeft, Copy, Play, ClipboardList as ClipboardListIcon, Download, ArrowRight } from 'lucide-react'
+import type { SolutionConfig, WorkflowConfig, ScenarioConfig, ProfitImpact, WorkbenchTab } from '@/lib/solution-router'
 import {
   executeWorkflow, executeScenario,
   type StepStatus, type WorkflowResult,
@@ -112,6 +112,9 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
   const [view, setView] = useState<ViewState>(initialWorkflow || initialScenario ? 'input' : 'list')
   const [activeWf, setActiveWf] = useState<WorkflowConfig | null>(initialWorkflow || null)
   const [activeScenario, setActiveScenario] = useState<ScenarioConfig | null>(initialScenario || null)
+  const selectedStock = useToolStore((s) => s.selectedStock)
+  const setActiveTab = useToolStore((s) => s.setActiveTab)
+  const navigateToDesignEngine = useToolStore((s) => s.navigateToDesignEngine)
   const [query, setQuery] = useState('')
   const [stepStatuses, setStepStatuses] = useState<Record<string, StepStatus>>({})
   const [stepPartials, setStepPartials] = useState<Record<string, string>>({})
@@ -148,6 +151,11 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
     setActiveScenario(null)
     setView('input')
     resetState()
+    // 若有全局选中股票，预填 query
+    const stock = useToolStore.getState().selectedStock
+    if (stock) {
+      setQuery(`请分析 ${stock.ticker} ${stock.name}`)
+    }
   }, [resetState])
 
   const selectScenario = useCallback((sc: ScenarioConfig) => {
@@ -195,7 +203,8 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
     runAbortRef.current?.abort()
     runAbortRef.current = new AbortController()
     const { signal } = runAbortRef.current
-    setRunStartMs(Date.now())
+    const t0 = Date.now()
+    setRunStartMs(t0)
     try {
       if (activeWf) {
         setView('running')
@@ -204,6 +213,19 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
         if (signal.aborted) return
         setResult(res)
         setView('done')
+        // 自动记录本次工作流效率数据
+        try {
+          const api = window.electronAPI
+          if (api?.miner?.recordEfficiency) {
+            void api.miner.recordEfficiency({
+              solutionId: solution.id,
+              taskName: activeWf.name,
+              assistedDurationMs: Date.now() - t0,
+              manualDurationMs: null,
+              timestamp: new Date().toISOString(),
+            })
+          }
+        } catch { /* 静默 */ }
       } else if (activeScenario) {
         setView('running')
         setError('')
@@ -211,6 +233,19 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
         if (signal.aborted) return
         if (res.success) {
           setScenarioAnswer(res.answer || '')
+          // 自动记录场景效率数据
+          try {
+            const api = window.electronAPI
+            if (api?.miner?.recordEfficiency) {
+              void api.miner.recordEfficiency({
+                solutionId: solution.id,
+                taskName: activeScenario.label,
+                assistedDurationMs: Date.now() - t0,
+                manualDurationMs: null,
+                timestamp: new Date().toISOString(),
+              })
+            }
+          } catch { /* 静默 */ }
         } else if (res.error) {
           setError(res.error)
         }
@@ -258,7 +293,7 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
                         <p className="text-xs text-muted-foreground mt-0.5">{wf.description}</p>
                         <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                           {wf.steps.map((s, i) => {
-                            const ModeIcon = wf.mode ? ORCHESTRATION_META[wf.mode]?.icon : undefined
+                            const ModeIcon = wf.mode ? ORCHESTRATION_META[wf.mode as keyof typeof ORCHESTRATION_META]?.icon : undefined
                             return (
                               <span key={s.id ?? i} className="flex items-center gap-1 text-[11px] text-muted-foreground/60">
                                 {i > 0 && ModeIcon && <ModeIcon className="w-3 h-3" />}
@@ -417,7 +452,7 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
                 <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-secondary/20 overflow-x-auto">
                   <OrchestrationBadge mode={activeWf.mode ?? 'sequential'} />
                   {activeWf.steps.map((s, i) => {
-                    const ModeIcon = activeWf.mode ? ORCHESTRATION_META[activeWf.mode]?.icon : undefined
+                    const ModeIcon = activeWf.mode ? ORCHESTRATION_META[activeWf.mode as keyof typeof ORCHESTRATION_META]?.icon : undefined
                     return (
                       <span key={s.id ?? i} className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
                         {i > 0 && ModeIcon && <ModeIcon className="w-3 h-3 text-border" />}
@@ -458,18 +493,33 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={activeScenario
-                ? `补充说明（可选，场景已预设提问模板）`
-                : `描述你的业务需求，AI 专家团队将按流程依次分析...`}
+                ? activeScenario.id === 'pillar_stock'
+                  ? `输入具体股票名称或代码，如：比亚迪 / 002594 / 宁德时代`
+                  : activeScenario.id.startsWith('pillar_')
+                    ? `可输入关注的股票（如：比亚迪），分析将结合该股给出具体建议`
+                    : `补充说明（可选，场景已预设提问模板）`
+                : activeWf
+                  ? `请输入分析对象，例如：\n请分析 601318 中国平安的 AI 化程度与 ROI 全景\n\n提示：可填写公司名称、股票代码、分析侧重点等`
+                  : `描述你的业务需求，AI 专家团队将按流程依次分析...`}
               rows={5}
               className="w-full px-4 py-3 rounded-xl border border-border/50 bg-secondary/20 text-sm resize-none outline-none focus:border-primary/50 transition-colors"
             />
           </div>
 
+          {/* 空输入提示 */}
+          {!activeScenario && !query.trim() && activeWf && (
+            <p className="text-xs text-amber-500 flex items-center gap-1.5 -mt-1">
+              <span>⚠️</span>
+              <span>请在上方输入要分析的公司名称或股票代码后，再启动流程</span>
+            </p>
+          )}
+
           <button
             type="button"
             onClick={handleRun}
             disabled={!activeScenario && !query.trim()}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-40 hover:opacity-90"
+            title={(!activeScenario && !query.trim()) ? '请先在上方输入分析对象' : undefined}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90"
             style={{ backgroundColor: solution.color }}
           >
             <Play className="w-4 h-4" />
@@ -602,22 +652,125 @@ export default function WorkflowPanel({ solution, initialWorkflow, initialScenar
         })()}
 
         {view === 'done' && (
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={goToList}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-border/50 hover:bg-secondary/30 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" /> 返回列表
-            </button>
-            <button
-              type="button"
-              onClick={goToInput}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm text-white hover:opacity-90 transition-colors"
-              style={{ backgroundColor: solution.color }}
-            >
-              <Play className="w-4 h-4" /> 再次执行
-            </button>
+          <div className="space-y-3">
+            {/* 四柱场景完成后 → 下一步引导 */}
+            {activeScenario?.id.startsWith('pillar_') && (() => {
+              const pillarOrder = ['pillar_macro', 'pillar_hotspot', 'pillar_stock', 'pillar_operation']
+              const currentIdx = pillarOrder.indexOf(activeScenario.id)
+              const nextId = pillarOrder[currentIdx + 1]
+              const nextSc = nextId ? (solution.scenarios ?? []).find(s => s.id === nextId) : null
+              if (!nextSc) return null
+              return (
+                <div className="px-4 py-3 rounded-xl border border-primary/20 bg-primary/5 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold text-primary">四柱决策链 — 继续下一步</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{nextSc.label}：{nextSc.expectedOutcome}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => selectScenario(nextSc)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white shrink-0 ml-3"
+                    style={{ backgroundColor: solution.color }}
+                  >
+                    {nextSc.label} <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
+              )
+            })()}
+
+            {/* 个股研究 / 行业研究完成后 → 导出研报 CTA */}
+            {(activeWf?.id !== 'workforce_ai_roi' && activeWf?.id !== 'report_compliance') &&
+             (activeWf || activeScenario?.id === 'pillar_stock') &&
+             (result?.success || scenarioAnswer) && (
+              <div className="px-4 py-3 rounded-xl border border-amber-500/20 bg-amber-500/5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold text-amber-500">研究完成 — 生成研报</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {selectedStock
+                        ? `${selectedStock.name}（${selectedStock.ticker}）研报已就绪，可导出 PDF / PPTX`
+                        : '研究结论已生成，可前往研报导出'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 ml-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // 将分析结果转为 Markdown 送入 Design Engine
+                        const content = result?.mergedAnswer || scenarioAnswer || ''
+                        const stock = selectedStock
+                        const frontmatter = stock
+                          ? `---\ntitle: ${stock.name}（${stock.ticker}）投研报告\nsubtitle: ${activeWf?.name || '深度研究'} · ${new Date().toLocaleDateString('zh-CN')}\n---\n\n`
+                          : `---\ntitle: 投研报告\nsubtitle: ${activeWf?.name || '深度研究'} · ${new Date().toLocaleDateString('zh-CN')}\n---\n\n`
+                        navigateToDesignEngine(frontmatter + content)
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary text-white hover:opacity-90 transition-opacity"
+                    >
+                      <Download className="w-3 h-3" /> 生成 PPTX
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('mises-export')}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 text-white hover:bg-amber-600 transition-colors"
+                    >
+                      <Download className="w-3 h-3" /> 导出研报
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* AI 降本 ROI 分析完成后 → 生成 AI 研报 CTA */}
+            {activeWf?.id === 'workforce_ai_roi' && result?.success && (
+              <div className="px-4 py-3 rounded-xl border border-violet-500/20 bg-violet-500/5 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold text-violet-500">ROI 分析完成 — 生成完整研报</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">ROI 模型已建立，可端到端生成《企业 AI 降本增效应用场景研究》</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('tools' as WorkbenchTab)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-violet-500 text-white shrink-0 ml-3 hover:bg-violet-600 transition-colors"
+                >
+                  <Download className="w-3 h-3" /> 生成研报
+                </button>
+              </div>
+            )}
+
+            {/* 研报合规审查完成后 → 前往合规发布 CTA */}
+            {activeWf?.id === 'report_compliance' && result?.success && (
+              <div className="px-4 py-3 rounded-xl border border-green-500/20 bg-green-500/5 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold text-green-500">合规审查通过 — 发布研报</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">所有合规检查项已通过，可进入发布流程</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('compliance-pub' as WorkbenchTab)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-500 text-white shrink-0 ml-3 hover:bg-green-600 transition-colors"
+                >
+                  <ArrowRight className="w-3 h-3" /> 前往发布
+                </button>
+              </div>
+            )}
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={goToList}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-border/50 hover:bg-secondary/30 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" /> 返回列表
+              </button>
+              <button
+                type="button"
+                onClick={goToInput}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm text-white hover:opacity-90 transition-colors"
+                style={{ backgroundColor: solution.color }}
+              >
+                <Play className="w-4 h-4" /> 再次执行
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -637,10 +790,7 @@ function ProfitBadge({ impact }: { impact?: ProfitImpact }) {
 }
 
 function OrchestrationBadge({ mode }: { mode: string }) {
-  const fallback = mode === 'parallel'
-    ? ORCHESTRATION_META.parallel
-    : ORCHESTRATION_META.sequential
-  const info = ORCHESTRATION_META[mode] || fallback
+  const info = ORCHESTRATION_META[mode as keyof typeof ORCHESTRATION_META] ?? ORCHESTRATION_META.sequential
   const ModeIcon = info.icon
   return (
     <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-secondary/30 text-muted-foreground"

@@ -121,7 +121,7 @@ export default function ClientDigestPanel({
         ) : (
           <div className="p-3 space-y-2">
             {digests.map(d => {
-              const st = STATUS_MAP[d.status] ?? STATUS_MAP.draft
+              const st = (STATUS_MAP[d.status] ?? STATUS_MAP['draft'])!
               const typeInfo = DIGEST_TYPES.find(t => t.id === d.digest_type)
               const Icon = typeInfo?.icon ?? FileText
               return (

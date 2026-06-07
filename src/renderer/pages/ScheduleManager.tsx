@@ -729,7 +729,7 @@ export default function ScheduleManager() {
             </div>
           ) : (
             schedules.map((sc) => {
-              const badge = STATUS_BADGE[sc.status] || STATUS_BADGE.error
+              const badge = (STATUS_BADGE[sc.status] || STATUS_BADGE.error)!
               const BadgeIcon = badge.icon
               const isSelected = selectedId === sc.schedule_id
               return (
@@ -883,7 +883,7 @@ export default function ScheduleManager() {
                   <div className="absolute left-[11px] top-6 bottom-0 w-px bg-border/30" />
 
                 {history.map((rec) => {
-                  const st = EXEC_STATUS[rec.status] || EXEC_STATUS.pending
+                  const st = (EXEC_STATUS[rec.status] || EXEC_STATUS.pending)!
                   return (
                     <div key={rec.execution_id} className="relative flex gap-3 pb-4">
                       {/* 时间线圆点 */}
@@ -1074,7 +1074,7 @@ function PipelinePanel({
                     if (dragIdx !== null && dragIdx !== i) {
                       setDraftSteps((prev) => {
                         const arr = [...prev]
-                        const [moved] = arr.splice(dragIdx, 1)
+                        const moved = arr.splice(dragIdx, 1)[0]!
                         arr.splice(i, 0, moved)
                         return arr
                       })
@@ -1092,7 +1092,8 @@ function PipelinePanel({
                         className="text-xs bg-background border border-border/50 rounded px-1.5 py-1"
                         value={`${step.agent_name}/${step.expert_id}`}
                         onChange={(e) => {
-                          const [a, x] = e.target.value.split('/')
+                          const parts = e.target.value.split('/')
+                          const a = parts[0]!; const x = parts[1]!
                           setDraftSteps((prev) => prev.map((s) => s.id === step.id ? { ...s, agent_name: a, expert_id: x } : s))
                         }}
                       >

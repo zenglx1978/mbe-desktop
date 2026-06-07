@@ -104,7 +104,7 @@ export default function ClientMemberPanel() {
 }
 
 function MemberRow({ member, onRemove }: { member: ChannelMember; onRemove?: () => void }) {
-  const cfg = ROLE_CONFIG[member.role] || ROLE_CONFIG.member
+  const cfg = (ROLE_CONFIG[member.role] ?? ROLE_CONFIG['member'])!
   const RoleIcon = cfg.icon
 
   return (

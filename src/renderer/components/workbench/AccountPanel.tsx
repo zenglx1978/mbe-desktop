@@ -56,7 +56,7 @@ const STATUS_CONFIG: Record<string, { icon: typeof CheckCircle; color: string; l
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending
+  const cfg = (STATUS_CONFIG[status] || STATUS_CONFIG.pending)!
   const Icon = cfg.icon
   return (
     <span className={`inline-flex items-center gap-1 text-xs ${cfg.color}`}>

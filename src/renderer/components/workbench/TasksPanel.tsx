@@ -47,7 +47,7 @@ export default function TasksPanel({ solution }: Props) {
     setTasks(prev => prev.map(t => {
       if (t.id !== id) return t
       const nextIdx = (order.indexOf(t.status) + 1) % order.length
-      const nextStatus = order[nextIdx]
+      const nextStatus = order[nextIdx]!
       updateTaskApi(id, { status: nextStatus })
       return {
         ...t,

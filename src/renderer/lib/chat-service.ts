@@ -305,7 +305,7 @@ async function streamViaWebSocket(
     const timeout = setTimeout(() => {
       if (signal) signal.removeEventListener('abort', onAbort)
       reject(new Error('WebSocket 超时'))
-    }, 30000)
+    }, 12000)
 
     const onAbort = () => {
       clearTimeout(timeout)
@@ -696,7 +696,7 @@ function offlineSourceBadge(source: string): string {
     pattern: '> 🧠 **离线推理** — 本地意图识别',
     fallback: '> ⚡ **离线模式**',
   }
-  return badges[source] ?? badges.fallback
+  return (badges[source] ?? badges.fallback)!
 }
 
 // ── Phase 6: 用户偏好记忆 — 自动学习 + 上下文注入 ──

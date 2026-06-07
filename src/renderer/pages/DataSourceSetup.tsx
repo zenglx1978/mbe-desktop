@@ -144,7 +144,7 @@ export default function DataSourceSetup() {
       <div className="flex-1 px-8 py-6 overflow-auto">
         <div className="max-w-2xl">
           <p className="text-sm text-muted-foreground mb-4">
-            {steps[step].description}
+            {steps[step]!.description}
           </p>
 
           <div className="space-y-3">

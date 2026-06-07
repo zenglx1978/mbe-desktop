@@ -7,7 +7,7 @@
 
 import path from 'path'
 import fs from 'fs'
-import { app, dialog, ipcMain } from 'electron'
+import { app, dialog, ipcMain, safeStorage } from 'electron'
 import crypto from 'crypto'
 import { isReadPathAllowed } from './safe-path'
 
@@ -638,12 +638,13 @@ function registerBackupHandlers() {
     const data = db.serialize()
     const password = crypto.randomBytes(16).toString('hex')
     const iv = crypto.randomBytes(16)
-    const key = crypto.scryptSync(password, 'mbe-desktop-salt', 32)
+    const salt = crypto.randomBytes(16)
+    const key = crypto.scryptSync(password, salt, 32)
     const cipher = crypto.createCipheriv('aes-256-gcm', key, iv)
     const encrypted = Buffer.concat([cipher.update(data), cipher.final()])
     const tag = cipher.getAuthTag()
 
-    const header = JSON.stringify({ v: 1, algo: 'aes-256-gcm', iv: iv.toString('hex'), tag: tag.toString('hex') })
+    const header = JSON.stringify({ v: 2, algo: 'aes-256-gcm', iv: iv.toString('hex'), tag: tag.toString('hex'), salt: salt.toString('hex') })
     const headerBuf = Buffer.from(header + '\n')
 
     fs.writeFileSync(filePath, Buffer.concat([headerBuf, encrypted]))
@@ -671,7 +672,8 @@ function registerBackupHandlers() {
 
     const iv = Buffer.from(header.iv, 'hex')
     const tag = Buffer.from(header.tag, 'hex')
-    const key = crypto.scryptSync(password, 'mbe-desktop-salt', 32)
+    const salt = header.salt ? Buffer.from(header.salt, 'hex') : 'mbe-desktop-salt'
+    const key = crypto.scryptSync(password, salt, 32)
     const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv)
     decipher.setAuthTag(tag)
 
@@ -756,7 +758,8 @@ function registerDataManagementHandlers() {
 
     const iv = Buffer.from(header.iv, 'hex')
     const tag = Buffer.from(header.tag, 'hex')
-    const key = crypto.scryptSync(password, 'mbe-desktop-salt', 32)
+    const salt = header.salt ? Buffer.from(header.salt, 'hex') : 'mbe-desktop-salt'
+    const key = crypto.scryptSync(password, salt, 32)
     const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv)
     decipher.setAuthTag(tag)
 
@@ -811,20 +814,25 @@ export function checkAutoBackup(): void {
     const data = db.serialize()
     const password = crypto.randomBytes(16).toString('hex')
     const iv = crypto.randomBytes(16)
-    const key = crypto.scryptSync(password, 'mbe-desktop-salt', 32)
+    const salt = crypto.randomBytes(16)
+    const key = crypto.scryptSync(password, salt, 32)
     const cipher = crypto.createCipheriv('aes-256-gcm', key, iv)
     const encrypted = Buffer.concat([cipher.update(data), cipher.final()])
     const tag = cipher.getAuthTag()
 
-    const header = JSON.stringify({ v: 1, algo: 'aes-256-gcm', iv: iv.toString('hex'), tag: tag.toString('hex') })
+    const header = JSON.stringify({ v: 2, algo: 'aes-256-gcm', iv: iv.toString('hex'), tag: tag.toString('hex'), salt: salt.toString('hex') })
     const headerBuf = Buffer.from(header + '\n')
 
     const filename = `auto-backup-${new Date().toISOString().slice(0, 10)}.mbebackup`
     const filePath = path.join(backupDir, filename)
     fs.writeFileSync(filePath, Buffer.concat([headerBuf, encrypted]))
 
+    // 密钥通过 safeStorage 加密后存储，防止明文泄露
     const pwFile = path.join(backupDir, `${filename}.key`)
-    fs.writeFileSync(pwFile, password, 'utf-8')
+    const pwBuf = safeStorage.isEncryptionAvailable()
+      ? safeStorage.encryptString(password)
+      : Buffer.from(password, 'utf-8')
+    fs.writeFileSync(pwFile, pwBuf)
 
     const oldFiles = existing.slice(4)
     for (const f of oldFiles) {

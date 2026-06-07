@@ -79,7 +79,7 @@ function resolveColor(raw: string): { r: number; g: number; b: number } {
   const computed = getComputedStyle(el).color
   document.body.removeChild(el)
   const m = computed.match(/(\d+)/g)
-  if (m && m.length >= 3) return { r: +m[0], g: +m[1], b: +m[2] }
+  if (m && m.length >= 3) return { r: +m[0]!, g: +m[1]!, b: +m[2]! }
   return { r: 100, g: 160, b: 220 }
 }
 
@@ -95,10 +95,8 @@ export default function ParticleField({
   particleDensity = 40,
   className = '',
 }: ParticleFieldProps) {
-  // C2: respect prefers-reduced-motion
-  if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    return null
-  }
+  // C2: respect prefers-reduced-motion (check before hooks but defer the return until after)
+  const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animRef = useRef<number>(0)
   const colorRef = useRef<{ r: number; g: number; b: number }>({ r: 100, g: 160, b: 220 })
@@ -161,8 +159,8 @@ export default function ParticleField({
     // ── 画节点间的连线（极淡） ──
     for (let i = 0; i < nodes.length; i++) {
       for (let j = i + 1; j < nodes.length; j++) {
-        const a = nodes[i]
-        const b = nodes[j]
+        const a = nodes[i]!
+        const b = nodes[j]!
         const dist = Math.hypot(a.x - b.x, a.y - b.y)
         const maxDist = Math.max(w, h) * 0.5
         if (dist > maxDist) continue
@@ -215,12 +213,14 @@ export default function ParticleField({
         // 到达时偶尔产生 spark
         if (Math.random() < 0.3) {
           const dest = nodes[p.fromIdx]
-          sparks.push({
-            x: dest.x + randomBetween(-8, 8),
-            y: dest.y + randomBetween(-8, 8),
-            life: 1,
-            size: randomBetween(1.5, 3),
-          })
+          if (dest) {
+            sparks.push({
+              x: dest.x + randomBetween(-8, 8),
+              y: dest.y + randomBetween(-8, 8),
+              life: 1,
+              size: randomBetween(1.5, 3),
+            })
+          }
         }
       }
 
@@ -243,6 +243,7 @@ export default function ParticleField({
     // ── 画火花（灵感闪烁） ──
     for (let i = sparks.length - 1; i >= 0; i--) {
       const spark = sparks[i]
+      if (!spark) continue
       spark.life -= 0.02
       if (spark.life <= 0) {
         sparks.splice(i, 1)
@@ -305,6 +306,8 @@ export default function ParticleField({
     document.addEventListener('visibilitychange', handleVisibility)
     return () => document.removeEventListener('visibilitychange', handleVisibility)
   }, [draw])
+
+  if (prefersReducedMotion) return null
 
   return (
     <canvas

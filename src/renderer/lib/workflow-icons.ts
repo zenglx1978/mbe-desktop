@@ -45,7 +45,7 @@ export function getWorkflowIcon(emoji: string): LucideIcon {
 }
 
 /** 步骤执行状态图标 */
-export const STATUS_ICONS: Record<string, LucideIcon> = {
+export const STATUS_ICONS: Record<'pending' | 'running' | 'done' | 'error', LucideIcon> = {
   pending: Clock,
   running: RefreshCw,
   done: CheckCircle2,
@@ -53,13 +53,13 @@ export const STATUS_ICONS: Record<string, LucideIcon> = {
 }
 
 /** 编排模式 */
-export const ORCHESTRATION_META: Record<string, { icon: LucideIcon; label: string; desc: string }> = {
+export const ORCHESTRATION_META: Record<'sequential' | 'parallel', { icon: LucideIcon; label: string; desc: string }> = {
   sequential: { icon: ArrowRight, label: '流水线', desc: '步骤间传递结果，依次执行' },
   parallel:   { icon: Columns2,   label: '并行合并', desc: '多 Expert 同时执行，结果合并' },
 }
 
 /** 利润维度标签 */
-export const PROFIT_DIM_META: Record<string, { icon: LucideIcon; label: string; cls: string }> = {
+export const PROFIT_DIM_META: Record<'revenue' | 'cost_saving' | 'loss_avoidance', { icon: LucideIcon; label: string; cls: string }> = {
   revenue:        { icon: TrendingUp,  label: '增收', cls: 'text-green-400' },
   cost_saving:    { icon: DollarSign,  label: '降本', cls: 'text-blue-400' },
   loss_avoidance: { icon: Shield,      label: '避损', cls: 'text-amber-400' },

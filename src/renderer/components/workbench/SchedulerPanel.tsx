@@ -226,7 +226,7 @@ export default function SchedulerPanel({ solution }: Props) {
         {/* 任务列表 */}
         {categories.map((cat) => {
           const catJobs = jobs.filter((j) => j.category === cat)
-          const meta = CATEGORY_META[cat]
+          const meta = CATEGORY_META[cat]!
           return (
             <div key={cat} className="space-y-2">
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">

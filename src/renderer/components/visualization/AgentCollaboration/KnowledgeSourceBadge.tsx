@@ -36,14 +36,14 @@ const RETRIEVAL_METHOD_LABEL: Record<string, string> = {
 
 function guessSourceType(source: SourceCitationData): { icon: string; label: string; color: string } {
   if (source.source_type && SOURCE_TYPE_ICON[source.source_type]) {
-    return SOURCE_TYPE_ICON[source.source_type]
+    return SOURCE_TYPE_ICON[source.source_type]!
   }
   const text = `${source.title} ${source.ref || ''}`.toLowerCase()
-  if (/法|条例|规定|办法/.test(text)) return SOURCE_TYPE_ICON.law
-  if (/准则|会计|审计/.test(text)) return SOURCE_TYPE_ICON.standard
-  if (/规则|标准|规范/.test(text)) return SOURCE_TYPE_ICON.rule
-  if (/案例|判例/.test(text)) return SOURCE_TYPE_ICON.case
-  if (/指南|指导|guide/.test(text)) return SOURCE_TYPE_ICON.guideline
+  if (/法|条例|规定|办法/.test(text)) return SOURCE_TYPE_ICON.law!
+  if (/准则|会计|审计/.test(text)) return SOURCE_TYPE_ICON.standard!
+  if (/规则|标准|规范/.test(text)) return SOURCE_TYPE_ICON.rule!
+  if (/案例|判例/.test(text)) return SOURCE_TYPE_ICON.case!
+  if (/指南|指导|guide/.test(text)) return SOURCE_TYPE_ICON.guideline!
   return { icon: '📄', label: '文档', color: '#6b7280' }
 }
 
@@ -56,7 +56,7 @@ const RELIABILITY_STYLE: Record<string, { badge: string; label: string }> = {
 export function KnowledgeSourceBadge({ source }: { source: SourceCitationData }) {
   const [expanded, setExpanded] = useState(false)
   const typeInfo = guessSourceType(source)
-  const reliability = RELIABILITY_STYLE[source.reliability] || RELIABILITY_STYLE.medium
+  const reliability = (RELIABILITY_STYLE[source.reliability] || RELIABILITY_STYLE.medium)!
 
   return (
     <div className="rounded-lg border border-gray-100 dark:border-[#3c3c3c] bg-gray-50 dark:bg-[#1e1e1e] overflow-hidden transition-all">
