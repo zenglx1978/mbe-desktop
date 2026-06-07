@@ -3,25 +3,9 @@ import { TrendingUp, DollarSign, Users, RefreshCw, BarChart3, ArrowUpRight, Arro
 import { authFetch, API_BASE } from '@/lib/api-client'
 import { useAuthStore } from '@/stores/auth-store'
 import { safeNum, safeFixed } from '@/lib/safe-num'
+import { parseROISummary, type ROISummary } from '@/lib/api-schemas'
 
-interface RoleROI {
-  role: string
-  role_display: string
-  revenue: number
-  cost: number
-  profit: number
-  roi_percent: number
-  user_count: number
-}
-
-interface ROISummary {
-  total_revenue: number
-  total_cost: number
-  total_profit: number
-  overall_roi: number
-  roles: RoleROI[]
-  period: string
-}
+// ROISummary 类型统一从 api-schemas 导入，字段默认值由 Zod 保证。
 
 export default function ROIPanel() {
   const [data, setData] = useState<ROISummary | null>(null)
@@ -37,15 +21,15 @@ export default function ROIPanel() {
       if (myResp.ok) {
         const json = await myResp.json()
         if (json?.success) {
-          const d = json.data
-          setData({
-            total_revenue: d.revenue || 0,
-            total_cost: d.cost || 0,
-            total_profit: d.profit || 0,
-            overall_roi: d.roi_percent || 0,
-            roles: [],
-            period: d.period || '',
-          })
+          const d = json.data ?? {}
+          setData(parseROISummary({
+            total_revenue: d.revenue,
+            total_cost:    d.cost,
+            total_profit:  d.profit,
+            overall_roi:   d.roi_percent,
+            roles:         [],
+            period:        d.period,
+          }))
           setLoading(false)
           return
         }
@@ -55,7 +39,7 @@ export default function ROIPanel() {
         const dashResp = await authFetch(`${API_BASE}/api/v1/admin/entrepreneur-roi/dashboard`)
         if (dashResp.ok) {
           const json = await dashResp.json()
-          if (json?.success) setData(json.data)
+          if (json?.success) setData(parseROISummary(json.data))
         }
       }
     } catch {

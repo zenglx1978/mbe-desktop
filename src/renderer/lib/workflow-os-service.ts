@@ -5,6 +5,7 @@
  */
 
 import { API_BASE, isElectron, authHeaders, isAbortError } from './api-client'
+import { parseAnalyticsOverview, parseROIPredictionData } from './api-schemas'
 import type { CrossAgentWorkflowExecuteResponse } from '@/types/api-responses'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || API_BASE
@@ -599,7 +600,7 @@ export async function fetchAnalyticsOverview(agentName: string, days = 30): Prom
   try {
     const res = await wfFetch(apiUrl(agentName, `/analytics/overview?days=${days}`))
     if (!res.ok) return null
-    return await res.json()
+    return parseAnalyticsOverview(await res.json())
   } catch {
     // Expected: Workflow OS 接口不可达或响应非 JSON；按无数据处理
     return null
@@ -622,7 +623,7 @@ export async function fetchROIPrediction(agentName: string): Promise<ROIPredicti
   try {
     const res = await wfFetch(apiUrl(agentName, '/analytics/roi-prediction'))
     if (!res.ok) return null
-    return await res.json()
+    return parseROIPredictionData(await res.json())
   } catch {
     // Expected: Workflow OS 接口不可达或响应非 JSON；按无数据处理
     return null

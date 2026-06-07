@@ -13,6 +13,11 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts'
 import { safeFixed, safeCNY, safeLocale, formatSeconds } from '@/lib/safe-num'
+import {
+  type OptDashboard,
+  type OptSuggestion,
+  parseOptDashboard,
+} from '@/lib/api-schemas'
 
 interface CostBenefitReport {
   solutionId: string
@@ -31,45 +36,9 @@ interface CostBenefitReport {
   }[]
 }
 
-interface OptSuggestion {
-  suggestion_id: string
-  step_type: string
-  step_display_name: string
-  current_avg_seconds: number
-  estimated_ai_seconds: number
-  speedup_ratio: number
-  matched_agent: string
-  matched_capabilities: string[]
-  confidence: number
-  estimated_monthly_savings: number
-  estimated_time_saved_hours: number
-  score_pct: number
-  status: string
-  created_at: string
-}
-
-interface OptRule {
-  rule_id: string
-  step_type: string
-  target_agent: string
-  trigger_mode: string
-  total_executions: number
-  total_time_saved_seconds: number
-  total_cost_saved: number
-}
-
-interface OptDashboard {
-  summary: {
-    total_cost_saved: number
-    total_time_saved_hours: number
-    active_rules: number
-    pending_suggestions: number
-    auto_mode: boolean
-  }
-  active_rules: OptRule[]
-  pending_suggestions: OptSuggestion[]
-  step_aggregates: { step_type: string; count: number; avg_ms: number }[]
-}
+// OptDashboard / OptSuggestion / OptRule 类型统一从 api-schemas 导入，
+// 字段默认值由 Zod schema 保证，无需在此重复定义。
+// 仅保留本地用到的 CostBenefitReport 接口（无 API 对应 schema）。
 
 function formatDuration(ms: unknown): string {
   const n = typeof ms === 'number' && isFinite(ms) ? ms : 0
@@ -111,7 +80,7 @@ export default function EfficiencyPanel() {
     setOptLoading(true)
     try {
       const res = await authFetch(`${API_BASE}/api/${agentName}/optimization/dashboard`)
-      if (res.ok) setOptDashboard(await res.json())
+      if (res.ok) setOptDashboard(parseOptDashboard(await res.json()))
     } catch {
       // Expected: 优化看板 HTTP 不可达；静默降级无仪表盘
     } finally {
