@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { TrendingUp, DollarSign, Users, RefreshCw, BarChart3, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import { authFetch, API_BASE } from '@/lib/api-client'
 import { useAuthStore } from '@/stores/auth-store'
+import { safeNum, safeFixed } from '@/lib/safe-num'
 
 interface RoleROI {
   role: string
@@ -65,9 +66,10 @@ export default function ROIPanel() {
 
   useEffect(() => { fetchROI() }, [fetchROI])
 
-  const fmt = (v: number) => {
-    if (Math.abs(v) >= 10000) return `¥${(v / 10000).toFixed(1)}万`
-    return `¥${v.toFixed(0)}`
+  const fmt = (v: unknown) => {
+    const n = safeNum(v)
+    if (Math.abs(n) >= 10000) return `¥${(n / 10000).toFixed(1)}万`
+    return `¥${n.toFixed(0)}`
   }
 
   const roiColor = (roi: number) =>
@@ -127,7 +129,7 @@ export default function ROIPanel() {
             <div className={`text-lg font-semibold flex items-center gap-1 ${data ? roiColor(data.overall_roi) : ''}`}>
               {data ? (
                 <>
-                  {data.overall_roi.toFixed(1)}%
+                  {safeFixed(data.overall_roi, 1)}%
                   <RoiArrow roi={data.overall_roi} />
                 </>
               ) : '—'}
@@ -149,7 +151,7 @@ export default function ROIPanel() {
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-sm font-medium">{role.role_display || role.role}</span>
                       <span className={`text-sm font-semibold flex items-center gap-0.5 ${roiColor(role.roi_percent)}`}>
-                        {role.roi_percent.toFixed(1)}%
+                        {safeFixed(role.roi_percent, 1)}%
                         <RoiArrow roi={role.roi_percent} />
                       </span>
                     </div>

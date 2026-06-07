@@ -12,6 +12,7 @@ import {
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts'
+import { safeFixed, safeCNY, safeLocale, formatSeconds } from '@/lib/safe-num'
 
 interface CostBenefitReport {
   solutionId: string
@@ -70,11 +71,12 @@ interface OptDashboard {
   step_aggregates: { step_type: string; count: number; avg_ms: number }[]
 }
 
-function formatDuration(ms: number): string {
-  if (ms < 1000) return `${ms}ms`
-  if (ms < 60000) return `${(ms / 1000).toFixed(1)}秒`
-  if (ms < 3600000) return `${(ms / 60000).toFixed(1)}分钟`
-  return `${(ms / 3600000).toFixed(1)}小时`
+function formatDuration(ms: unknown): string {
+  const n = typeof ms === 'number' && isFinite(ms) ? ms : 0
+  if (n < 1000) return `${n}ms`
+  if (n < 60000) return `${(n / 1000).toFixed(1)}秒`
+  if (n < 3600000) return `${(n / 60000).toFixed(1)}分钟`
+  return `${(n / 3600000).toFixed(1)}小时`
 }
 
 export default function EfficiencyPanel() {
@@ -382,7 +384,7 @@ export default function EfficiencyPanel() {
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <StatCard
                   label="累计节省"
-                  value={`¥${optDashboard.summary.total_cost_saved.toLocaleString()}`}
+                  value={safeCNY(optDashboard.summary.total_cost_saved)}
                   icon={<TrendingUp className="w-4 h-4" />}
                   highlight
                 />
@@ -445,11 +447,11 @@ export default function EfficiencyPanel() {
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-sm font-bold text-emerald-600">
-                          省 {(rule.total_time_saved_seconds / 3600).toFixed(1)}h
+                          省 {safeFixed(rule.total_time_saved_seconds / 3600, 1)}h
                         </p>
                         {rule.total_cost_saved > 0 && (
                           <p className="text-xs text-muted-foreground">
-                            ¥{rule.total_cost_saved.toLocaleString()}
+                            {safeLocale(rule.total_cost_saved)}
                           </p>
                         )}
                       </div>
@@ -470,14 +472,8 @@ function SuggestionCard({ suggestion, onAccept, onDismiss }: {
   onAccept: (suggestionId: string) => void | Promise<void>
   onDismiss: (suggestionId: string) => void | Promise<void>
 }) {
-  const currentTime = suggestion.current_avg_seconds >= 3600
-    ? `${(suggestion.current_avg_seconds / 3600).toFixed(1)} 小时`
-    : suggestion.current_avg_seconds >= 60
-      ? `${(suggestion.current_avg_seconds / 60).toFixed(0)} 分钟`
-      : `${suggestion.current_avg_seconds.toFixed(0)} 秒`
-  const aiTime = suggestion.estimated_ai_seconds >= 60
-    ? `${(suggestion.estimated_ai_seconds / 60).toFixed(0)} 分钟`
-    : `${suggestion.estimated_ai_seconds.toFixed(0)} 秒`
+  const currentTime = formatSeconds(suggestion.current_avg_seconds)
+  const aiTime = formatSeconds(suggestion.estimated_ai_seconds)
 
   return (
     <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
@@ -495,11 +491,11 @@ function SuggestionCard({ suggestion, onAccept, onDismiss }: {
             （快 <span className="font-bold text-primary">{suggestion.speedup_ratio}x</span>）
           </p>
           <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-            <span>预估月省 <strong className="text-emerald-600">¥{suggestion.estimated_monthly_savings.toLocaleString()}</strong></span>
+            <span>预估月省 <strong className="text-emerald-600">{safeCNY(suggestion.estimated_monthly_savings)}</strong></span>
             <span>·</span>
             <span>释放 <strong>{suggestion.estimated_time_saved_hours}h</strong>/月</span>
             <span>·</span>
-            <span>置信度 {(suggestion.confidence * 100).toFixed(0)}%</span>
+            <span>置信度 {safeFixed(suggestion.confidence * 100, 0)}%</span>
           </div>
           <div className="flex items-center gap-2 mt-3">
             <button

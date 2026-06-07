@@ -36,9 +36,13 @@ export default function Sidebar() {
   if (!solution) return null
 
   const baseTabs = [...(solution.enabledTabs ?? [])] as WorkbenchTab[]
+  // 任务导向型方案（投研/财税/律所/劳务派遣）不注入运营类 tab，避免渲染不适用的面板
+  const isTaskOriented = ['finance-tax-service', 'law-firm', 'labor-dispatch', 'investment-research'].includes(solution.id)
   if (!baseTabs.includes('approvals')) baseTabs.push('approvals')
-  if (!baseTabs.includes('costs')) baseTabs.push('costs')
-  if (!baseTabs.includes('efficiency')) baseTabs.push('efficiency')
+  if (!isTaskOriented) {
+    if (!baseTabs.includes('costs')) baseTabs.push('costs')
+    if (!baseTabs.includes('efficiency')) baseTabs.push('efficiency')
+  }
   if (!baseTabs.includes('design-engine')) baseTabs.push('design-engine')
 
   // 根据使用频率自动重排（高频 tab 靠前）

@@ -1,4 +1,5 @@
 import { DashboardMarketplaceSearch } from './DashboardFilters'
+import { safeFixed, safeLocale } from '@/lib/safe-num'
 import {
   installFromMarketplace,
   type AnalyticsOverview,
@@ -79,9 +80,9 @@ export function DashboardCharts({
           <div className="grid grid-cols-4 gap-3 mb-3">
             {[
               { label: '执行', value: anlOverview.total_executions },
-              { label: '成功率', value: `${(anlOverview.success_rate * 100).toFixed(0)}%` },
+              { label: '成功率', value: `${safeFixed(anlOverview.success_rate * 100, 0)}%` },
               { label: '活跃流程', value: anlOverview.active_workflows },
-              { label: 'ROI', value: `¥${anlOverview.total_roi_saved.toLocaleString()}` },
+              { label: 'ROI', value: `¥${safeLocale(anlOverview.total_roi_saved)}` },
             ].map((s) => (
               <div key={s.label} className="text-center">
                 <div className="text-lg font-bold text-neutral-900 dark:text-neutral-100">{s.value}</div>
@@ -92,13 +93,13 @@ export function DashboardCharts({
 
           {roiPred && roiPred.predicted_next_month > 0 && (
             <div className="px-3 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 text-xs text-emerald-800 dark:text-emerald-300 mb-3">
-              <span className="font-medium">ROI 预测</span>：下月 ¥{roiPred.predicted_next_month.toLocaleString()}
+              <span className="font-medium">ROI 预测</span>：下月 ¥{safeLocale(roiPred.predicted_next_month)}
               {roiPred.growth_rate !== 0 && (
                 <span className={roiPred.growth_rate > 0 ? 'text-emerald-600' : 'text-red-500'}>
-                  {' '}({roiPred.growth_rate > 0 ? '+' : ''}{(roiPred.growth_rate * 100).toFixed(0)}%)
+                  {' '}({roiPred.growth_rate > 0 ? '+' : ''}{safeFixed(roiPred.growth_rate * 100, 0)}%)
                 </span>
               )}
-              <span className="text-muted-foreground ml-1">置信度 {(roiPred.confidence * 100).toFixed(0)}%</span>
+              <span className="text-muted-foreground ml-1">置信度 {safeFixed(roiPred.confidence * 100, 0)}%</span>
             </div>
           )}
 

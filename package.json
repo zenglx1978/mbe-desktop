@@ -12,6 +12,8 @@
     "build": "vite build && bun run compile:main",
     "preview": "vite preview",
     "start": "electron .",
+    "kill": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/kill-mbe.ps1",
+    "restart": "bun run kill && powershell -NoProfile -Command \"Start-Sleep -Seconds 2\" && bun run start",
     "pack:win": "bun run build && electron-builder --win --x64",
     "pack:mac": "bun run build && electron-builder --mac",
     "pack:linux": "bun run build && electron-builder --linux",
@@ -95,7 +97,7 @@
     "win": {
       "target": [
         {
-          "target": "zip",
+          "target": "nsis",
           "arch": [
             "x64"
           ]

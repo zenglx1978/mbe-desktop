@@ -1,4 +1,5 @@
 import { StatCard, UsageBar } from './dashboard-panel-widgets'
+import { safeFixed, safeLocale } from '@/lib/safe-num'
 import type { BillingUsage, DashboardData, ROISummary, SLADashboardData } from '@/lib/workflow-os-service'
 import { useBrandStore } from '@/stores/brand-store'
 import { useAppStore } from '@/stores/app-store'
@@ -71,7 +72,7 @@ export function DashboardStatCards({ dashboard, roi, billing, slaDash }: Dashboa
               <span className="text-primary font-bold text-base">{roi!.total_human_hours_saved}</span> 小时节省
             </span>
             <span>
-              <span className="text-green-500 font-bold text-base">¥{roi!.total_cost_saved_yuan.toLocaleString()}</span> 成本节省
+              <span className="text-green-500 font-bold text-base">¥{safeLocale(roi!.total_cost_saved_yuan)}</span> 成本节省
             </span>
             <span>
               <span className="text-amber-500 font-bold text-base">{roi!.avg_acceleration_ratio}x</span> 加速比
@@ -123,7 +124,7 @@ export function DashboardStatCards({ dashboard, roi, billing, slaDash }: Dashboa
           />
           {billing.usage.billable_total > 0 && (
             <div className="mt-2 text-xs text-neutral-500">
-              本月计费: ¥{billing.usage.billable_total.toFixed(2)}
+              本月计费: ¥{safeFixed(billing.usage.billable_total, 2)}
             </div>
           )}
         </div>
@@ -157,7 +158,7 @@ export function DashboardStatCards({ dashboard, roi, billing, slaDash }: Dashboa
                 }`} />
                 <span className="truncate flex-1 text-neutral-700 dark:text-neutral-300">{t.step_id}</span>
                 <span className="text-muted-foreground shrink-0">
-                  {t.elapsed_minutes.toFixed(0)}m / {t.deadline_minutes}m
+                  {safeFixed(t.elapsed_minutes, 0)}m / {t.deadline_minutes}m
                 </span>
                 {t.circuit_broken && <span className="px-1 py-0.5 rounded bg-neutral-200 dark:bg-neutral-700 text-[9px]">熔断</span>}
               </div>

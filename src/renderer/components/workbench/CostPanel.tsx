@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { safeNum, safeFixed } from '@/lib/safe-num'
 import {
   DollarSign,
   TrendingUp,
@@ -341,16 +342,18 @@ export default function CostPanel({ solution }: Props) {
     [dimension],
   )
 
-  const formatCost = (yuan: number) => {
-    if (yuan >= 10000) return `¥${(yuan / 10000).toFixed(2)}万`
-    if (yuan >= 100) return `¥${yuan.toFixed(0)}`
-    return `¥${yuan.toFixed(2)}`
+  const formatCost = (yuan: unknown) => {
+    const n = safeNum(yuan)
+    if (n >= 10000) return `¥${(n / 10000).toFixed(2)}万`
+    if (n >= 100) return `¥${n.toFixed(0)}`
+    return `¥${n.toFixed(2)}`
   }
 
-  const formatTokens = (tokens: number) => {
-    if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(1)}M`
-    if (tokens >= 1_000) return `${(tokens / 1_000).toFixed(1)}K`
-    return `${tokens}`
+  const formatTokens = (tokens: unknown) => {
+    const n = safeNum(tokens)
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
+    return `${n}`
   }
 
   const isEmpty = !data || (data.totalCalls === 0 && data.mergedBreakdown.length === 0)
@@ -517,7 +520,7 @@ export default function CostPanel({ solution }: Props) {
                     )}
                     <div className="text-lg font-bold text-amber-600 dark:text-amber-400">
                       {planCurrency === 'CNY' ? '¥' : `${planCurrency} `}
-                      {amount > 0 ? amount.toFixed(amount % 1 ? 2 : 0) : '—'}
+                      {amount > 0 ? safeFixed(amount, amount % 1 ? 2 : 0) : '—'}
                       <span className="text-xs font-normal text-muted-foreground ml-0.5">{periodLabel}</span>
                     </div>
                     <button

@@ -3,6 +3,7 @@ import {
   InstanceDetail,
   DeliverableRow,
 } from './dashboard-panel-widgets'
+import { safeFixed } from '@/lib/safe-num'
 import type { DashboardData, PendingApproval, WorkflowInstanceDetail } from '@/lib/workflow-os-service'
 
 export interface DashboardWorkflowInstancesProps {
@@ -151,7 +152,7 @@ export function DashboardWorkflowInstances({
             {dashboard.data_flywheel.avg_completion_ms > 0 && (
               <>
                 <span>·</span>
-                <span>平均 {(dashboard.data_flywheel.avg_completion_ms / 1000).toFixed(1)}s/流程</span>
+                <span>平均 {safeFixed(dashboard.data_flywheel.avg_completion_ms / 1000, 1)}s/流程</span>
               </>
             )}
           </div>
