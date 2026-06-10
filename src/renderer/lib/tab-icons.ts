@@ -15,7 +15,7 @@ import {
   UserCheck, Banknote, ShieldAlert, Gavel,
   Search, Briefcase, Globe, FileCheck, Network, Rocket,
   GitBranch, Download, ListChecks, ClipboardCheck, Store,
-  Layers, Timer, FlaskConical,
+  Layers, Timer, FlaskConical, UserCheck,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -75,6 +75,7 @@ export const TAB_ICON_MAP: Record<string, TabMeta> = {
   'report-distill':     { icon: Layers,      label: '研报蒸馏' },
   'distill-scheduler':  { icon: Timer,       label: '定时抓取' },
   'backtest':           { icon: FlaskConical, label: '回测验证' },
+  'hitl':              { icon: UserCheck,    label: '决策审核' },
   'ipo-prep':           { icon: ListChecks,      label: 'IPO 准备' },
   'audit-report':      { icon: ClipboardCheck,  label: '审计报告' },
   'neeq':              { icon: Store,           label: '新三板' },

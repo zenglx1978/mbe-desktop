@@ -49,6 +49,7 @@ import MisesExportPanel from '@/components/workbench/MisesExportPanel'
 import { ReportDistillPanel } from '@/components/workbench/ReportDistillPanel'
 import { DistillSchedulerPanel } from '@/components/workbench/DistillSchedulerPanel'
 import BacktestPanel from '@/components/workbench/BacktestPanel'
+import HitlPanel from '@/components/workbench/HitlPanel'
 import IPOPrepPanel from '@/components/workbench/IPOPrepPanel'
 import AuditReportFullPanel from '@/components/workbench/AuditReportFullPanel'
 import NEEQPanel from '@/components/workbench/NEEQPanel'
@@ -523,6 +524,8 @@ function ActivePanel({ tab }: { tab: string }) {
       return <DistillSchedulerPanel />
     case 'backtest':
       return <BacktestPanel />
+    case 'hitl':
+      return <HitlPanel />
     // 财税方案专属任务 tab
     case 'consolidated':
       return <ConsolidatedReportPanel solution={solution} />
