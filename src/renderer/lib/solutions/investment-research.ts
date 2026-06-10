@@ -23,7 +23,7 @@ export const investmentResearchSolution: SolutionConfig = {
   localScripts: ['calc_iit', 'calc_vat'],
   knowledgeCache: ['invest_mises_framework'],
   theme: { primary: '38 92% 43%', accent: '38 92% 43%' },
-  enabledTabs: ['today', 'research', 'portfolio', 'macro', 'compliance-pub', 'mises-export', 'tools', 'documents', 'chat', 'knowledge-graph'],
+  enabledTabs: ['today', 'research', 'portfolio', 'macro', 'compliance-pub', 'mises-export', 'report-distill', 'distill-scheduler', 'tools', 'documents', 'chat', 'knowledge-graph'],
   onboarding: {
     questions: [
       { key: 'institution_type', label: '机构类型', options: ['私募基金', '家族办公室', '独立投研工作室', '券商/资管', '个人投资者'] },

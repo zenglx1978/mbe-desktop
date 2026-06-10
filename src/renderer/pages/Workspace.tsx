@@ -46,6 +46,8 @@ import HkFinanceTodayPanel from '@/components/workbench/HkFinanceTodayPanel'
 import TaskContextPanel from '@/components/workbench/TaskContextPanel'
 import ConsolidatedReportPanel from '@/components/workbench/ConsolidatedReportPanel'
 import MisesExportPanel from '@/components/workbench/MisesExportPanel'
+import { ReportDistillPanel } from '@/components/workbench/ReportDistillPanel'
+import { DistillSchedulerPanel } from '@/components/workbench/DistillSchedulerPanel'
 import IPOPrepPanel from '@/components/workbench/IPOPrepPanel'
 import AuditReportFullPanel from '@/components/workbench/AuditReportFullPanel'
 import NEEQPanel from '@/components/workbench/NEEQPanel'
@@ -514,6 +516,10 @@ function ActivePanel({ tab }: { tab: string }) {
       return <TaskContextPanel solution={solution} taskId="compliance-pub" />
     case 'mises-export':
       return <MisesExportPanel solution={solution} />
+    case 'report-distill':
+      return <ReportDistillPanel />
+    case 'distill-scheduler':
+      return <DistillSchedulerPanel />
     // 财税方案专属任务 tab
     case 'consolidated':
       return <ConsolidatedReportPanel solution={solution} />

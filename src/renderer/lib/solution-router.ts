@@ -12,6 +12,9 @@ export interface AgentEndpoint {
   handles: string
   baseUrl: string
   wsUrl: string
+  /** AI 员工具名身份（Anthropic Playbook: AI Worker, not AI Tool） */
+  personaName?: string
+  personaBio?: string
 }
 
 /** 方案级主题 — 借鉴 WorldMonitor 多变体仪表盘设计 */
@@ -112,6 +115,7 @@ export type WorkbenchTab = 'chat' | 'tools' | 'documents' | 'tasks' | 'dashboard
   | 'cases' | 'contracts' | 'legal-docs' | 'billing'
   | 'employees' | 'payroll' | 'compliance' | 'disputes'
   | 'research' | 'portfolio' | 'macro' | 'compliance-pub' | 'mises-export'
+  | 'report-distill' | 'distill-scheduler'
   | 'design-engine' | 'dispatch-dashboard' | 'knowledge-graph'
 
 /** 利润影响标注 — 米塞斯 P2：企业的目的是获取利润 */

@@ -15,6 +15,7 @@ import {
   UserCheck, Banknote, ShieldAlert, Gavel,
   Search, Briefcase, Globe, FileCheck, Network, Rocket,
   GitBranch, Download, ListChecks, ClipboardCheck, Store,
+  Layers, Timer,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -71,6 +72,8 @@ export const TAB_ICON_MAP: Record<string, TabMeta> = {
   'business-plan':      { icon: Rocket,    label: '商业计划书' },
   'consolidated':       { icon: GitBranch,   label: '合并报表' },
   'mises-export':       { icon: Download,    label: '研报导出' },
+  'report-distill':     { icon: Layers,      label: '研报蒸馏' },
+  'distill-scheduler':  { icon: Timer,       label: '定时抓取' },
   'ipo-prep':           { icon: ListChecks,      label: 'IPO 准备' },
   'audit-report':      { icon: ClipboardCheck,  label: '审计报告' },
   'neeq':              { icon: Store,           label: '新三板' },
