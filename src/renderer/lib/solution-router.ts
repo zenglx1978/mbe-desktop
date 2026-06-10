@@ -115,7 +115,7 @@ export type WorkbenchTab = 'chat' | 'tools' | 'documents' | 'tasks' | 'dashboard
   | 'cases' | 'contracts' | 'legal-docs' | 'billing'
   | 'employees' | 'payroll' | 'compliance' | 'disputes'
   | 'research' | 'portfolio' | 'macro' | 'compliance-pub' | 'mises-export'
-  | 'report-distill' | 'distill-scheduler'
+  | 'report-distill' | 'distill-scheduler' | 'backtest'
   | 'design-engine' | 'dispatch-dashboard' | 'knowledge-graph'
 
 /** 利润影响标注 — 米塞斯 P2：企业的目的是获取利润 */

@@ -3,14 +3,16 @@
  *
  * QuickBooks 风格：盘前提醒 + 持仓异动 + 财报日历 + 研报截止 + 快速开始
  */
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useToolStore } from '@/stores/tool-store'
 import type { SolutionConfig, WorkbenchTab } from '@/lib/solution-router'
 import {
   AlertTriangle, TrendingUp, Briefcase, Globe,
   Search, FileCheck, BarChart3, LineChart,
+  ShieldAlert, Bell, TrendingDown, Minus,
 } from 'lucide-react'
 import { StatCard, QuickAction, CalculatorChips, ProfitImpactFooter, HelpGuideSection } from './today-panel-shared'
+import { API_BASE, authHeaders } from '@/lib/api-client'
 
 interface Props {
   solution: SolutionConfig
@@ -22,6 +24,23 @@ interface CalendarItem {
   date: string
   daysLeft: number
   urgent: boolean
+}
+
+interface PatrolAlert {
+  ticker: string
+  signal: 'bearish' | 'critical' | 'info'
+  message: string
+  timestamp?: string
+}
+
+interface TrackerItem {
+  ticker: string
+  entry_price?: number
+  stop_loss?: number
+  take_profit?: number
+  current_price?: number
+  signal?: string
+  alerts?: PatrolAlert[]
 }
 
 function getMockCalendar(): CalendarItem[] {
@@ -40,10 +59,45 @@ function getMockCalendar(): CalendarItem[] {
 export default function InvestTodayPanel({ solution }: Props) {
   const { setActiveTab } = useToolStore()
   const [calendar] = useState<CalendarItem[]>(getMockCalendar)
+  const [trackers, setTrackers] = useState<TrackerItem[]>([])
+  const [alerts, setAlerts] = useState<PatrolAlert[]>([])
+  const [trackerErr, setTrackerErr] = useState(false)
 
   const goToTab = useCallback((tab: WorkbenchTab) => {
     setActiveTab(tab)
   }, [setActiveTab])
+
+  // 拉取持仓 tracker，提取有告警的条目
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const resp = await fetch(`${API_BASE}/api/invest/tracker/`, {
+          headers: authHeaders(),
+        })
+        if (!resp.ok) return
+        const data = await resp.json()
+        const items: TrackerItem[] = Array.isArray(data) ? data : (data.trackers ?? [])
+        setTrackers(items)
+        // 收集各 tracker 的告警
+        const collected: PatrolAlert[] = []
+        for (const item of items) {
+          if (item.alerts && item.alerts.length > 0) {
+            collected.push(...item.alerts)
+          } else if (item.signal === 'bearish' || item.signal === 'critical') {
+            collected.push({
+              ticker: item.ticker,
+              signal: (item.signal as PatrolAlert['signal']),
+              message: `${item.ticker} 触发 ${item.signal} 信号`,
+            })
+          }
+        }
+        setAlerts(collected)
+      } catch {
+        setTrackerErr(true)
+      }
+    }
+    load()
+  }, [])
 
   const urgentItems = calendar.filter(c => c.urgent)
 
@@ -78,6 +132,54 @@ export default function InvestTodayPanel({ solution }: Props) {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* 巡检告警区块 */}
+        {!trackerErr && alerts.length > 0 && (
+          <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <ShieldAlert className="w-4 h-4 text-red-500" />
+              <span className="text-sm font-semibold text-red-500">持仓巡检告警</span>
+              <span className="ml-auto text-xs text-red-400">{alerts.length} 条</span>
+            </div>
+            <div className="space-y-2">
+              {alerts.slice(0, 5).map((alert, i) => (
+                <div key={i} className="flex items-start gap-2">
+                  {alert.signal === 'critical'
+                    ? <TrendingDown className="w-3.5 h-3.5 text-red-500 mt-0.5 shrink-0" />
+                    : alert.signal === 'bearish'
+                    ? <TrendingDown className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
+                    : <Minus className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0" />}
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs font-mono font-semibold text-foreground">{alert.ticker}</span>
+                    <span className="text-xs text-muted-foreground ml-2">{alert.message}</span>
+                  </div>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full shrink-0 ${
+                    alert.signal === 'critical' ? 'bg-red-500/10 text-red-500' :
+                    alert.signal === 'bearish' ? 'bg-amber-500/10 text-amber-500' :
+                    'bg-muted text-muted-foreground'
+                  }`}>
+                    {alert.signal === 'critical' ? '危险' : alert.signal === 'bearish' ? '看空' : '提示'}
+                  </span>
+                </div>
+              ))}
+              {alerts.length > 5 && (
+                <p className="text-xs text-muted-foreground text-center pt-1">
+                  还有 {alerts.length - 5} 条告警，查看组合详情
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* tracker 无告警提示 */}
+        {!trackerErr && trackers.length > 0 && alerts.length === 0 && (
+          <div className="rounded-xl border border-green-500/20 bg-green-500/5 p-3 flex items-center gap-2">
+            <Bell className="w-4 h-4 text-green-500" />
+            <span className="text-xs text-green-600">
+              持仓巡检正常，{trackers.length} 个标的无告警信号
+            </span>
           </div>
         )}
 

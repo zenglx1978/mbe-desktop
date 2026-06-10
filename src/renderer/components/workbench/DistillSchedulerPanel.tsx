@@ -12,6 +12,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import {
   Timer, Plus, Trash2, Play, RefreshCw, Clock, CheckCircle2,
   XCircle, SkipForward, AlertCircle, ChevronDown, ChevronRight,
+  Database, ChevronUp,
 } from 'lucide-react'
 import { API_BASE, authHeaders } from '@/lib/api-client'
 
@@ -44,12 +45,35 @@ interface JobHistory {
   failed: number
 }
 
+// ─── 类型补充 ──────────────────────────────────────────────────────────────────
+
+interface KBRecord {
+  ticker: string
+  title: string
+  institution: string
+  report_date: string
+  quality_score: number
+  created_at: string
+}
+
+interface KBStatus {
+  total: number
+  tickers: string[]
+  records?: KBRecord[]
+}
+
 // ─── 辅助 ─────────────────────────────────────────────────────────────────────
 
 const BASE = `${API_BASE}/api/invest/scheduler`
+const REPORT_BASE = `${API_BASE}/api/invest/report`
 
 async function apiFetch(path: string, init?: RequestInit) {
   const resp = await fetch(`${BASE}${path}`, { ...init, headers: { ...authHeaders(), ...(init?.headers as Record<string, string> ?? {}) } })
+  return resp.json()
+}
+
+async function reportApiFetch(path: string, init?: RequestInit) {
+  const resp = await fetch(`${REPORT_BASE}${path}`, { ...init, headers: { ...authHeaders(), ...(init?.headers as Record<string, string> ?? {}) } })
   return resp.json()
 }
 
@@ -77,20 +101,43 @@ export function DistillSchedulerPanel() {
   const [batchRunning, setBatchRunning] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [loadErr, setLoadErr] = useState<string | null>(null)
+  // KB 状态
+  const [kbStatus, setKbStatus] = useState<KBStatus | null>(null)
+  const [kbOpen, setKbOpen] = useState(false)
+  const [kbTicker, setKbTicker] = useState('')
+  const [kbRecords, setKbRecords] = useState<KBRecord[]>([])
+  const [kbLoading, setKbLoading] = useState(false)
 
   const load = useCallback(async () => {
     try {
-      const [wl, st, hist] = await Promise.all([
+      const [wl, st, hist, kb] = await Promise.all([
         apiFetch('/watchlist'),
         apiFetch('/status'),
         apiFetch('/history?limit=5'),
+        reportApiFetch('/kb/status').catch(() => null),
       ])
       setWatchlist(wl.watchlist ?? [])
       setStatus(st)
       setHistory(hist.history ?? [])
+      if (kb) setKbStatus(kb)
       setLoadErr(null)
     } catch (e) {
       setLoadErr(String(e))
+    }
+  }, [])
+
+  const queryKB = useCallback(async (t?: string) => {
+    setKbLoading(true)
+    try {
+      const q = t ? `?ticker=${encodeURIComponent(t)}` : ''
+      const data = await reportApiFetch(`/kb/status${q}`)
+      if (t) {
+        setKbRecords(data.records ?? [])
+      } else {
+        setKbStatus(data)
+      }
+    } finally {
+      setKbLoading(false)
     }
   }, [])
 
@@ -264,6 +311,83 @@ export function DistillSchedulerPanel() {
             )}
           </div>
         )}
+
+        {/* 研报 KB 状态 */}
+        <div>
+          <button
+            onClick={() => { setKbOpen(o => !o); if (!kbOpen) queryKB() }}
+            className="flex items-center gap-2 text-sm font-semibold mb-2 hover:text-primary transition-colors"
+          >
+            <Database className="w-4 h-4" />
+            研报知识库（KB）状态
+            {kbStatus && <span className="text-xs font-normal text-muted-foreground ml-1">共 {kbStatus.total} 条</span>}
+            {kbOpen ? <ChevronUp className="w-3.5 h-3.5 ml-auto" /> : <ChevronDown className="w-3.5 h-3.5 ml-auto" />}
+          </button>
+          {kbOpen && (
+            <div className="space-y-3">
+              {/* 按 ticker 查询 */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="输入代码查询具体记录…"
+                  value={kbTicker}
+                  onChange={e => setKbTicker(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && queryKB(kbTicker.trim().toUpperCase())}
+                  className="flex-1 px-3 py-1.5 rounded-lg border border-border/60 bg-background text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                <button
+                  onClick={() => queryKB(kbTicker.trim().toUpperCase() || undefined)}
+                  disabled={kbLoading}
+                  className="px-3 py-1.5 rounded-lg border border-border/60 text-xs hover:bg-muted/50 transition-colors disabled:opacity-50"
+                >
+                  {kbLoading ? <RefreshCw className="w-3 h-3 animate-spin" /> : '查询'}
+                </button>
+              </div>
+
+              {/* 全局统计 */}
+              {kbStatus && !kbTicker && (
+                <div className="rounded-lg border border-border/60 p-3 bg-muted/20 text-xs">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-medium">全库统计</span>
+                    <span className="text-muted-foreground">共 <b className="text-foreground">{kbStatus.total}</b> 条蒸馏记录</span>
+                  </div>
+                  {kbStatus.tickers && kbStatus.tickers.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {kbStatus.tickers.map(t => (
+                        <button
+                          key={t}
+                          onClick={() => { setKbTicker(t); queryKB(t) }}
+                          className="px-2 py-0.5 rounded bg-primary/10 text-primary font-mono hover:bg-primary/20 transition-colors"
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ticker 详情 */}
+              {kbRecords.length > 0 && (
+                <div className="space-y-1">
+                  {kbRecords.map((rec, i) => (
+                    <div key={i} className="p-2 rounded-lg border border-border/40 bg-card text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium truncate max-w-[60%]">{rec.title || '无标题'}</span>
+                        <span className="text-muted-foreground shrink-0">{rec.report_date || '—'}</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5 text-muted-foreground">
+                        <span>{rec.institution || '—'}</span>
+                        <span>质量 <b className={rec.quality_score >= 0.7 ? 'text-green-600' : 'text-amber-500'}>{(rec.quality_score * 100).toFixed(0)}%</b></span>
+                        <span className="ml-auto">{fmtDt(rec.created_at)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
