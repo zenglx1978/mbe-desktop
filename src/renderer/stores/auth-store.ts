@@ -14,6 +14,7 @@ interface UserInfo {
 
 interface AuthState {
   token: string | null
+  refreshToken: string | null
   user: UserInfo | null
   loading: boolean
   error: string | null
@@ -21,9 +22,13 @@ interface AuthState {
   /** 是否已登录 */
   isAuthenticated: () => boolean
   setToken: (t: string | null) => void
+  setRefreshToken: (t: string | null) => void
   setUser: (u: UserInfo | null) => void
   logout: () => void
   restoreAuth: () => Promise<void>
+
+  /** 静默刷新 access token（401 拦截器调用）*/
+  silentRefresh: () => Promise<boolean>
 
   /** 邮箱+密码登录 */
   login: (email: string, password: string) => Promise<boolean>
@@ -40,6 +45,7 @@ interface AuthState {
 }
 
 const TOKEN_KEY = 'auth_token'
+const REFRESH_TOKEN_KEY = 'auth_refresh_token'
 const USER_KEY = 'auth_user'
 
 /** POST 用户认证 JSON 接口，统一解析 body（失败时仍返回已解析的 detail 等字段） */
@@ -71,6 +77,7 @@ function persistSessionFromToken(get: () => AuthState, accessToken: string, user
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   token: null,
+  refreshToken: null,
   user: null,
   loading: false,
   error: null,
@@ -95,6 +102,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
+  setRefreshToken: (t) => {
+    set({ refreshToken: t })
+    try {
+      const api = (window as WindowWithElectron).electronAPI
+      if (api?.session) {
+        if (t) { api.session.set(REFRESH_TOKEN_KEY, t) } else { api.session.remove(REFRESH_TOKEN_KEY) }
+      } else {
+        if (t) { localStorage.setItem(REFRESH_TOKEN_KEY, t) } else { localStorage.removeItem(REFRESH_TOKEN_KEY) }
+      }
+    } catch {
+      if (t) { localStorage.setItem(REFRESH_TOKEN_KEY, t) } else { localStorage.removeItem(REFRESH_TOKEN_KEY) }
+    }
+  },
+
   setUser: (u) => {
     set({ user: u })
     try {
@@ -111,7 +132,37 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   logout: () => {
     get().setToken(null)
+    get().setRefreshToken(null)
     get().setUser(null)
+  },
+
+  silentRefresh: async () => {
+    const rt = get().refreshToken
+    if (!rt) return false
+    try {
+      const resp = await fetch(`${API_BASE}/api/v1/users/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: rt }),
+        signal: AbortSignal.timeout(10_000),
+      })
+      if (!resp.ok) {
+        get().logout()
+        return false
+      }
+      const data = await resp.json() as Record<string, unknown>
+      const newAccess = data.access_token as string | undefined
+      const newRefresh = data.refresh_token as string | undefined
+      if (!newAccess) {
+        get().logout()
+        return false
+      }
+      get().setToken(newAccess)
+      if (newRefresh) get().setRefreshToken(newRefresh)
+      return true
+    } catch {
+      return false
+    }
   },
 
   clearError: () => set({ error: null, emailUnverified: false }),
@@ -120,22 +171,28 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const api = (window as WindowWithElectron).electronAPI
       if (api?.session) {
-        const [token, userRaw] = await Promise.all([
+        const [token, refreshTok, userRaw] = await Promise.all([
           api.session.get(TOKEN_KEY),
+          api.session.get(REFRESH_TOKEN_KEY),
           api.session.get(USER_KEY),
         ])
         if (token && typeof token === 'string') {
-          set({ token, user: (userRaw as UserInfo) ?? null })
+          set({
+            token,
+            refreshToken: (typeof refreshTok === 'string' ? refreshTok : null),
+            user: (userRaw as UserInfo) ?? null,
+          })
         }
       } else {
         const token = localStorage.getItem(TOKEN_KEY)
+        const refreshTok = localStorage.getItem(REFRESH_TOKEN_KEY)
         const userStr = localStorage.getItem(USER_KEY)
         if (token) {
           let user: UserInfo | null = null
           if (userStr) {
             try { user = JSON.parse(userStr) } catch { /* Expected: auth_user 非合法 JSON，忽略 */ }
           }
-          set({ token, user })
+          set({ token, refreshToken: refreshTok, user })
         }
       }
     } catch {
@@ -167,6 +224,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         allowedSolutions: rawSolutions?.length ? rawSolutions : undefined,
       }
       persistSessionFromToken(get, data.access_token as string, user)
+      if (data.refresh_token) get().setRefreshToken(data.refresh_token as string)
       set({ loading: false, error: null })
       return true
     } catch (err: any) {

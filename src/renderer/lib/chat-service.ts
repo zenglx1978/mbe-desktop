@@ -32,7 +32,7 @@ import {
   type LocalAction,
 } from '@/lib/local-action-executor'
 
-import { getDeviceId, authHeaders, isAbortError } from '@/lib/api-client'
+import { getDeviceId, authHeaders, authFetch, isAbortError } from '@/lib/api-client'
 export { isAbortError }
 import type { ConsultResponse, WindowWithElectron } from '@/types/api-responses'
 
@@ -201,8 +201,14 @@ export async function sendMessage(
           aborted = true
         } else {
           const errorMsg = err instanceof Error ? err.message : '请求失败'
+          // 登录过期：提示重新登录
+          if (errorMsg === 'AUTH:EXPIRED') {
+            chatStore.updateMessage(assistantId, {
+              content: `## 🔐 登录已过期\n\n您的登录会话已过期，请**退出后重新登录**以继续使用 AI 专家功能。\n\n> 提示：点击左下角头像 → 退出登录，然后重新登录即可。`,
+              streaming: false,
+            })
           // 计费类错误：展示专属升级引导而非通用网络错误提示
-          if (errorMsg.startsWith('BILLING:')) {
+          } else if (errorMsg.startsWith('BILLING:')) {
             const [, code, detail] = errorMsg.split(':')
             const isQuota = code === 'QUOTA_EXCEEDED'
             const billingContent = isQuota
@@ -502,12 +508,11 @@ async function streamViaHTTP(
     ...(convId ? { conversation_id: convId } : {}),
     ...(isResume ? { is_resume: true } : {}),
   })
-  const headers = authHeaders()
-
   let response: Response | null = null
   for (const url of candidates) {
     try {
-      const r = await fetch(url, { method: 'POST', headers, body, signal })
+      // authFetch 带 401 静默刷新：token 过期时自动获取新 token 并重试
+      const r = await authFetch(url, { method: 'POST', headers: authHeaders(), body, signal })
       if (r.ok || r.status === 401) {
         response = r
         break
@@ -523,6 +528,10 @@ async function streamViaHTTP(
   }
 
   if (!response.ok) {
+    // 401 登录过期 — 提示用户重新登录
+    if (response.status === 401) {
+      throw new Error('AUTH:EXPIRED')
+    }
     // 402 额度不足 / 429 触发限流 — 特殊处理，上层可展示升级引导
     if (response.status === 402 || response.status === 429) {
       let detail = ''
@@ -532,6 +541,25 @@ async function streamViaHTTP(
       } catch { /* 忽略解析失败 */ }
       const code = response.status === 402 ? 'QUOTA_EXCEEDED' : 'RATE_LIMITED'
       throw new Error(`BILLING:${code}:${detail}`)
+    }
+    // 404 stock_not_found — 直接渲染友好消息，不抛异常
+    if (response.status === 404) {
+      try {
+        const errBody = (await response.json()) as Record<string, unknown>
+        const detail = errBody.detail as Record<string, unknown> | undefined
+        if (detail?.error === 'stock_not_found') {
+          const msg = [
+            `⚠️ **未找到该股票**`,
+            ``,
+            String(detail.message ?? ''),
+            ``,
+            `> 提示：${String(detail.hint ?? '请提供正确的股票代码')}`,
+          ].join('\n')
+          chatStore.appendToMessage(messageId, msg)
+          chatStore.updateMessage(messageId, { streaming: false })
+          return
+        }
+      } catch { /* 解析失败则走通用错误 */ }
     }
     throw new Error(`HTTP ${response.status}`)
   }
@@ -600,7 +628,16 @@ async function streamViaHTTP(
         if (data === '[DONE]') continue
         try {
           const parsed = JSON.parse(data)
-          if (parsed.content) {
+          if (parsed.type === 'error' && parsed.error === 'stock_not_found') {
+            const msg = [
+              `⚠️ **未找到该股票**`,
+              ``,
+              String(parsed.content ?? parsed.message ?? '找不到对应的上市公司'),
+              ``,
+              `> 请提供正确的股票代码（如 \`600519\`、\`NVDA\`、\`00700.HK\`）`,
+            ].join('\n')
+            chatStore.appendToMessage(messageId, msg)
+          } else if (parsed.content) {
             chatStore.appendToMessage(messageId, parsed.content)
           }
           if (parsed.sources || parsed.source_citation) {

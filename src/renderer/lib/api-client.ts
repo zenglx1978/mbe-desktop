@@ -71,7 +71,7 @@ export function isAbortError(err: unknown): boolean {
   return false
 }
 
-/** 带认证的 fetch 封装 */
+/** 带认证的 fetch 封装（含 401 静默刷新重试）*/
 export async function authFetch(
   url: string,
   init?: RequestInit,
@@ -79,5 +79,21 @@ export async function authFetch(
   const headers = authHeaders(
     init?.headers as Record<string, string> | undefined,
   )
-  return fetch(url, { ...init, headers })
+  const resp = await fetch(url, { ...init, headers })
+
+  if (resp.status === 401) {
+    const { silentRefresh, token: newToken } = useAuthStore.getState()
+    const refreshed = await silentRefresh()
+    if (refreshed) {
+      // 用新 token 重试一次
+      const retryHeaders = authHeaders(
+        init?.headers as Record<string, string> | undefined,
+      )
+      return fetch(url, { ...init, headers: retryHeaders })
+    }
+    // 刷新失败，返回原始 401（调用方决定是否弹出登录框）
+    void newToken
+  }
+
+  return resp
 }
