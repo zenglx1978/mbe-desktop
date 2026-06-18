@@ -145,13 +145,14 @@ export function resolveAgentBase(_agentId: string): string {
 /** 调用远端 Agent API */
 async function runRemote(tool: ToolConfig, values: Record<string, unknown>): Promise<CalcResult> {
   const start = Date.now()
+  const timeoutMs = tool.id === 'founder-os-signal' ? 60000 : 15000
   try {
     const base = resolveAgentBase(tool.agent)
     const resp = await fetch(`${base}${tool.apiPath}`, {
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify(values),
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(timeoutMs),
     })
     const duration = Date.now() - start
 

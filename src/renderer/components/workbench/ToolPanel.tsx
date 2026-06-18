@@ -173,6 +173,10 @@ function formatResultValue(v: unknown): string {
 }
 
 function ResultTable({ data, tool, source }: { data: Record<string, unknown>; tool: ToolConfig; source?: string }) {
+  if (tool.id === 'founder-os-signal') {
+    return <FounderOSResult data={data} tool={tool} source={source} />
+  }
+
   const entries = Object.entries(data).filter(
     ([k, v]) => !k.startsWith('_') && typeof v !== 'object'
   )
@@ -202,6 +206,71 @@ function ResultTable({ data, tool, source }: { data: Record<string, unknown>; to
         结果仅供参考，具体以实际为准
       </div>
     </>
+  )
+}
+
+function FounderOSResult({ data, tool, source }: { data: Record<string, unknown>; tool: ToolConfig; source?: string }) {
+  const payload = unwrapApiData(data)
+  const peerRelative = asRecord(payload.peer_relative)
+  const target = asRecord(peerRelative.target)
+  const score = formatMaybeNumber(payload.founder_os_signal, 1)
+  const verdict = String(peerRelative.relative_verdict ?? 'insufficient_valuation_data')
+  const position = String(peerRelative.valuation_position ?? 'unknown')
+  const confidence = String(peerRelative.confidence ?? 'low')
+
+  return (
+    <>
+      <div className="px-4 py-2.5 bg-green-500/10 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span>{tool.icon}</span>
+          <span className="font-medium text-sm">{tool.name} · 相对同行结论</span>
+        </div>
+        {source && (
+          <span className="text-[11px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
+            {source === 'local' ? '📱 本地计算' : '☁️ 云端计算'}
+          </span>
+        )}
+      </div>
+
+      <div className="p-4 space-y-3">
+        <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs text-muted-foreground">相对结论</p>
+              <p className="text-base font-semibold mt-0.5">{FOUNDER_VERDICT_LABELS[verdict] ?? verdict}</p>
+            </div>
+            <span className={`text-[11px] px-2 py-0.5 rounded-full border ${confidenceClass(confidence)}`}>
+              {FOUNDER_CONFIDENCE_LABELS[confidence] ?? confidence}
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+            {String(peerRelative.note ?? payload.summary ?? '暂无相对同行说明')}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <FounderMetric label="Founder OS" value={score} />
+          <FounderMetric label="估值位置" value={FOUNDER_POSITION_LABELS[position] ?? position} />
+          <FounderMetric label="PE 相对同行" value={formatPct(peerRelative.pe_vs_peer_pct)} />
+          <FounderMetric label="PB 相对同行" value={formatPct(peerRelative.pb_vs_peer_pct)} />
+          <FounderMetric label="目标 PE/PB" value={`${formatMaybeNumber(target.pe, 2)} / ${formatMaybeNumber(target.pb, 2)}`} />
+          <FounderMetric label="同行 PE/PB" value={`${formatMaybeNumber(peerRelative.peer_avg_pe, 2)} / ${formatMaybeNumber(peerRelative.peer_avg_pb, 2)}`} />
+        </div>
+
+        <div className="text-[11px] text-muted-foreground/70">
+          目标估值来源：{String(target.source ?? 'unknown')}；本结论仅用于投研排序与复核，不构成交易建议。
+        </div>
+      </div>
+    </>
+  )
+}
+
+function FounderMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg bg-secondary/30 px-3 py-2">
+      <div className="text-[10px] text-muted-foreground">{label}</div>
+      <div className="text-sm font-medium mt-0.5">{value}</div>
+    </div>
   )
 }
 
@@ -258,6 +327,61 @@ function FieldInput({
       />
     </div>
   )
+}
+
+const FOUNDER_VERDICT_LABELS: Record<string, string> = {
+  undervalued_quality: '低估质量候选',
+  quality_priced_in: '优质但已定价',
+  value_trap_check: '价值陷阱复核',
+  avoid_or_shortlist_review: '谨慎/回避复核',
+  insufficient_valuation_data: '估值数据不足',
+  watchlist: '观察名单',
+}
+
+const FOUNDER_POSITION_LABELS: Record<string, string> = {
+  deep_discount: '深度折价',
+  discount: '折价',
+  in_line: '基本匹配同行',
+  slight_premium: '小幅溢价',
+  premium: '明显溢价',
+  unknown: '不可比',
+}
+
+const FOUNDER_CONFIDENCE_LABELS: Record<string, string> = {
+  high: '高置信度',
+  medium: '中置信度',
+  low: '低置信度',
+}
+
+function unwrapApiData(data: Record<string, unknown>): Record<string, unknown> {
+  const nested = data.data
+  return isRecord(nested) ? nested : data
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return isRecord(value) ? value : {}
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value)
+}
+
+function formatMaybeNumber(value: unknown, digits: number): string {
+  const num = Number(value)
+  if (!Number.isFinite(num)) return '—'
+  return num.toFixed(digits)
+}
+
+function formatPct(value: unknown): string {
+  const num = Number(value)
+  if (!Number.isFinite(num)) return '—'
+  return `${num > 0 ? '+' : ''}${num.toFixed(1)}%`
+}
+
+function confidenceClass(confidence: string): string {
+  if (confidence === 'high') return 'bg-green-500/10 text-green-400 border-green-500/30'
+  if (confidence === 'medium') return 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30'
+  return 'bg-red-500/10 text-red-400 border-red-500/30'
 }
 
 // ── FileExportCard — file-export 类型工具渲染 ────────────────────────────────
