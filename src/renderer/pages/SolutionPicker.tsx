@@ -190,6 +190,41 @@ const POPULAR_TAGS = [
   { label: '香港财税', query: '我是香港会计师事务所' },
 ]
 
+const SOLUTION_QUERY_ALIASES: Record<string, string[]> = {
+  'investment-research': ['投资', '投研', '股票', '证券', '基金', '研究分析', '投资研究', '个股', '组合', '机构持仓'],
+  'finance-tax-service': ['财税', '记账', '报税', '会计', '发票', '审计', '财务'],
+  'hk-finance-tax': ['香港', '香港会计', '利得税', '转移定价', 'hk'],
+  'law-firm': ['律师', '律所', '法律', '合同', '诉讼', '案件'],
+  'labor-dispatch': ['劳务', '派遣', '人力', '用工', '社保', '薪资'],
+  'smb-operations': ['中小企业', '老板', '企业运营', '经营', '行政', '销售客服'],
+  'ecommerce-brand-service': ['电商', '品牌', '亚马逊', '抖音', '淘宝', '京东'],
+  'construction-cost': ['造价', '工程', '清单', '预算', '结算'],
+  'clinic-respiratory': ['医疗', '肺科', '呼吸', '门诊', '医生'],
+  'insurance-operations': ['保险', '理赔', '保单', '客服'],
+  'study-abroad-consulting': ['留学', '签证', '申请', '院校'],
+  'education-training': ['教育', '培训', '考试', '课程'],
+}
+
+function normalizeQuery(value: string) {
+  return value.toLowerCase().replace(/\s+/g, '')
+}
+
+function solutionMatchesQuery(solution: SolutionConfig, rawQuery: string) {
+  const query = normalizeQuery(rawQuery)
+  if (!query) return true
+  const aliases = SOLUTION_QUERY_ALIASES[solution.id] ?? []
+  const haystack = normalizeQuery([
+    solution.id,
+    solution.name,
+    solution.tagline,
+    solution.description,
+    solution.entrepreneurPurpose,
+    ...solution.profitMetrics,
+    ...aliases,
+  ].filter(Boolean).join(' '))
+  return haystack.includes(query) || aliases.some(alias => query.includes(normalizeQuery(alias)))
+}
+
 export default function SolutionPicker() {
   const navigate = useNavigate()
   const setSolution = useAppStore((s) => s.setSolution)
@@ -220,11 +255,9 @@ export default function SolutionPicker() {
   // 這樣能避免上一個用戶的無限制方案列表污染新用戶的視圖。
   const userId = user?.userId ?? user?.email ?? null
   useEffect(() => {
-    console.debug('[SolutionPicker] user changed, resetting statuses. userId=', userId, 'allowedSolutions=', user?.allowedSolutions)
     setStatusSynced(false)
     resetSolutionStatuses()
     fetchSolutionStatuses().then(() => {
-      console.debug('[SolutionPicker] fetchSolutionStatuses done. allowedSolutions=', user?.allowedSolutions)
       setStatusSynced(true)
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -294,8 +327,7 @@ export default function SolutionPicker() {
   const topRecommendation = industryGuesses[0]
 
   const filteredCategories = useMemo(() => {
-    // Intake API 成功時不需要本地過濾（結果單獨展示）
-    // Intake API 失敗時展示全部方案，不做本地過濾（中文子串匹配不可靠）
+    const query = search.trim()
     const base = CATEGORIES
 
     return base.map((cat) => ({
@@ -303,10 +335,12 @@ export default function SolutionPicker() {
       ids: cat.ids.filter((id) => {
         if (getEffectiveStatus(id) === 'disabled') return false
         if (allowedSolutions?.length && !allowedSolutions.includes(id)) return false
+        const solution = findSolution(id)
+        if (query && solution && !solutionMatchesQuery(solution, query)) return false
         return true
       }),
     })).filter((cat) => cat.ids.length > 0)
-  }, [statusSynced, allowedSolutions])
+  }, [statusSynced, allowedSolutions, search])
 
   // P2-10: 首次進入引導狀態
   const [onboardingFor, setOnboardingFor] = useState<string | null>(null)
@@ -606,7 +640,11 @@ export default function SolutionPicker() {
             className="inline-flex items-center gap-1.5 px-5 py-2.5 text-sm text-muted-foreground hover:text-foreground border border-border/40 rounded-xl hover:border-border transition-all"
           >
             <ChevronDown className="w-4 h-4" />
-            {intakeResults.length > 0 ? `不满意？浏览全部 ${availableRegistry.length} 个方案` : `或者，浏览全部行业方案`}
+            {search.trim()
+              ? '查看匹配的行业方案'
+              : intakeResults.length > 0
+                ? `不满意？浏览全部 ${availableRegistry.length} 个方案`
+                : `或者，浏览全部行业方案`}
           </button>
         </div>
       )}
