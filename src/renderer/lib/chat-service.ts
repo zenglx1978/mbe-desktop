@@ -172,10 +172,19 @@ export async function sendMessage(
     text = `${text}\n\n---\n以下是系统自动识别的文件内容：\n${fileContext}`
   }
 
+  const routedText = route.domainInstruction
+    ? `${route.domainInstruction}\n\n---\n用户原始问题：\n${text}`
+    : text
+
   // 如果是自动路由切换，在回复头部加提示
-  const routeHint = route.autoRouted && route.agentIndex !== currentIdx
-    ? `> 已为你转接 **${agent.role}**\n\n`
-    : ''
+  const routeHintParts: string[] = []
+  if (route.autoRouted && route.agentIndex !== currentIdx) {
+    routeHintParts.push(`> 已为你转接 **${agent.role}**`)
+  }
+  if (route.domainIntent === 'interview-graph') {
+    routeHintParts.push('> 已识别为 **访谈图谱情报** 任务')
+  }
+  const routeHint = routeHintParts.length > 0 ? `${routeHintParts.join('\n')}\n\n` : ''
 
   const assistantId = chatStore.addMessage({
     role: 'assistant',
@@ -189,13 +198,13 @@ export async function sendMessage(
 
   let aborted = false
   try {
-    await streamViaWebSocket(text, agent, assistantId, convId, memoryContext, billing, signal, isResume)
+    await streamViaWebSocket(routedText, agent, assistantId, convId, memoryContext, billing, signal, isResume)
   } catch (e) {
     if (isAbortError(e)) {
       aborted = true
     } else {
       try {
-        await streamViaHTTP(text, agent, assistantId, convId, memoryContext, billing, signal, isResume)
+        await streamViaHTTP(routedText, agent, assistantId, convId, memoryContext, billing, signal, isResume)
       } catch (err) {
         if (isAbortError(err)) {
           aborted = true

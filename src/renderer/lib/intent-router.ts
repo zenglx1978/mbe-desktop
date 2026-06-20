@@ -10,6 +10,8 @@ export interface RouteResult {
   agentIndex: number
   autoRouted: boolean
   confidence: number
+  domainIntent?: 'interview-graph'
+  domainInstruction?: string
   /** Phase 7: 匹配到的关键词（用于 UI 展示） */
   matchedKeywords?: string[]
 }
@@ -84,6 +86,36 @@ const DISAMBIGUATION: { keywords: string[]; prefer: string; over: string[] }[] =
   { keywords: ['利润', '营收', '税'], prefer: 'finance', over: ['invest'] },
 ]
 
+const INTERVIEW_SOURCE_KEYWORDS = [
+  'podcast', '播客', '访谈', '采访', 'interview', 'youtube', '博客', 'blog',
+]
+
+const INTERVIEW_TASK_KEYWORDS = [
+  '哪些人', '哪些人物', '哪些嘉宾', '嘉宾', '人物', '受访', '访谈了谁', '采访了谁',
+  '访谈了哪些', '采访了哪些', '问了什么', '哪些问题', '主题', 'episode', 'episodes',
+  '访谈了哪些任务', '采访了哪些任务', '哪些任务',
+]
+
+const INTERVIEW_GRAPH_INSTRUCTION = [
+  '【意图路由：访谈图谱】',
+  '用户在问播客/博客/访谈信源的嘉宾、人物、主题、问题或可扩展线索，不是在问商业模式、估值或 MISES 评分。',
+  '请优先按“访谈图谱情报”回答：列出可核验的嘉宾/人物、机构/公司、访谈主题、关键问题、公开来源线索和后续扩展方向。',
+  '如果用户写“访谈了哪些任务”，应先按“访谈了哪些人物/嘉宾”理解，并在必要时提示这是可能的笔误。',
+  '不要默认套用奥地利经济学派/MISES 四维评分框架；只有用户明确要求投资评分、估值、商业模式分析时才使用该框架。',
+  '若无法确认具体名单，请先说明需要检索公开访谈列表，并给出下一步可执行的信源发现/图谱构建计划。',
+].join('\n')
+
+function normalizeIntentText(text: string): string {
+  return text.toLowerCase().replace(/\s+/g, '')
+}
+
+function isInterviewGraphIntent(text: string): boolean {
+  const normalized = normalizeIntentText(text)
+  const hasSource = INTERVIEW_SOURCE_KEYWORDS.some(kw => normalized.includes(normalizeIntentText(kw)))
+  const hasTask = INTERVIEW_TASK_KEYWORDS.some(kw => normalized.includes(normalizeIntentText(kw)))
+  return hasSource && hasTask
+}
+
 export function routeMessage(
   text: string,
   solution: SolutionConfig,
@@ -97,6 +129,20 @@ export function routeMessage(
   }
 
   if (!text || solution.agents.length <= 1) return defaultResult
+
+  if (solution.id === 'investment-research' && isInterviewGraphIntent(text)) {
+    const investIdx = solution.agents.findIndex(agent => agent.id === 'invest')
+    const agentIndex = investIdx >= 0 ? investIdx : currentIndex
+    return {
+      agent: solution.agents[agentIndex]!,
+      agentIndex,
+      autoRouted: agentIndex !== currentIndex,
+      confidence: 0.95,
+      domainIntent: 'interview-graph',
+      domainInstruction: INTERVIEW_GRAPH_INSTRUCTION,
+      matchedKeywords: ['访谈图谱'],
+    }
+  }
 
   const scores: { idx: number; score: number; matched: string[] }[] = []
 
