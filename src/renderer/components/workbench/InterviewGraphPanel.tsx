@@ -258,6 +258,7 @@ export default function InterviewGraphPanel() {
   const [sourceDiscovery, setSourceDiscovery] = useState<InterviewGraphSourceDiscoveryResult | null>(null)
   const [stockCandidates, setStockCandidates] = useState<InterviewGraphStockCandidateResult | null>(null)
   const [expansionTrail, setExpansionTrail] = useState<ExpansionStep[]>([])
+  const [expandingNode, setExpandingNode] = useState('')
 
   const nodes = result?.nodes ?? []
   const signals = result?.signals ?? []
@@ -355,11 +356,17 @@ export default function InterviewGraphPanel() {
     setSeedType(nextSeedType)
     setSeed(nodeName)
     setSourceUrl(nextSourceUrl)
+    setExpandingNode(nodeName)
     setExpansionTrail((prev) => [
       ...prev.slice(-5),
       { node_name: nodeName, node_type: String(node.node_type ?? 'node'), expanded_at: requestInput.generated_at },
     ])
-    await runGenerateWithInput(requestInput)
+    try {
+      await runGenerateWithInput(requestInput)
+      addToast(`已沿「${nodeName}」展开二跳图谱。`, 'success')
+    } finally {
+      setExpandingNode('')
+    }
   }
 
   async function runStockCandidates() {
@@ -539,7 +546,13 @@ export default function InterviewGraphPanel() {
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {nodes.slice(0, 8).map((node, index) => (
-                    <NodeCard key={`${node.node_name ?? 'node'}-${index}`} node={node} onExpand={() => expandFromNode(node)} loading={loading} />
+                    <NodeCard
+                      key={`${node.node_name ?? 'node'}-${index}`}
+                      node={node}
+                      onExpand={() => expandFromNode(node)}
+                      loading={loading}
+                      expanding={expandingNode === String(node.node_name ?? '').trim()}
+                    />
                   ))}
                 </div>
               </div>
@@ -606,7 +619,17 @@ function InlineLoading({ label }: { label: string }) {
   )
 }
 
-function NodeCard({ node, onExpand, loading }: { node: InterviewGraphNode; onExpand: () => void; loading: boolean }) {
+function NodeCard({
+  node,
+  onExpand,
+  loading,
+  expanding,
+}: {
+  node: InterviewGraphNode
+  onExpand: () => void
+  loading: boolean
+  expanding: boolean
+}) {
   return (
     <div className="rounded-xl border border-border/60 bg-background/70 p-3">
       <div className="flex items-start justify-between gap-2">
@@ -615,7 +638,7 @@ function NodeCard({ node, onExpand, loading }: { node: InterviewGraphNode; onExp
           <p className="mt-0.5 text-xs text-muted-foreground">{node.node_type || 'node'}{node.organization ? ` · ${node.organization}` : ''}</p>
         </div>
         <button type="button" onClick={onExpand} disabled={loading} className="rounded-lg border border-primary/30 px-2 py-1 text-xs text-primary disabled:opacity-50">
-          展开
+          {expanding ? '展开中...' : '展开'}
         </button>
       </div>
       <p className="mt-2 text-xs text-muted-foreground line-clamp-2">{node.why_relevant || '可沿此线索继续扩展访谈网络。'}</p>
