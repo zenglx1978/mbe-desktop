@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, type ReactNode } from 'react'
 import { RefreshCw, AlertTriangle } from 'lucide-react'
 
 interface UpdateInfo {
@@ -15,6 +15,25 @@ function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / 1048576).toFixed(1)} MB`
+}
+
+function BannerShell({
+  tone = 'primary',
+  children,
+}: {
+  tone?: 'primary' | 'danger'
+  children: ReactNode
+}) {
+  const toneClass = tone === 'danger'
+    ? 'bg-destructive text-destructive-foreground'
+    : 'bg-primary text-primary-foreground'
+  return (
+    <div className={`fixed bottom-3 left-1/2 z-[100] w-[min(860px,calc(100vw-2rem))] -translate-x-1/2 rounded-xl px-4 py-3 text-xs shadow-2xl ${toneClass}`}>
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        {children}
+      </div>
+    </div>
+  )
 }
 
 export default function UpdateBanner() {
@@ -43,10 +62,10 @@ export default function UpdateBanner() {
 
   if (info.status === 'installing') {
     return (
-      <div className="fixed bottom-0 inset-x-0 z-[100] h-8 bg-primary text-primary-foreground flex items-center justify-center gap-2 text-xs">
+      <BannerShell>
         <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-        正在安装 v{info.version}，即将重启...
-      </div>
+        <span>正在安装 v{info.version}，即将重启...</span>
+      </BannerShell>
     )
   }
 
@@ -55,18 +74,18 @@ export default function UpdateBanner() {
     const speedText = info.bytesPerSecond ? `${formatBytes(info.bytesPerSecond)}/s` : ''
     const sizeText = info.total ? `${formatBytes(info.transferred ?? 0)} / ${formatBytes(info.total)}` : ''
     return (
-      <div className="fixed bottom-0 inset-x-0 z-[100] h-8 bg-primary text-primary-foreground flex items-center justify-center gap-2 text-xs">
+      <BannerShell>
         <RefreshCw className="w-3.5 h-3.5 animate-spin" />
         <span>正在下载 v{info.version}... {pct}%</span>
         {sizeText && <span className="opacity-70">{sizeText}</span>}
         {speedText && <span className="opacity-70">{speedText}</span>}
-      </div>
+      </BannerShell>
     )
   }
 
   if (info.status === 'error') {
     return (
-      <div className="fixed bottom-0 inset-x-0 z-[100] h-8 bg-destructive text-destructive-foreground flex items-center justify-center gap-3 text-xs">
+      <BannerShell tone="danger">
         <AlertTriangle className="w-3.5 h-3.5" />
         <span>更新失败: {info.error || '未知错误'}</span>
         <button
@@ -81,31 +100,31 @@ export default function UpdateBanner() {
         >
           关闭
         </button>
-      </div>
+      </BannerShell>
     )
   }
 
   if (info.status === 'available') {
     return (
-      <div className="fixed bottom-0 inset-x-0 z-[100] h-8 bg-primary text-primary-foreground flex items-center justify-center gap-3 text-xs">
-        <span>新版本 v{info.version} 可用</span>
-        <button
-          onClick={() => setDismissed(true)}
-          className="px-3 py-0.5 rounded border border-white/40 hover:bg-white/10 transition-colors"
-        >
-          稍后
-        </button>
+      <BannerShell>
+        <span className="font-medium">新版本 v{info.version} 可用</span>
         <button
           onClick={() => {
             const api = (window as any).electronAPI
             api?.updater?.download()
             setInfo({ ...info, status: 'downloading', progress: 0 })
           }}
-          className="px-3 py-0.5 rounded bg-primary-foreground text-primary font-medium hover:opacity-90 transition-colors"
+          className="rounded-lg bg-primary-foreground px-4 py-1.5 font-semibold text-primary hover:opacity-90 transition-colors"
         >
-          立即安装
+          立即升级并重启
         </button>
-      </div>
+        <button
+          onClick={() => setDismissed(true)}
+          className="rounded-lg border border-white/40 px-3 py-1.5 hover:bg-white/10 transition-colors"
+        >
+          稍后
+        </button>
+      </BannerShell>
     )
   }
 
