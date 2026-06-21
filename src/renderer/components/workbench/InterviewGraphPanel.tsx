@@ -142,6 +142,39 @@ interface InterviewGraphStockCandidateResult {
   [key: string]: unknown
 }
 
+interface InterviewGraphEvidenceSearchTask {
+  from?: string
+  to?: string
+  relation?: string
+  relation_label?: string
+  queries?: string[]
+  search_urls?: string[]
+  verification_metric?: string
+  priority?: string
+  [key: string]: unknown
+}
+
+interface InterviewGraphFetchedPage {
+  url?: string
+  ok?: boolean
+  status_code?: number
+  title?: string
+  description?: string
+  excerpt?: string
+  error?: string
+  needs_human_confirm?: boolean
+  [key: string]: unknown
+}
+
+interface InterviewGraphEvidenceDiscoveryResult {
+  search_tasks?: InterviewGraphEvidenceSearchTask[]
+  known_urls?: string[]
+  fetched_pages?: InterviewGraphFetchedPage[]
+  coverage?: Record<string, unknown>
+  note?: string
+  [key: string]: unknown
+}
+
 interface InterviewGraphValueChainPosition {
   value_chain_layer?: string
   layer_label?: string
@@ -304,11 +337,13 @@ export default function InterviewGraphPanel() {
   const [loading, setLoading] = useState(false)
   const [sourceLoading, setSourceLoading] = useState(false)
   const [stockLoading, setStockLoading] = useState(false)
+  const [evidenceLoading, setEvidenceLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [result, setResult] = useState<InterviewGraphResult | null>(null)
   const [submittedInput, setSubmittedInput] = useState<SubmittedInput | null>(null)
   const [sourceDiscovery, setSourceDiscovery] = useState<InterviewGraphSourceDiscoveryResult | null>(null)
   const [stockCandidates, setStockCandidates] = useState<InterviewGraphStockCandidateResult | null>(null)
+  const [evidenceDiscovery, setEvidenceDiscovery] = useState<InterviewGraphEvidenceDiscoveryResult | null>(null)
   const [expansionTrail, setExpansionTrail] = useState<ExpansionStep[]>([])
   const [expandingNode, setExpandingNode] = useState('')
 
@@ -373,6 +408,7 @@ export default function InterviewGraphPanel() {
       setResult(resp.data)
       setSubmittedInput(requestInput)
       setStockCandidates(null)
+      setEvidenceDiscovery(null)
       addToast('访谈图谱情报已生成。', 'success')
     } catch (err) {
       const message = err instanceof Error ? err.message : '访谈图谱生成失败'
@@ -444,6 +480,28 @@ export default function InterviewGraphPanel() {
       addToast(message, 'error')
     } finally {
       setStockLoading(false)
+    }
+  }
+
+  async function runEvidenceDiscovery() {
+    if (!result || evidenceLoading) return
+    setEvidenceLoading(true)
+    setErrorMessage('')
+    try {
+      const resp = await postEnvelope<InterviewGraphEvidenceDiscoveryResult>('/interview-graph/evidence-discovery', {
+        graph_result: result,
+        max_fetch: 3,
+        fetch_urls: true,
+      })
+      if (resp.success === false || !resp.data) throw new Error('证据搜索返回为空')
+      setEvidenceDiscovery(resp.data)
+      addToast('已生成证据搜索任务。', 'success')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '证据搜索失败'
+      setErrorMessage(message)
+      addToast(message, 'error')
+    } finally {
+      setEvidenceLoading(false)
     }
   }
 
@@ -597,9 +655,14 @@ export default function InterviewGraphPanel() {
               <div className="rounded-2xl border border-border/60 bg-card p-5 space-y-4">
                 <div className="flex items-center justify-between gap-3">
                   <SectionTitle icon={<GitBranch className="w-4 h-4" />} title="图谱节点" />
-                  <button type="button" onClick={runStockCandidates} disabled={stockLoading} className="rounded-lg border border-primary/35 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary disabled:opacity-50">
-                    {stockLoading ? '生成中...' : '生成选股线索'}
-                  </button>
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <button type="button" onClick={runEvidenceDiscovery} disabled={evidenceLoading} className="rounded-lg border border-primary/35 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary disabled:opacity-50">
+                      {evidenceLoading ? '搜索中...' : '3. 自动搜索证据'}
+                    </button>
+                    <button type="button" onClick={runStockCandidates} disabled={stockLoading} className="rounded-lg border border-primary/35 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary disabled:opacity-50">
+                      {stockLoading ? '生成中...' : '生成选股线索'}
+                    </button>
+                  </div>
                 </div>
                 {expansionTrail.length > 0 && (
                   <div className="flex flex-wrap gap-2">
@@ -645,6 +708,30 @@ export default function InterviewGraphPanel() {
                 <ValueChainPositionCard key={`${position.value_chain_layer ?? 'layer'}-${index}`} position={position} />
               ))}
             </div>
+          </section>
+        )}
+
+        {evidenceDiscovery && (
+          <section className="rounded-2xl border border-border/60 bg-card p-5 space-y-4">
+            <SectionTitle icon={<SearchCheck className="w-4 h-4" />} title="自动搜索与证据抓取" />
+            {evidenceDiscovery.note && <p className="text-xs text-muted-foreground">{evidenceDiscovery.note}</p>}
+            {evidenceDiscovery.search_tasks?.length ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                {evidenceDiscovery.search_tasks.slice(0, 8).map((task, index) => (
+                  <EvidenceTaskCard key={`${task.from ?? 'from'}-${task.to ?? 'to'}-${index}`} task={task} />
+                ))}
+              </div>
+            ) : null}
+            {evidenceDiscovery.fetched_pages?.length ? (
+              <div className="space-y-3">
+                <p className="text-sm font-semibold">已抓取 URL 摘要</p>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                  {evidenceDiscovery.fetched_pages.map((page, index) => (
+                    <FetchedEvidenceCard key={`${page.url ?? 'url'}-${index}`} page={page} />
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </section>
         )}
 
@@ -790,6 +877,56 @@ function ValueChainPositionCard({ position }: { position: InterviewGraphValueCha
           ))}
         </div>
       ) : null}
+    </div>
+  )
+}
+
+function EvidenceTaskCard({ task }: { task: InterviewGraphEvidenceSearchTask }) {
+  return (
+    <div className="rounded-xl border border-border/60 bg-background/70 p-4">
+      <div className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+        <span>{task.from || '起点'}</span>
+        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] text-primary">
+          {task.relation_label || task.relation || '关系'}
+        </span>
+        <span>{task.to || '终点'}</span>
+      </div>
+      {task.queries?.length ? (
+        <div className="mt-3 space-y-1.5">
+          {task.queries.slice(0, 3).map((query, index) => (
+            <p key={`${query}-${index}`} className="text-xs text-muted-foreground">{query}</p>
+          ))}
+        </div>
+      ) : null}
+      {task.search_urls?.length ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {task.search_urls.slice(0, 2).map((url, index) => (
+            <a key={`${url}-${index}`} href={url} target="_blank" rel="noreferrer" className="rounded-lg border border-primary/30 px-2.5 py-1 text-[11px] font-semibold text-primary hover:bg-primary/10">
+              打开搜索 {index + 1}
+            </a>
+          ))}
+        </div>
+      ) : null}
+      {task.verification_metric && <p className="mt-3 text-xs text-primary">验证：{task.verification_metric}</p>}
+    </div>
+  )
+}
+
+function FetchedEvidenceCard({ page }: { page: InterviewGraphFetchedPage }) {
+  return (
+    <div className="rounded-xl border border-border/60 bg-background/70 p-4">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="text-sm font-semibold">{page.title || page.url || '证据页面'}</p>
+          <p className="mt-0.5 break-all text-xs text-muted-foreground">{page.url}</p>
+        </div>
+        <span className={`rounded-full px-2 py-1 text-[11px] ${page.ok ? 'bg-primary/10 text-primary' : 'bg-red-500/10 text-red-500'}`}>
+          {page.ok ? '已抓取' : '失败'}
+        </span>
+      </div>
+      {page.description && <p className="mt-3 text-xs text-muted-foreground">{page.description}</p>}
+      {page.excerpt && <p className="mt-2 line-clamp-4 text-xs text-muted-foreground">{page.excerpt}</p>}
+      {page.error && <p className="mt-2 text-xs text-red-500">{page.error}</p>}
     </div>
   )
 }
