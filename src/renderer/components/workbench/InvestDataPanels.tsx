@@ -70,7 +70,7 @@ function asArray(value: unknown): ApiRecord[] {
   if (Array.isArray(data)) return data.filter((item): item is ApiRecord => item !== null && typeof item === 'object')
   if (data && typeof data === 'object') {
     const record = data as ApiRecord
-    for (const key of ['items', 'results', 'opportunities', 'portfolios', 'predictions', 'funds', 'signals', 'watchlist', 'trackers', 'candidates', 'topics', 'quadrants', 'layers', 'allocations', 'consensus']) {
+    for (const key of ['items', 'results', 'opportunities', 'portfolios', 'predictions', 'funds', 'signals', 'short_candidates', 'long_opportunities', 'watchlist', 'trackers', 'candidates', 'topics', 'quadrants', 'layers', 'allocations', 'consensus']) {
       const nested = record[key]
       if (Array.isArray(nested)) return nested.filter((item): item is ApiRecord => item !== null && typeof item === 'object')
     }
@@ -766,8 +766,9 @@ function evidenceSourceText(source: unknown): string {
   if (!sourceRecord) return text(source, '')
   const name = text(sourceRecord.name ?? sourceRecord.type, '')
   const detail = text(sourceRecord.detail ?? sourceRecord.pattern ?? sourceRecord.updated ?? sourceRecord.count, '')
+  const url = text(sourceRecord.url, '')
   const required = sourceRecord.required === true ? '必需复核' : ''
-  return [name, detail, required].filter(Boolean).join(' · ')
+  return [name, detail, url, required].filter(Boolean).join(' · ')
 }
 
 function statusClass(status: string) {
@@ -785,16 +786,171 @@ function severityClass(severity: string) {
 function RiskList({ items, empty }: { items: ApiRecord[]; empty: string }) {
   if (!items.length) return <EmptyBox message={empty} />
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
       {items.slice(0, 12).map((item, index) => (
-        <article key={text(item.id ?? item.ticker, String(index))} className="rounded-xl border border-border/60 bg-card p-4">
-          <div className="flex items-start justify-between gap-3">
-            <h3 className="text-sm font-semibold">{titleFromRecord(item)}</h3>
-            <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-xs text-red-500">{text(item.signal_type ?? item.strength ?? item.score, 'signal')}</span>
-          </div>
-          <p className="mt-2 line-clamp-3 text-xs text-muted-foreground">{text(item.reason ?? item.rationale ?? item.summary ?? item.description)}</p>
-        </article>
+        <TradeValidationCard key={text(item.id ?? item.ticker, String(index))} item={item} />
       ))}
+    </div>
+  )
+}
+
+function TradeValidationCard({ item }: { item: ApiRecord }) {
+  const validation = record(item.trade_validation)
+  if (!validation) {
+    return (
+      <article className="rounded-xl border border-border/60 bg-card p-4">
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="text-sm font-semibold">{titleFromRecord(item)}</h3>
+          <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-xs text-red-500">{text(item.signal_type ?? item.strength ?? item.score, 'signal')}</span>
+        </div>
+        <p className="mt-2 line-clamp-3 text-xs text-muted-foreground">{text(item.reason ?? item.rationale ?? item.summary ?? item.description)}</p>
+      </article>
+    )
+  }
+
+  const direction = text(validation.direction)
+  const evidence = Array.isArray(validation.evidence_sources)
+    ? validation.evidence_sources.map(evidenceSourceText).filter(Boolean)
+    : []
+  const metrics = stringList(validation.verification_metrics)
+  const disconfirming = stringList(validation.disconfirming_conditions)
+  const catalysts = stringList(validation.catalysts)
+  const valuation = record(validation.valuation_status)
+  const position = record(validation.position_risk)
+  const live = record(validation.live_validation)
+  return (
+    <article className="rounded-xl border border-border/60 bg-card p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold">{titleFromRecord(item)}</h3>
+          <p className="mt-0.5 text-xs text-muted-foreground">{text(item.ticker, '无 ticker')} · 颠覆分 {numberText(item.disruption_score)}/100</p>
+        </div>
+        <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${direction === 'short' ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'}`}>
+          {text(validation.direction_label ?? direction)}
+        </span>
+      </div>
+
+      <div className="mt-3 rounded-lg bg-background/70 p-3">
+        <p className="text-[11px] font-semibold text-muted-foreground">核心假设</p>
+        <p className="mt-1 text-xs text-foreground/85">{text(validation.core_hypothesis)}</p>
+      </div>
+
+      {live ? <LiveValidationPanel live={live} /> : null}
+
+      <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+        <MiniChecklist title="验证指标" items={metrics} />
+        <MiniChecklist title="反证条件" items={disconfirming} tone="red" />
+        <MiniChecklist title="催化剂" items={catalysts} tone="green" />
+        <div className="rounded-lg bg-background/70 p-3">
+          <p className="text-[11px] font-semibold text-muted-foreground">估值状态</p>
+          <p className="mt-1 text-xs text-foreground/85">{text(valuation?.summary ?? valuation?.status)}</p>
+          {stringList(valuation?.watch_metrics).length ? (
+            <p className="mt-2 text-[11px] text-muted-foreground">{stringList(valuation?.watch_metrics).slice(0, 3).join('；')}</p>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="rounded-lg bg-background/70 p-3">
+          <p className="text-[11px] font-semibold text-muted-foreground">仓位/止损复核项</p>
+          <p className="mt-1 text-xs text-foreground/85">建议上限：{pctText(position?.suggested_max_position)}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{text(position?.stop_loss)}</p>
+          {position?.borrow_check ? <p className="mt-1 text-xs text-amber-500">{text(position.borrow_check)}</p> : null}
+        </div>
+        <div className="rounded-lg bg-background/70 p-3">
+          <p className="text-[11px] font-semibold text-muted-foreground">证据来源</p>
+          <p className="mt-1 text-xs text-muted-foreground">{evidence.length ? evidence.slice(0, 4).join('；') : '待补充证据来源'}</p>
+        </div>
+      </div>
+      {validation.not_investment_advice ? (
+        <p className="mt-3 text-[11px] text-muted-foreground">仅用于研究验证和风控复核，不构成投资建议；进入交易前必须完成证据核验、估值复核和仓位审批。</p>
+      ) : null}
+    </article>
+  )
+}
+
+function LiveValidationPanel({ live }: { live: ApiRecord }) {
+  const quote = record(live.quote)
+  const valuation = record(live.valuation_snapshot)
+  const financial = record(live.financial_quality)
+  const newsItems = Array.isArray(live.news_evidence)
+    ? live.news_evidence.filter((item): item is ApiRecord => item !== null && typeof item === 'object')
+    : []
+  const gaps = stringList(live.verification_gaps)
+  const checks = Array.isArray(live.ticker_specific_checks)
+    ? live.ticker_specific_checks.filter((item): item is ApiRecord => item !== null && typeof item === 'object')
+    : []
+  return (
+    <div className="mt-3 rounded-xl border border-primary/15 bg-primary/5 p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs font-semibold text-primary">实时验证状态：{text(live.status)}</p>
+        <p className="text-[11px] text-muted-foreground">{text(live.summary)}</p>
+      </div>
+      <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="rounded-lg bg-card/70 p-3">
+          <p className="text-[11px] font-semibold text-muted-foreground">行情/估值快照</p>
+          <p className="mt-1 text-xs text-foreground/85">
+            {quote ? `${text(quote.ticker)} ${text(quote.price)} ${text(quote.currency)} · ${pctText(quote.change_pct)}` : '行情待补'}
+          </p>
+          <p className="mt-1 text-[11px] text-muted-foreground">{text(valuation?.summary)}</p>
+        </div>
+        <div className="rounded-lg bg-card/70 p-3">
+          <p className="text-[11px] font-semibold text-muted-foreground">财务质量</p>
+          <p className="mt-1 text-xs text-foreground/85">{text(financial?.summary ?? financial?.status)}</p>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            OCF/利润 {text(financial?.ocf_to_profit_ratio)} · 营收增速 {pctText(financial?.revenue_growth_yoy)}
+          </p>
+        </div>
+        <div className="rounded-lg bg-card/70 p-3">
+          <p className="text-[11px] font-semibold text-muted-foreground">验证缺口</p>
+          <p className="mt-1 text-xs text-amber-500">{gaps.length ? gaps.slice(0, 3).join('；') : '暂无明显缺口'}</p>
+        </div>
+      </div>
+      {newsItems.length ? (
+        <div className="mt-3 rounded-lg bg-card/70 p-3">
+          <p className="text-[11px] font-semibold text-muted-foreground">新闻/研报证据</p>
+          <div className="mt-1 space-y-1">
+            {newsItems.slice(0, 3).map((item, index) => (
+              item.url ? (
+                <a key={`${text(item.title)}-${index}`} href={text(item.url, '#')} target="_blank" rel="noreferrer" className="block text-xs text-primary hover:underline">
+                  {text(item.title)} <span className="text-muted-foreground">({text(item.source)} {text(item.published_at)})</span>
+                </a>
+              ) : (
+                <p key={`${text(item.title)}-${index}`} className="text-xs text-muted-foreground">{text(item.title)} ({text(item.source)})</p>
+              )
+            ))}
+          </div>
+        </div>
+      ) : null}
+      {checks.length ? (
+        <div className="mt-3 rounded-lg bg-card/70 p-3">
+          <p className="text-[11px] font-semibold text-muted-foreground">重点标的专项核验</p>
+          <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+            {checks.slice(0, 6).map((check) => (
+              <div key={text(check.topic)} className="rounded-lg bg-background/70 p-2">
+                <p className="text-xs font-semibold">{text(check.topic)} · {text(check.metric)}</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">{text(check.verify)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function MiniChecklist({ title, items, tone = 'default' }: { title: string; items: string[]; tone?: 'default' | 'red' | 'green' }) {
+  const titleClass = tone === 'red' ? 'text-red-500' : tone === 'green' ? 'text-green-500' : 'text-muted-foreground'
+  return (
+    <div className="rounded-lg bg-background/70 p-3">
+      <p className={`text-[11px] font-semibold ${titleClass}`}>{title}</p>
+      {items.length ? (
+        <ul className="mt-1 space-y-1 text-xs text-foreground/85">
+          {items.slice(0, 4).map((item) => <li key={item}>• {item}</li>)}
+        </ul>
+      ) : (
+        <p className="mt-1 text-xs text-muted-foreground">待补充</p>
+      )}
     </div>
   )
 }
