@@ -28,8 +28,8 @@ function BannerShell({
     ? 'bg-destructive text-destructive-foreground'
     : 'bg-primary text-primary-foreground'
   return (
-    <div className={`fixed bottom-3 left-1/2 z-[100] w-[min(860px,calc(100vw-2rem))] -translate-x-1/2 rounded-xl px-4 py-3 text-xs shadow-2xl ${toneClass}`}>
-      <div className="flex flex-wrap items-center justify-center gap-3">
+    <div className={`fixed bottom-5 left-1/2 z-[100] w-[min(680px,calc(100vw-2rem))] -translate-x-1/2 rounded-2xl px-4 py-4 text-xs shadow-2xl ${toneClass}`}>
+      <div className="flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
         {children}
       </div>
     </div>
@@ -107,20 +107,20 @@ export default function UpdateBanner() {
   if (info.status === 'available') {
     return (
       <BannerShell>
-        <span className="font-medium">新版本 v{info.version} 可用</span>
+        <span className="text-center font-medium sm:flex-1 sm:text-left">新版本 v{info.version} 可用</span>
         <button
           onClick={() => {
             const api = (window as any).electronAPI
             api?.updater?.download()
             setInfo({ ...info, status: 'downloading', progress: 0 })
           }}
-          className="rounded-lg bg-primary-foreground px-4 py-1.5 font-semibold text-primary hover:opacity-90 transition-colors"
+          className="min-h-10 rounded-xl bg-primary-foreground px-5 py-2 text-sm font-bold text-primary shadow-sm hover:opacity-90 transition-colors"
         >
-          立即升级并重启
+          立即安装
         </button>
         <button
           onClick={() => setDismissed(true)}
-          className="rounded-lg border border-white/40 px-3 py-1.5 hover:bg-white/10 transition-colors"
+          className="min-h-10 rounded-xl border border-white/50 px-5 py-2 text-sm font-semibold hover:bg-white/10 transition-colors"
         >
           稍后
         </button>
