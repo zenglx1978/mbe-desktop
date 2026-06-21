@@ -44,8 +44,30 @@ interface InterviewGraphNode {
   organization?: string
   why_relevant?: string
   confidence?: string
+  value_chain_layer?: string
+  value_chain_position?: string
+  listed_company_links?: string[]
   needs_source_check?: boolean
   source_url?: string | null
+  [key: string]: unknown
+}
+
+interface InterviewGraphEvidenceSource {
+  source_type?: string
+  source_name?: string
+  verification_hint?: string
+  needs_source_check?: boolean
+  [key: string]: unknown
+}
+
+interface InterviewGraphEdge {
+  from?: string
+  to?: string
+  relation?: string
+  relation_label?: string
+  evidence_sources?: InterviewGraphEvidenceSource[]
+  verification_metric?: string
+  confidence?: string
   [key: string]: unknown
 }
 
@@ -120,15 +142,28 @@ interface InterviewGraphStockCandidateResult {
   [key: string]: unknown
 }
 
+interface InterviewGraphValueChainPosition {
+  value_chain_layer?: string
+  layer_label?: string
+  position_summary?: string
+  nodes?: string[]
+  listed_company_links?: string[]
+  relation_count?: number
+  verification_metrics?: string[]
+  [key: string]: unknown
+}
+
 interface InterviewGraphResult {
   tracker_id?: string
   seed?: Record<string, unknown>
   source_quality?: Record<string, unknown>
   nodes?: InterviewGraphNode[]
-  edges?: Record<string, unknown>[]
+  edges?: InterviewGraphEdge[]
   questions?: Record<string, unknown>[]
   signals?: InterviewGraphSignal[]
   verification_plan?: InterviewGraphVerificationItem[]
+  value_chain_positions?: InterviewGraphValueChainPosition[]
+  stock_candidates?: InterviewGraphStockCandidateResult
   next_actions?: string[]
   quality_rules?: string[]
   disclaimer?: string
@@ -240,6 +275,23 @@ function marketFromCandidate(market?: string): 'A' | 'HK' | 'US' {
   return 'A'
 }
 
+function isSupportedResearchMarket(market?: string): boolean {
+  const normalized = String(market ?? '').trim().toUpperCase()
+  return (
+    normalized.includes('A股') ||
+    normalized.includes('A-SHARE') ||
+    normalized.includes('CHINA') ||
+    normalized.includes('HK') ||
+    normalized.includes('港') ||
+    normalized.includes('HONG KONG') ||
+    normalized.includes('US') ||
+    normalized.includes('美') ||
+    normalized.includes('NASDAQ') ||
+    normalized.includes('NYSE') ||
+    normalized.includes('AMEX')
+  )
+}
+
 export default function InterviewGraphPanel() {
   const addToast = useToastStore((s) => s.addToast)
   const selectStockAndResearch = useToolStore((s) => s.selectStockAndResearch)
@@ -261,13 +313,17 @@ export default function InterviewGraphPanel() {
   const [expandingNode, setExpandingNode] = useState('')
 
   const nodes = result?.nodes ?? []
+  const edges = result?.edges ?? []
   const signals = result?.signals ?? []
   const verificationPlan = result?.verification_plan ?? []
+  const valueChainPositions = result?.value_chain_positions ?? []
+  const visibleStockCandidates = stockCandidates?.candidates ?? result?.stock_candidates?.candidates ?? []
   const sourceQuality = result?.source_quality ?? {}
   const layerCount = useMemo(
     () => new Set(signals.map((s) => s.value_chain_layer).filter(Boolean)).size,
     [signals],
   )
+  const latestExpansion = expansionTrail.length > 0 ? expansionTrail[expansionTrail.length - 1] : null
 
   async function runDiscoverSources() {
     if (sourceLoading) return
@@ -393,7 +449,7 @@ export default function InterviewGraphPanel() {
 
   function sendToResearch(candidate: InterviewGraphStockCandidate) {
     const ticker = String(candidate.ticker ?? '').trim()
-    if (!ticker) return
+    if (!ticker || !isSupportedResearchMarket(candidate.market)) return
     selectStockAndResearch({
       ticker,
       name: String(candidate.company_name || ticker),
@@ -496,6 +552,15 @@ export default function InterviewGraphPanel() {
           </section>
 
           <section className="space-y-4">
+            {result && latestExpansion && (
+              <div className="rounded-2xl border border-primary/30 bg-primary/10 p-4 text-sm">
+                <p className="font-semibold text-primary">当前结果：已沿「{latestExpansion.node_name}」展开二跳图谱</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  下方节点是该节点的下一层人物、公司、供应链瓶颈和验证线索；可继续点任一节点深入。
+                </p>
+              </div>
+            )}
+
             {sourceDiscovery?.sources?.length ? (
               <div className="rounded-2xl border border-border/60 bg-card p-5 space-y-3">
                 <SectionTitle icon={<SearchCheck className="w-4 h-4" />} title="候选信源" />
@@ -514,8 +579,9 @@ export default function InterviewGraphPanel() {
             ) : null}
 
             {result ? (
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <MetricCard label="节点" value={nodes.length} />
+                <MetricCard label="关系边" value={edges.length} />
                 <MetricCard label="产业层级" value={layerCount} />
                 <MetricCard label="验证项" value={verificationPlan.length} />
               </div>
@@ -560,11 +626,33 @@ export default function InterviewGraphPanel() {
           </section>
         </div>
 
-        {stockCandidates?.candidates?.length ? (
+        {edges.length > 0 && (
+          <section className="rounded-2xl border border-border/60 bg-card p-5 space-y-4">
+            <SectionTitle icon={<GitBranch className="w-4 h-4" />} title="关系边与证据来源" />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              {edges.slice(0, 8).map((edge, index) => (
+                <RelationCard key={`${edge.from ?? 'from'}-${edge.to ?? 'to'}-${index}`} edge={edge} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {valueChainPositions.length > 0 && (
+          <section className="rounded-2xl border border-border/60 bg-card p-5 space-y-4">
+            <SectionTitle icon={<Network className="w-4 h-4" />} title="由图谱归纳的产业链位置" />
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+              {valueChainPositions.map((position, index) => (
+                <ValueChainPositionCard key={`${position.value_chain_layer ?? 'layer'}-${index}`} position={position} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {visibleStockCandidates.length ? (
           <section className="rounded-2xl border border-border/60 bg-card p-5 space-y-4">
             <SectionTitle icon={<CheckCircle2 className="w-4 h-4" />} title="相关股票候选" />
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-              {stockCandidates.candidates.map((candidate, index) => (
+              {visibleStockCandidates.map((candidate, index) => (
                 <StockCandidateCard key={`${candidate.ticker ?? 'candidate'}-${index}`} candidate={candidate} onResearch={() => sendToResearch(candidate)} />
               ))}
             </div>
@@ -642,6 +730,66 @@ function NodeCard({
         </button>
       </div>
       <p className="mt-2 text-xs text-muted-foreground line-clamp-2">{node.why_relevant || '可沿此线索继续扩展访谈网络。'}</p>
+      {(node.value_chain_position || node.value_chain_layer) && (
+        <p className="mt-2 text-[11px] text-primary">
+          {node.value_chain_layer ? `${LAYER_LABELS[node.value_chain_layer] ?? node.value_chain_layer} · ` : ''}
+          {node.value_chain_position}
+        </p>
+      )}
+    </div>
+  )
+}
+
+function RelationCard({ edge }: { edge: InterviewGraphEdge }) {
+  const evidence = edge.evidence_sources?.[0]
+  return (
+    <div className="rounded-xl border border-border/60 bg-background/70 p-4">
+      <div className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+        <span>{edge.from || '起点'}</span>
+        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] text-primary">
+          {edge.relation_label || edge.relation || '关系'}
+        </span>
+        <span>{edge.to || '终点'}</span>
+      </div>
+      {evidence?.source_name && (
+        <p className="mt-3 text-xs text-muted-foreground">
+          证据源：{evidence.source_name}
+        </p>
+      )}
+      {(edge.verification_metric || evidence?.verification_hint) && (
+        <p className="mt-2 text-xs text-primary">
+          验证：{edge.verification_metric || evidence?.verification_hint}
+        </p>
+      )}
+    </div>
+  )
+}
+
+function ValueChainPositionCard({ position }: { position: InterviewGraphValueChainPosition }) {
+  const layer = position.value_chain_layer ? (LAYER_LABELS[position.value_chain_layer] ?? position.layer_label ?? position.value_chain_layer) : position.layer_label
+  return (
+    <div className="rounded-xl border border-border/60 bg-background/70 p-4">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="text-sm font-semibold">{layer || '产业链位置'}</p>
+          {typeof position.relation_count === 'number' && (
+            <p className="mt-0.5 text-xs text-muted-foreground">{position.relation_count} 条关系支撑</p>
+          )}
+        </div>
+      </div>
+      {position.position_summary && <p className="mt-3 text-xs text-muted-foreground">{position.position_summary}</p>}
+      {position.nodes?.length ? (
+        <p className="mt-2 text-xs text-muted-foreground">节点：{position.nodes.slice(0, 4).join('、')}</p>
+      ) : null}
+      {position.listed_company_links?.length ? (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {position.listed_company_links.slice(0, 6).map((ticker) => (
+            <span key={ticker} className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] text-primary">
+              {ticker}
+            </span>
+          ))}
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -668,6 +816,7 @@ function SignalCard({ signal, verification }: { signal: InterviewGraphSignal; ve
 
 function StockCandidateCard({ candidate, onResearch }: { candidate: InterviewGraphStockCandidate; onResearch: () => void }) {
   const ticker = String(candidate.ticker ?? '').trim()
+  const supported = isSupportedResearchMarket(candidate.market)
   return (
     <div className="rounded-xl border border-border/60 bg-background/70 p-4">
       <div className="flex items-start justify-between gap-2">
@@ -689,8 +838,8 @@ function StockCandidateCard({ candidate, onResearch }: { candidate: InterviewGra
           ))}
         </div>
       ) : null}
-      <button type="button" onClick={onResearch} disabled={!ticker} className="mt-4 w-full rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary disabled:opacity-50">
-        进入投研工作流
+      <button type="button" onClick={onResearch} disabled={!ticker || !supported} className="mt-4 w-full rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary disabled:opacity-50">
+        {supported ? '进入投研工作流' : '暂不支持该市场工作流'}
       </button>
     </div>
   )
