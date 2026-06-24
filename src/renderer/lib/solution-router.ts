@@ -114,9 +114,9 @@ export type WorkbenchTab = 'chat' | 'tools' | 'documents' | 'tasks' | 'dashboard
   | 'today' | 'bookkeeping' | 'invoices' | 'tax-filing' | 'reports' | 'tax-planning' | 'business-plan' | 'consolidated' | 'ipo-prep' | 'audit-report' | 'neeq'
   | 'cases' | 'contracts' | 'legal-docs' | 'billing'
   | 'employees' | 'payroll' | 'compliance' | 'disputes'
-  | 'research' | 'portfolio' | 'macro' | 'compliance-pub' | 'mises-export'
+  | 'research' | 'portfolio' | 'macro' | 'invest-dashboard' | 'opportunity-discovery' | 'interview-graph' | 'risk-signals' | 'institution-signals' | 'compliance-pub' | 'mises-export'
   | 'report-distill' | 'distill-scheduler' | 'backtest' | 'hitl'
-  | 'design-engine' | 'dispatch-dashboard' | 'knowledge-graph'
+  | 'design-engine' | 'dispatch-dashboard' | 'knowledge-graph' | 'knowledge-base'
 
 /** 利润影响标注 — 米塞斯 P2：企业的目的是获取利润 */
 export interface ProfitImpact {
@@ -200,6 +200,27 @@ export interface SafetyRule {
   description?: string
 }
 
+export type ModelStrategy =
+  | 'cost_first_with_quality_gate'
+  | 'balanced'
+  | 'quality_first'
+  | 'latency_first'
+
+export interface OrchestrationProfile {
+  /** 方案级模型选择策略：便宜模型草稿、强模型复核、或质量优先等 */
+  modelStrategy: ModelStrategy
+  /** 最终交付物是否启用 Generator-Evaluator QA Loop */
+  qaLoop: 'final_deliverables' | 'high_risk_steps' | 'off'
+  /** 数值类问题优先走确定性计算器，避免 LLM 概率性计算 */
+  calculatorFirst: boolean
+  /** 是否要求输出证据链、路由记录和关键步骤审计轨迹 */
+  auditTrace: 'required' | 'recommended' | 'off'
+  /** 需要人工确认的高风险动作 */
+  humanApproval: string[]
+  /** 用户可见的编排能力标签 */
+  badges: string[]
+}
+
 export interface SolutionConfig {
   id: string
   name: string
@@ -236,6 +257,8 @@ export interface SolutionConfig {
   scenarios?: ScenarioConfig[]
   /** 安全规则（AI 输出合规保障） */
   safetyRules?: SafetyRule[]
+  /** MBE Fusion Profile：方案级编排策略声明 */
+  orchestrationProfile?: Partial<OrchestrationProfile>
   /** 快捷操作（方案首页卡片） */
   quickActions?: QuickAction[]
   /** P2-10: 首次进入引导配置（QuickBooks 风格） */
@@ -331,6 +354,45 @@ export function isStatusSynced(): boolean {
 
 export function getSolution(id: string): SolutionConfig | undefined {
   return SOLUTION_REGISTRY.find(s => s.id === id)
+}
+
+const DEFAULT_ORCHESTRATION_PROFILE: OrchestrationProfile = {
+  modelStrategy: 'cost_first_with_quality_gate',
+  qaLoop: 'final_deliverables',
+  calculatorFirst: true,
+  auditTrace: 'required',
+  humanApproval: ['合同签署', '付款/开票确认', '高风险合规结论'],
+  badges: ['多 Agent 编排', '便宜模型草稿', '强模型复核', '规则计算优先', '审计轨迹'],
+}
+
+export function getSolutionOrchestrationProfile(solution: SolutionConfig): OrchestrationProfile {
+  const profile = solution.orchestrationProfile ?? {}
+  const hasCalculators = solution.tools.some(tool => tool.type === 'calculator' || Boolean(tool.localScript))
+  const hasHumanSteps = solution.workflows.some(workflow =>
+    workflow.mode === 'hitl' ||
+    workflow.mode === 'human_in_loop' ||
+    workflow.steps.some(step => step.mode === 'hitl' || step.mode === 'human_in_loop'),
+  )
+  const hasSafetyRules = Boolean(solution.safetyRules?.length)
+  const agentCount = new Set(solution.agents.map(agent => agent.id)).size
+
+  return {
+    ...DEFAULT_ORCHESTRATION_PROFILE,
+    ...profile,
+    calculatorFirst: profile.calculatorFirst ?? hasCalculators,
+    auditTrace: profile.auditTrace ?? (hasSafetyRules ? 'required' : DEFAULT_ORCHESTRATION_PROFILE.auditTrace),
+    humanApproval: profile.humanApproval ?? (
+      hasHumanSteps
+        ? DEFAULT_ORCHESTRATION_PROFILE.humanApproval
+        : ['最终交付确认', '外部系统写入', '高风险合规结论']
+    ),
+    badges: profile.badges ?? [
+      agentCount > 1 ? `${agentCount} Agent 协作` : '单 Agent 专家组',
+      hasCalculators ? '规则计算优先' : '模型路由',
+      hasSafetyRules ? '合规护栏' : 'QA Loop',
+      '审计轨迹',
+    ],
+  }
 }
 
 /** 仅返回已上架的方案（远端状态覆盖本地定义） */

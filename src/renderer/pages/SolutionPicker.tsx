@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { SOLUTION_REGISTRY, type SolutionConfig, fetchSolutionStatuses, getEffectiveStatus, resetSolutionStatuses } from '@/lib/solution-router'
+import { SOLUTION_REGISTRY, type SolutionConfig, fetchSolutionStatuses, getEffectiveStatus, getSolutionOrchestrationProfile, resetSolutionStatuses } from '@/lib/solution-router'
 import { useAppStore } from '@/stores/app-store'
 import { useAuthStore } from '@/stores/auth-store'
-import { LogOut, Zap, Briefcase, Search, Users, Sparkles, Scan, ArrowRight, ChevronDown } from 'lucide-react'
+import { LogOut, Zap, Briefcase, Search, Users, Sparkles, Scan, ArrowRight, ChevronDown, Network, ShieldCheck, Calculator, GitBranch } from 'lucide-react'
 import { getSolutionIcon } from '@/lib/solution-icons'
 import { API_BASE, authHeaders } from '@/lib/api-client'
 import UpdateBanner from '@/components/UpdateBanner'
@@ -79,6 +79,7 @@ function SolutionCard({ solution, index, onPick, onLearnMore }: {
   const status = getEffectiveStatus(solution.id)
   const isClickable = status === 'available'
   const badge = STATUS_BADGE[status]
+  const orchestration = getSolutionOrchestrationProfile(solution)
 
   const handleMouseEnter = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!isClickable) return
@@ -147,13 +148,19 @@ function SolutionCard({ solution, index, onPick, onLearnMore }: {
       )}
 
       {/* P2-8: 去掉技術計數（專家數/工具數/流程數），改為利潤導向標籤 */}
-      <div className="flex items-center gap-2 mt-3 text-[11px] text-muted-foreground/50 group-hover:text-muted-foreground/70 transition-colors">
+      <div className="flex flex-wrap items-center gap-2 mt-3 text-[11px] text-muted-foreground/50 group-hover:text-muted-foreground/70 transition-colors">
         {solution.valueEquivalent && (
           <span className="flex items-center gap-1">
             <Zap className="w-3 h-3" />
             效率提升 {solution.valueEquivalent.acceleration}
           </span>
         )}
+        {orchestration.badges.slice(0, 2).map((item) => (
+          <span key={item} className="flex items-center gap-1">
+            <GitBranch className="w-3 h-3" />
+            {item}
+          </span>
+        ))}
       </div>
 
       {/* 操作按鈕 — 兩個獨立交互元素，不嵌套 */}
@@ -480,11 +487,39 @@ export default function SolutionPicker() {
             </div>
 
             {/* P2-8: 簡化統計，去掉技術計數 */}
-            <div className="flex items-center gap-5 text-xs text-muted-foreground/60 mt-1">
+            <div className="flex flex-wrap items-center gap-5 text-xs text-muted-foreground/60 mt-1">
               <span className="flex items-center gap-1.5">
                 <Briefcase className="w-3.5 h-3.5" />
                 {availableRegistry.length} 个行业方案
               </span>
+              <span className="flex items-center gap-1.5">
+                <Network className="w-3.5 h-3.5" />
+                MBE 编排引擎
+              </span>
+              <span className="flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                QA Loop + 审计轨迹
+              </span>
+            </div>
+
+            <div className="grid gap-3 max-w-3xl sm:grid-cols-2 lg:grid-cols-4 mt-4">
+              {[
+                { icon: Network, label: '多 Agent 派工', text: '按任务路由到财务、法律、HR、投研等专家' },
+                { icon: GitBranch, label: '模型分层', text: '便宜模型起草，强模型复核关键交付物' },
+                { icon: Calculator, label: '计算优先', text: '金额、税费、赔偿等先走确定性工具' },
+                { icon: ShieldCheck, label: '可审计交付', text: '保留证据链、QA 分数和人工确认点' },
+              ].map((item) => {
+                const Icon = item.icon
+                return (
+                  <div key={item.label} className="rounded-xl border border-border/35 bg-card/70 px-4 py-3">
+                    <div className="flex items-center gap-2 text-xs font-medium text-foreground">
+                      <Icon className="w-3.5 h-3.5 text-primary" />
+                      {item.label}
+                    </div>
+                    <p className="text-[11px] leading-relaxed text-muted-foreground mt-1.5">{item.text}</p>
+                  </div>
+                )
+              })}
             </div>
           </div>
         </div>
@@ -615,6 +650,15 @@ export default function SolutionPicker() {
                         <Users className="w-3 h-3" />
                         {rec.ai_team_summary.slice(0, 3).join(' · ')}
                       </div>
+                    </div>
+                  )}
+                  {localSol && (
+                    <div className="flex flex-wrap gap-1.5 mt-3">
+                      {getSolutionOrchestrationProfile(localSol).badges.slice(0, 3).map((item) => (
+                        <span key={item} className="text-[11px] px-2 py-0.5 rounded-full bg-primary/10 text-primary/80">
+                          {item}
+                        </span>
+                      ))}
                     </div>
                   )}
                   {rec.top_scenario && (

@@ -24,6 +24,14 @@ export const laborDispatchSolution: SolutionConfig = {
   knowledgeCache: ['labor_law_basics', 'dispatch_regulations'],
   theme: { primary: '38 92% 50%', accent: '38 92% 50%' },
   enabledTabs: ['today', 'employees', 'payroll', 'compliance', 'disputes', 'tools', 'documents', 'chat', 'knowledge-graph'],
+  orchestrationProfile: {
+    modelStrategy: 'cost_first_with_quality_gate',
+    qaLoop: 'high_risk_steps',
+    calculatorFirst: true,
+    auditTrace: 'required',
+    humanApproval: ['合同签署', '社保增员', '开票确认', '纠纷和解方案'],
+    badges: ['Legal+Finance+HR 协作', '赔偿/税费计算优先', '高风险步骤复核', '审批留痕'],
+  },
   onboarding: {
     questions: [
       { key: 'company_size', label: '公司规模', options: ['1-20人', '20-50人', '50-200人', '200人以上'] },

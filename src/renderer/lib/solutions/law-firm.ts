@@ -24,6 +24,14 @@ export const lawFirmSolution: SolutionConfig = {
   knowledgeCache: ['civil_law_basics', 'contract_law'],
   theme: { primary: '220 65% 50%', accent: '220 65% 50%', sidebarBg: '220 15% 7%' },
   enabledTabs: ['today', 'cases', 'contracts', 'legal-docs', 'billing', 'tools', 'documents', 'chat', 'knowledge-graph'],
+  orchestrationProfile: {
+    modelStrategy: 'quality_first',
+    qaLoop: 'final_deliverables',
+    calculatorFirst: true,
+    auditTrace: 'required',
+    humanApproval: ['法律意见签发', '合同签署建议', '诉讼策略定稿'],
+    badges: ['法律专家组协作', '强模型复核', '法条证据链', '人工签发'],
+  },
   onboarding: {
     questions: [
       { key: 'firm_size', label: '律所规模', options: ['1-5人', '5-20人', '20-50人', '50人以上'] },

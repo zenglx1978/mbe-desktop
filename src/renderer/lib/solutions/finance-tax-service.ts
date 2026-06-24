@@ -26,6 +26,14 @@ export const financeTaxServiceSolution: SolutionConfig = {
   knowledgeCache: ['tax_law_basics', 'accounting_standards'],
   theme: { primary: '164 100% 42%', accent: '164 100% 42%' },
   enabledTabs: ['today', 'bookkeeping', 'invoices', 'tax-filing', 'reports', 'tax-planning', 'business-plan', 'consolidated', 'ipo-prep', 'audit-report', 'neeq', 'tools', 'documents', 'chat', 'dashboard', 'knowledge-graph'],
+  orchestrationProfile: {
+    modelStrategy: 'cost_first_with_quality_gate',
+    qaLoop: 'final_deliverables',
+    calculatorFirst: true,
+    auditTrace: 'required',
+    humanApproval: ['纳税申报提交', '税务筹划落地', '审计报告签发'],
+    badges: ['Finance+Legal 协作', '凭证/税费计算优先', '交付物 QA Loop', '审计轨迹'],
+  },
   onboarding: {
     questions: [
       { key: 'taxpayer_type', label: '纳税人类型', options: ['一般纳税人', '小规模纳税人'] },

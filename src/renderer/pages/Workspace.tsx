@@ -7,7 +7,7 @@ import { useAdaptiveUIStore } from '@/stores/adaptive-ui-store'
 import { useLocalFeedbackStore, startFeedbackSync } from '@/stores/local-feedback-store'
 import { useSmartCacheStore } from '@/stores/smart-cache-store'
 import { useCloudSyncStore, startCloudSync } from '@/stores/cloud-sync-store'
-import { applySolutionTheme, fetchSolutionStatuses, getEffectiveStatus, type WorkbenchTab, type SolutionConfig } from '@/lib/solution-router'
+import { applySolutionTheme, fetchSolutionStatuses, getEffectiveStatus, getSolutionOrchestrationProfile, type WorkbenchTab, type SolutionConfig } from '@/lib/solution-router'
 import { API_BASE, authHeaders } from '@/lib/api-client'
 import { getSolutionIcon } from '@/lib/solution-icons'
 import { useState } from 'react'
@@ -29,6 +29,7 @@ import SchedulerPanel from '@/components/workbench/SchedulerPanel'
 import DesignerPanel from '@/components/workbench/DesignerPanel'
 import DesignEnginePanel from '@/components/workbench/DesignEnginePanel'
 import KnowledgeGraphPanel from '@/components/workbench/KnowledgeGraphPanel'
+import KnowledgeBasePanel from '@/components/workbench/KnowledgeBasePanel'
 import EfficiencyPanel from '@/components/workbench/EfficiencyPanel'
 import ClientChatPanel from '@/components/workbench/ClientChatPanel'
 import ROIPanel from '@/components/workbench/ROIPanel'
@@ -50,6 +51,14 @@ import { ReportDistillPanel } from '@/components/workbench/ReportDistillPanel'
 import { DistillSchedulerPanel } from '@/components/workbench/DistillSchedulerPanel'
 import BacktestPanel from '@/components/workbench/BacktestPanel'
 import HitlPanel from '@/components/workbench/HitlPanel'
+import InterviewGraphPanel from '@/components/workbench/InterviewGraphPanel'
+import {
+  InvestDashboardPanel,
+  InvestDiscoveryPanel,
+  InvestInstitutionPredictionPanel,
+  InvestPortfolioPanel,
+  InvestRiskPanel,
+} from '@/components/workbench/InvestDataPanels'
 import IPOPrepPanel from '@/components/workbench/IPOPrepPanel'
 import AuditReportFullPanel from '@/components/workbench/AuditReportFullPanel'
 import NEEQPanel from '@/components/workbench/NEEQPanel'
@@ -58,7 +67,7 @@ import OfflineBanner from '@/components/OfflineBanner'
 import UndoToast from '@/components/workbench/UndoToast'
 import { startApprovalPolling } from '@/stores/approval-store'
 import { useApprovalNotifications } from '@/hooks/useApprovalNotifications'
-import { MessageSquare, ChevronDown, X, ArrowLeftRight, Sparkles } from 'lucide-react'
+import { MessageSquare, ChevronDown, X, ArrowLeftRight, Sparkles, Network, GitBranch, Calculator, ShieldCheck, UserCheck } from 'lucide-react'
 import { PanelErrorBoundary } from '@/components/PanelErrorBoundary'
 
 let connectivityInitialized = false
@@ -136,6 +145,36 @@ function OnboardingDialog({ solution, onComplete }: { solution: SolutionConfig; 
 /** 是否支持 AI 助手侧面板（非 chat tab 时可滑出） */
 function supportsAssistant(tab: string): boolean {
   return tab !== 'chat' && !['today'].includes(tab)
+}
+
+function OrchestrationPlanStrip({ solution }: { solution: SolutionConfig }) {
+  const profile = getSolutionOrchestrationProfile(solution)
+  const agentCount = new Set(solution.agents.map(agent => agent.id)).size
+  const items = [
+    { icon: Network, label: `${agentCount} Agent 派工`, detail: solution.agents.map(agent => agent.id).slice(0, 4).join(' + ') },
+    { icon: GitBranch, label: '模型策略', detail: profile.modelStrategy === 'quality_first' ? '质量优先 + 强模型复核' : '便宜模型草稿 + 质量门' },
+    { icon: Calculator, label: '计算优先', detail: profile.calculatorFirst ? '金额/税费先走规则工具' : '按任务动态路由' },
+    { icon: ShieldCheck, label: 'QA + 审计', detail: `${profile.qaLoop === 'off' ? '按需复核' : '交付物 QA Loop'} · ${profile.auditTrace === 'required' ? '强制留痕' : '建议留痕'}` },
+    { icon: UserCheck, label: '人工确认', detail: profile.humanApproval.slice(0, 2).join(' / ') },
+  ]
+
+  return (
+    <div className="border-b border-border/30 bg-card/45 px-4 py-2">
+      <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
+        <span className="text-[11px] font-semibold text-primary shrink-0">MBE 编排计划</span>
+        {items.map((item) => {
+          const Icon = item.icon
+          return (
+            <div key={item.label} className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-secondary/30 border border-border/25 shrink-0">
+              <Icon className="w-3.5 h-3.5 text-primary" />
+              <span className="text-[11px] font-medium text-foreground">{item.label}</span>
+              <span className="text-[11px] text-muted-foreground/70 max-w-[180px] truncate">{item.detail}</span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 export default function Workspace() {
@@ -227,6 +266,7 @@ export default function Workspace() {
     // 「账户 / 用量 / 订阅」对所有付费用户始终可达，不受方案类型影响
     if (!tabs.includes('approvals')) tabs.push('approvals' as (typeof tabs)[number])
     if (!tabs.includes('account')) tabs.push('account' as (typeof tabs)[number])
+    if (!tabs.includes('knowledge-base')) tabs.push('knowledge-base' as (typeof tabs)[number])
     if (!isTaskOriented) {
       if (!tabs.includes('costs')) tabs.push('costs' as (typeof tabs)[number])
       if (!tabs.includes('efficiency')) tabs.push('efficiency' as (typeof tabs)[number])
@@ -380,6 +420,7 @@ export default function Workspace() {
         {/* 内容区 + AI 助手侧面板 */}
         <div className="flex-1 flex overflow-hidden">
           <div className="flex-1 flex flex-col overflow-hidden">
+            {activeTab !== 'chat' && <OrchestrationPlanStrip solution={solution} />}
             <PanelErrorBoundary key={activeTab} name={activeTab}>
               <ActivePanel tab={activeTab} />
             </PanelErrorBoundary>
@@ -508,12 +549,23 @@ function ActivePanel({ tab }: { tab: string }) {
     case 'disputes':
       return <TaskContextPanel solution={solution} taskId="disputes" />
     // 投研方案专属任务 tab
+    case 'invest-dashboard':
+      return <InvestDashboardPanel />
+    case 'opportunity-discovery':
+      return <InvestDiscoveryPanel />
     case 'research':
       return <TaskContextPanel solution={solution} taskId="research" />
     case 'portfolio':
+      if (solution.id === 'investment-research') return <InvestPortfolioPanel />
       return <TaskContextPanel solution={solution} taskId="portfolio" />
     case 'macro':
       return <TaskContextPanel solution={solution} taskId="macro" />
+    case 'interview-graph':
+      return <InterviewGraphPanel />
+    case 'risk-signals':
+      return <InvestRiskPanel />
+    case 'institution-signals':
+      return <InvestInstitutionPredictionPanel />
     case 'compliance-pub':
       return <TaskContextPanel solution={solution} taskId="compliance-pub" />
     case 'mises-export':
@@ -537,6 +589,8 @@ function ActivePanel({ tab }: { tab: string }) {
       return <NEEQPanel solution={solution} />
     case 'knowledge-graph':
       return <KnowledgeGraphPanel />
+    case 'knowledge-base':
+      return <KnowledgeBasePanel />
     default:
       return <ChatPanel />
   }
